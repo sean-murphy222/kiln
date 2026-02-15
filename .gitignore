@@ -1,0 +1,144 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+MANIFEST
+*.manifest
+*.spec
+pip-log.txt
+pip-delete-this-directory.txt
+.pytest_cache/
+.coverage
+.coverage.*
+htmlcov/
+.tox/
+.nox/
+coverage.xml
+*.cover
+.hypothesis/
+.mypy_cache/
+.dmypy.json
+dmypy.json
+.ruff_cache/
+
+# Virtual environments
+venv/
+env/
+ENV/
+env.bak/
+venv.bak/
+.venv/
+
+# Node.js
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+lerna-debug.log*
+.npm
+.eslintcache
+*.tsbuildinfo
+
+# Build outputs
+ui/dist/
+ui/build/
+ui/out/
+
+# Electron
+ui/release/
+
+# Environment and secrets
+.env
+.env.local
+.env.*.local
+*.pem
+*.key
+*.p12
+credentials.json
+secrets.*
+.secrets/
+
+# IDEs and editors
+.vscode/
+!.vscode/settings.json
+!.vscode/tasks.json
+!.vscode/launch.json
+!.vscode/extensions.json
+.idea/
+*.swp
+*.swo
+*~
+.DS_Store
+*.sublime-project
+*.sublime-workspace
+
+# Claude Code
+.claude/backups/
+.claude/session-log.jsonl
+.claude/worktrees/
+.claude/settings.local.json
+
+# OS
+Thumbs.db
+.DS_Store
+
+# Logs
+*.log
+logs/
+
+# Temporary files
+tmp/
+temp/
+*.tmp
+
+# Data files (large)
+*.pdf
+*.docx
+*.xlsx
+data/documents/
+data/test-corpus/
+models/
+*.ckpt
+*.safetensors
+*.bin
+
+# Test output files (large JSON exports)
+*-extraction-*.json
+*NESTED-HIERARCHY.json
+*comparison_report.txt
+
+# Artifacts
+nul
+_ul
+=*
+
+# Jupyter
+.ipynb_checkpoints/
+*.ipynb
+
+# Testing
+.pytest_cache/
+test-results/
+playwright-report/
+
+# Database
+*.db
+*.sqlite
+*.sqlite3

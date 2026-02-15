@@ -1,0 +1,101 @@
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[project]
+name = "chonk"
+version = "0.1.0"
+description = "Visual document chunking studio for RAG pipelines"
+readme = "README.md"
+requires-python = ">=3.10"
+license = "MIT"
+authors = [
+    { name = "CHONK Team" }
+]
+keywords = ["rag", "chunking", "document", "embedding", "nlp"]
+classifiers = [
+    "Development Status :: 3 - Alpha",
+    "Intended Audience :: Developers",
+    "License :: OSI Approved :: MIT License",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+]
+
+dependencies = [
+    # Web framework
+    "fastapi>=0.109.0",
+    "uvicorn[standard]>=0.27.0",
+    "pydantic>=2.5.0",
+
+    # Document loading
+    "pdfplumber>=0.10.0",
+    "pymupdf>=1.23.0",
+    "python-docx>=1.1.0",
+    "markdown-it-py>=3.0.0",
+
+    # NLP & Tokenization
+    "tiktoken>=0.5.0",
+
+    # Embeddings & Search
+    "sentence-transformers>=2.2.0",
+    "numpy>=1.24.0",
+
+    # Utilities
+    "python-multipart>=0.0.6",
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=7.4.0",
+    "pytest-asyncio>=0.23.0",
+    "black>=24.0.0",
+    "ruff>=0.1.0",
+    "mypy>=1.8.0",
+]
+ocr = [
+    "pytesseract>=0.3.10",
+]
+pptx = [
+    "python-pptx>=0.6.21",
+]
+# Tier 2: Enhanced extraction with Docling (IBM)
+enhanced = [
+    "docling>=2.0.0",
+]
+# Tier 3: AI-powered extraction with LayoutParser
+ai = [
+    "layoutparser>=0.3.4",
+    "detectron2>=0.6",
+    "torchvision>=0.15.0",
+]
+# All optional extraction features
+all-extractors = [
+    "docling>=2.0.0",
+    "layoutparser>=0.3.4",
+]
+
+[project.scripts]
+chonk = "chonk.cli:main"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/chonk"]
+
+[tool.black]
+line-length = 100
+target-version = ["py310"]
+
+[tool.ruff]
+line-length = 100
+target-version = "py310"
+select = ["E", "F", "I", "N", "W", "UP"]
+
+[tool.mypy]
+python_version = "3.10"
+strict = true
+warn_return_any = true
+warn_unused_ignores = true
+
+[tool.pytest.ini_options]
+asyncio_mode = "auto"
+testpaths = ["tests"]

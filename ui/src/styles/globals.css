@@ -1,0 +1,232 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* Base styles */
+:root {
+  font-family: 'Inter', sans-serif;
+  color-scheme: dark;
+}
+
+body {
+  @apply bg-surface-bg text-chonk-white;
+  margin: 0;
+  padding: 0;
+  overflow: hidden;
+}
+
+/* Scrollbar styling - 8-bit theme */
+::-webkit-scrollbar {
+  width: 12px;
+  height: 12px;
+}
+
+::-webkit-scrollbar-track {
+  @apply bg-surface-bg;
+}
+
+::-webkit-scrollbar-thumb {
+  @apply bg-chonk-gray border-2 border-solid border-chonk-slate;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  @apply bg-chonk-light;
+}
+
+::-webkit-scrollbar-corner {
+  @apply bg-surface-bg;
+}
+
+/* Selection styling */
+::selection {
+  @apply bg-accent-primary text-chonk-white;
+}
+
+/* Focus styling */
+:focus-visible {
+  @apply outline-none ring-2 ring-accent-primary ring-offset-2 ring-offset-surface-bg;
+}
+
+/* Pixel art effect for certain elements */
+.pixel-border {
+  @apply border-pixel border-chonk-slate;
+  image-rendering: pixelated;
+}
+
+.pixel-shadow {
+  @apply shadow-pixel;
+}
+
+/* Retro button styles */
+.btn-pixel {
+  @apply px-4 py-2 font-mono text-sm font-medium;
+  @apply bg-surface-panel border-pixel border-chonk-slate;
+  @apply shadow-pixel transition-all duration-100;
+  @apply hover:bg-surface-card hover:translate-x-0.5 hover:translate-y-0.5 hover:shadow-pixel-sm;
+  @apply active:translate-x-1 active:translate-y-1 active:shadow-none;
+}
+
+.btn-pixel-primary {
+  @apply btn-pixel bg-accent-primary border-chonk-navy text-chonk-white;
+  @apply hover:bg-chonk-sky;
+}
+
+.btn-pixel-success {
+  @apply btn-pixel bg-accent-success border-chonk-teal text-chonk-white;
+  @apply hover:bg-chonk-yellow hover:text-chonk-black;
+}
+
+.btn-pixel-danger {
+  @apply btn-pixel bg-accent-error border-chonk-purple text-chonk-white;
+  @apply hover:bg-chonk-red;
+}
+
+/* Card styles */
+.card-pixel {
+  @apply bg-surface-panel border-pixel border-chonk-slate;
+  @apply shadow-pixel;
+}
+
+/* Input styles */
+.input-pixel {
+  @apply w-full px-3 py-2 font-mono text-sm;
+  @apply bg-surface-bg border-pixel border-chonk-slate;
+  @apply text-chonk-white placeholder:text-chonk-gray;
+  @apply focus:border-accent-primary focus:ring-0;
+  @apply shadow-pixel-inset;
+}
+
+/* Badge styles */
+.badge {
+  @apply inline-flex items-center px-2 py-1 text-xs font-mono rounded-sm;
+}
+
+.badge-success {
+  @apply badge bg-accent-success text-chonk-white;
+}
+
+.badge-warning {
+  @apply badge bg-accent-warning text-chonk-black;
+}
+
+.badge-error {
+  @apply badge bg-accent-error text-chonk-white;
+}
+
+.badge-info {
+  @apply badge bg-accent-primary text-chonk-white;
+}
+
+/* Quality score indicators */
+.quality-high {
+  @apply text-accent-success;
+}
+
+.quality-medium {
+  @apply text-accent-warning;
+}
+
+.quality-low {
+  @apply text-accent-error;
+}
+
+/* Chunk highlight colors */
+.chunk-selected {
+  @apply bg-accent-primary/30 border-accent-primary;
+}
+
+.chunk-hover {
+  @apply bg-accent-primary/10;
+}
+
+/* Panel styling */
+.panel {
+  @apply bg-surface-panel border-r border-chonk-slate;
+}
+
+.panel-header {
+  @apply px-4 py-3 border-b border-chonk-slate;
+  @apply font-pixel text-xs text-chonk-light uppercase tracking-wider;
+}
+
+/* Drag and drop zone */
+.dropzone {
+  @apply border-2 border-dashed border-chonk-gray rounded-lg;
+  @apply flex flex-col items-center justify-center;
+  @apply transition-colors duration-200;
+}
+
+.dropzone-active {
+  @apply border-accent-primary bg-accent-primary/10;
+}
+
+/* Loading states */
+.skeleton {
+  @apply animate-pulse bg-surface-card rounded;
+}
+
+/* Toast/notification styling */
+.toast {
+  @apply card-pixel px-4 py-3 flex items-center gap-3;
+  @apply text-sm font-mono;
+}
+
+.toast-success {
+  @apply toast border-accent-success;
+}
+
+.toast-error {
+  @apply toast border-accent-error;
+}
+
+.toast-info {
+  @apply toast border-accent-primary;
+}
+
+/* Title bar styling for Electron */
+.titlebar {
+  -webkit-app-region: drag;
+  @apply h-8 bg-surface-bg flex items-center px-4;
+  @apply border-b border-chonk-slate;
+}
+
+.titlebar-nodrag {
+  -webkit-app-region: no-drag;
+}
+
+/* Typography utilities */
+.text-pixel {
+  font-family: 'Press Start 2P', monospace;
+  @apply text-xs leading-relaxed;
+}
+
+/* Animation utilities */
+@keyframes slide-up {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes slide-down {
+  from {
+    opacity: 0;
+    transform: translateY(-10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.animate-slide-up {
+  animation: slide-up 0.2s ease-out;
+}
+
+.animate-slide-down {
+  animation: slide-down 0.2s ease-out;
+}
