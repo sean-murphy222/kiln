@@ -82,6 +82,7 @@ def sample_document(sample_blocks: list[Block]) -> ChonkDocument:
         source_path=Path("test_document.pdf"),
         source_type="pdf",
         blocks=sample_blocks,
+        chunks=[],
         metadata=DocumentMetadata(
             title="Test Document",
             author="Test Author",
