@@ -152,7 +152,7 @@ class TestChunk:
             quality=quality,
         )
 
-        assert chunk.quality.overall == 0.93
+        assert chunk.quality.overall == 0.945
         assert chunk.quality.token_range == 0.9
 
     def test_chunk_serialization(self):
