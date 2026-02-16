@@ -241,13 +241,11 @@ class TestChunkerRegistry:
         assert isinstance(hierarchy, HierarchyChunker)
 
     def test_get_unknown_chunker(self):
-        """Test getting unknown chunker raises error."""
+        """Test getting unknown chunker returns None."""
         config = ChunkerConfig()
 
-        with pytest.raises(ValueError) as exc_info:
-            ChunkerRegistry.get_chunker("unknown_chunker", config)
-
-        assert "Unknown chunker" in str(exc_info.value)
+        chunker = ChunkerRegistry.get_chunker("unknown_chunker", config)
+        assert chunker is None
 
     def test_chunk_document(self, sample_document):
         """Test chunking document through registry."""

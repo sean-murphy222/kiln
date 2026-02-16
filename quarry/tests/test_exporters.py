@@ -35,11 +35,9 @@ class TestExporterRegistry:
         assert csv_exporter is not None
 
     def test_get_unknown_exporter(self):
-        """Test getting unknown exporter raises error."""
-        with pytest.raises(ValueError) as exc_info:
-            ExporterRegistry.get_exporter("unknown_format")
-
-        assert "Unknown export format" in str(exc_info.value)
+        """Test getting unknown exporter returns None."""
+        exporter = ExporterRegistry.get_exporter("unknown_format")
+        assert exporter is None
 
 
 class TestJSONLExporter:

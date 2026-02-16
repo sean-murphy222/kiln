@@ -143,7 +143,6 @@ class TestChunk:
             hierarchy_preserved=1.0,
             table_integrity=1.0,
             reference_complete=1.0,
-            overall=0.93,
         )
         chunk = Chunk(
             id="quality_chunk",
