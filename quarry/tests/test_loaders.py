@@ -26,25 +26,23 @@ class TestLoaderRegistry:
 
     def test_get_loader_for_pdf(self):
         """Test getting loader for PDF."""
-        loader = LoaderRegistry.get_loader(".pdf")
+        loader = LoaderRegistry.get_loader(Path("test.pdf"))
         assert loader is not None
 
     def test_get_loader_for_markdown(self):
         """Test getting loader for markdown."""
-        loader = LoaderRegistry.get_loader(".md")
+        loader = LoaderRegistry.get_loader(Path("test.md"))
         assert isinstance(loader, MarkdownLoader)
 
     def test_get_loader_for_text(self):
         """Test getting loader for text."""
-        loader = LoaderRegistry.get_loader(".txt")
+        loader = LoaderRegistry.get_loader(Path("test.txt"))
         assert isinstance(loader, TextLoader)
 
     def test_get_loader_for_unknown(self):
         """Test getting loader for unknown extension."""
-        with pytest.raises(LoaderError) as exc_info:
-            LoaderRegistry.get_loader(".xyz")
-
-        assert "Unsupported" in str(exc_info.value)
+        loader = LoaderRegistry.get_loader(Path("test.xyz"))
+        assert loader is None
 
 
 class TestTextLoader:
@@ -53,7 +51,7 @@ class TestTextLoader:
     def test_text_loader_creation(self):
         """Test text loader instantiation."""
         loader = TextLoader()
-        assert ".txt" in loader.supported_extensions()
+        assert ".txt" in loader.SUPPORTED_EXTENSIONS
 
     def test_text_loader_load(self, temp_dir, sample_text_content):
         """Test loading a text file."""
@@ -61,7 +59,7 @@ class TestTextLoader:
         file_path.write_text(sample_text_content)
 
         loader = TextLoader()
-        doc = loader.load(file_path)
+        doc = loader.load_document(file_path)
 
         assert doc.source_type == "txt"
         assert len(doc.blocks) > 0
@@ -74,7 +72,7 @@ class TestTextLoader:
         file_path.write_text(content)
 
         loader = TextLoader()
-        doc = loader.load(file_path)
+        doc = loader.load_document(file_path)
 
         # Should have blocks for each paragraph
         text_blocks = [b for b in doc.blocks if b.type == "text"]
@@ -94,7 +92,7 @@ class TestMarkdownLoader:
     def test_markdown_loader_creation(self):
         """Test markdown loader instantiation."""
         loader = MarkdownLoader()
-        assert ".md" in loader.supported_extensions()
+        assert ".md" in loader.SUPPORTED_EXTENSIONS
 
     def test_markdown_loader_load(self, temp_dir, sample_markdown_content):
         """Test loading a markdown file."""
@@ -102,7 +100,7 @@ class TestMarkdownLoader:
         file_path.write_text(sample_markdown_content)
 
         loader = MarkdownLoader()
-        doc = loader.load(file_path)
+        doc = loader.load_document(file_path)
 
         assert doc.source_type == "md"
         assert len(doc.blocks) > 0
@@ -113,7 +111,7 @@ class TestMarkdownLoader:
         file_path.write_text(sample_markdown_content)
 
         loader = MarkdownLoader()
-        doc = loader.load(file_path)
+        doc = loader.load_document(file_path)
 
         heading_blocks = [b for b in doc.blocks if b.type == "heading"]
         assert len(heading_blocks) > 0
@@ -139,7 +137,7 @@ And more text after.
         file_path.write_text(content)
 
         loader = MarkdownLoader()
-        doc = loader.load(file_path)
+        doc = loader.load_document(file_path)
 
         code_blocks = [b for b in doc.blocks if b.type == "code"]
         assert len(code_blocks) == 1

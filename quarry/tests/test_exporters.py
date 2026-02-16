@@ -25,19 +25,19 @@ class TestExporterRegistry:
 
     def test_get_exporter(self):
         """Test getting exporter by format."""
-        jsonl_exporter = ExporterRegistry.get("jsonl")
+        jsonl_exporter = ExporterRegistry.get_exporter("jsonl")
         assert jsonl_exporter is not None
 
-        json_exporter = ExporterRegistry.get("json")
+        json_exporter = ExporterRegistry.get_exporter("json")
         assert json_exporter is not None
 
-        csv_exporter = ExporterRegistry.get("csv")
+        csv_exporter = ExporterRegistry.get_exporter("csv")
         assert csv_exporter is not None
 
     def test_get_unknown_exporter(self):
         """Test getting unknown exporter raises error."""
         with pytest.raises(ValueError) as exc_info:
-            ExporterRegistry.get("unknown_format")
+            ExporterRegistry.get_exporter("unknown_format")
 
         assert "Unknown export format" in str(exc_info.value)
 

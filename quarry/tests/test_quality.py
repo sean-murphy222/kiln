@@ -138,7 +138,6 @@ class TestQualityAnalyzer:
             hierarchy_preserved=1.0,
             table_integrity=1.0,
             reference_complete=0.7,
-            overall=0.88,
         )
 
         data = score.to_dict()
