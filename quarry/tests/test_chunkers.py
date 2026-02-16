@@ -57,7 +57,7 @@ class TestFixedSizeChunker:
         )
         chunker = FixedSizeChunker(config)
 
-        chunks = chunker.chunk(sample_document)
+        chunks = chunker.chunk(sample_document.blocks)
 
         assert len(chunks) > 0
         for chunk in chunks:
@@ -72,7 +72,7 @@ class TestFixedSizeChunker:
         )
         chunker = FixedSizeChunker(config)
 
-        chunks = chunker.chunk(sample_document)
+        chunks = chunker.chunk(sample_document.blocks)
 
         for chunk in chunks:
             assert chunk.token_count <= config.max_tokens
@@ -97,7 +97,7 @@ class TestRecursiveChunker:
         )
         chunker = RecursiveChunker(config)
 
-        chunks = chunker.chunk(sample_document)
+        chunks = chunker.chunk(sample_document.blocks)
 
         assert len(chunks) > 0
         for chunk in chunks:
@@ -117,12 +117,13 @@ class TestRecursiveChunker:
                     page=1,
                 ),
             ],
+            chunks=[],
         )
 
         config = ChunkerConfig(target_tokens=10, max_tokens=20)
         chunker = RecursiveChunker(config)
 
-        chunks = chunker.chunk(doc)
+        chunks = chunker.chunk(doc.blocks)
 
         # Should split on paragraph boundaries
         assert len(chunks) >= 2
@@ -147,7 +148,7 @@ class TestHierarchyChunker:
         )
         chunker = HierarchyChunker(config)
 
-        chunks = chunker.chunk(sample_document)
+        chunks = chunker.chunk(sample_document.blocks)
 
         assert len(chunks) > 0
         # Should have hierarchy paths set
@@ -166,6 +167,7 @@ class TestHierarchyChunker:
                 Block(id="h2", type="heading", content="Methods", page=1, heading_level=1),
                 Block(id="p2", type="text", content="Methods content " * 20, page=1),
             ],
+            chunks=[],
         )
 
         config = ChunkerConfig(
@@ -175,7 +177,7 @@ class TestHierarchyChunker:
         )
         chunker = HierarchyChunker(config)
 
-        chunks = chunker.chunk(doc)
+        chunks = chunker.chunk(doc.blocks)
 
         # Chunks should not span across major headings
         # Each chunk should have content from only one section
@@ -197,6 +199,7 @@ class TestHierarchyChunker:
                 ),
                 Block(id="p2", type="text", content="Some text after code.", page=1),
             ],
+            chunks=[],
         )
 
         config = ChunkerConfig(
@@ -206,7 +209,7 @@ class TestHierarchyChunker:
         )
         chunker = HierarchyChunker(config)
 
-        chunks = chunker.chunk(doc)
+        chunks = chunker.chunk(doc.blocks)
 
         # Code should be kept together
         code_chunks = [c for c in chunks if "def function" in c.content]
@@ -228,13 +231,13 @@ class TestChunkerRegistry:
         """Test getting chunker by name."""
         config = ChunkerConfig()
 
-        fixed = ChunkerRegistry.get("fixed", config)
+        fixed = ChunkerRegistry.get_chunker("fixed", config)
         assert isinstance(fixed, FixedSizeChunker)
 
-        recursive = ChunkerRegistry.get("recursive", config)
+        recursive = ChunkerRegistry.get_chunker("recursive", config)
         assert isinstance(recursive, RecursiveChunker)
 
-        hierarchy = ChunkerRegistry.get("hierarchy", config)
+        hierarchy = ChunkerRegistry.get_chunker("hierarchy", config)
         assert isinstance(hierarchy, HierarchyChunker)
 
     def test_get_unknown_chunker(self):
@@ -242,7 +245,7 @@ class TestChunkerRegistry:
         config = ChunkerConfig()
 
         with pytest.raises(ValueError) as exc_info:
-            ChunkerRegistry.get("unknown_chunker", config)
+            ChunkerRegistry.get_chunker("unknown_chunker", config)
 
         assert "Unknown chunker" in str(exc_info.value)
 

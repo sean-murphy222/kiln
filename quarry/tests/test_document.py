@@ -185,6 +185,7 @@ class TestChonkDocument:
             source_path=Path("document.pdf"),
             source_type="pdf",
             blocks=sample_blocks,
+            chunks=[],
         )
 
         assert doc.id == "test_doc"
