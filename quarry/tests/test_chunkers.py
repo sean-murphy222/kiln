@@ -113,14 +113,14 @@ class TestRecursiveChunker:
                 Block(
                     id="b1",
                     type=BlockType.TEXT,
-                    content="First paragraph.\n\nSecond paragraph.\n\nThird paragraph.",
+                    content="First paragraph with some additional content to make it longer.\n\nSecond paragraph with more text to exceed token limits.\n\nThird paragraph also with substantial content.",
                     page=1,
                 ),
             ],
             chunks=[],
         )
 
-        config = ChunkerConfig(target_tokens=10, max_tokens=20)
+        config = ChunkerConfig(target_tokens=10, max_tokens=15)
         chunker = RecursiveChunker(config)
 
         chunks = chunker.chunk(doc.blocks)
