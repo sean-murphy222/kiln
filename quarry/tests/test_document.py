@@ -10,6 +10,7 @@ import pytest
 
 from chonk.core.document import (
     Block,
+    BlockType,
     Chunk,
     ChunkMetadata,
     ChonkDocument,
@@ -29,13 +30,13 @@ class TestBlock:
         """Test basic block creation."""
         block = Block(
             id="test_block",
-            type="text",
+            type=BlockType.TEXT,
             content="Hello, world!",
             page=1,
         )
 
         assert block.id == "test_block"
-        assert block.type == "text"
+        assert block.type == BlockType.TEXT
         assert block.content == "Hello, world!"
         assert block.page == 1
         assert block.bbox is None
@@ -46,20 +47,20 @@ class TestBlock:
         """Test block with heading level."""
         block = Block(
             id="heading_block",
-            type="heading",
+            type=BlockType.HEADING,
             content="Introduction",
             page=1,
             heading_level=1,
         )
 
-        assert block.type == "heading"
+        assert block.type == BlockType.HEADING
         assert block.heading_level == 1
 
     def test_block_with_bbox(self):
         """Test block with bounding box."""
         block = Block(
             id="positioned_block",
-            type="text",
+            type=BlockType.TEXT,
             content="Positioned text",
             page=2,
             bbox={"x1": 100, "y1": 200, "x2": 300, "y2": 250, "page": 2},
@@ -73,7 +74,7 @@ class TestBlock:
         """Test block to_dict and from_dict."""
         block = Block(
             id="test_block",
-            type="text",
+            type=BlockType.TEXT,
             content="Test content",
             page=1,
             metadata={"custom_key": "value"},
@@ -93,8 +94,8 @@ class TestBlock:
         id2 = Block.generate_id()
 
         assert id1 != id2
-        assert id1.startswith("blk_")
-        assert len(id1) == 12
+        assert id1.startswith("block_")
+        assert len(id1) == 18  # "block_" + 12 hex chars
 
 
 class TestChunk:

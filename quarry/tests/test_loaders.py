@@ -6,6 +6,7 @@ from pathlib import Path
 
 import pytest
 
+from chonk.core.document import BlockType
 from chonk.loaders import LoaderRegistry
 from chonk.loaders.base import BaseLoader, LoaderError
 from chonk.loaders.markdown import MarkdownLoader
@@ -75,7 +76,7 @@ class TestTextLoader:
         doc = loader.load_document(file_path)
 
         # Should have blocks for each paragraph
-        text_blocks = [b for b in doc.blocks if b.type == "text"]
+        text_blocks = [b for b in doc.blocks if b.type == BlockType.TEXT]
         assert len(text_blocks) == 3
 
     def test_text_loader_missing_file(self, temp_dir):
@@ -113,7 +114,7 @@ class TestMarkdownLoader:
         loader = MarkdownLoader()
         doc = loader.load_document(file_path)
 
-        heading_blocks = [b for b in doc.blocks if b.type == "heading"]
+        heading_blocks = [b for b in doc.blocks if b.type == BlockType.HEADING]
         assert len(heading_blocks) > 0
 
         # Check heading levels are set
@@ -139,7 +140,7 @@ And more text after.
         loader = MarkdownLoader()
         doc = loader.load_document(file_path)
 
-        code_blocks = [b for b in doc.blocks if b.type == "code"]
+        code_blocks = [b for b in doc.blocks if b.type == BlockType.CODE]
         assert len(code_blocks) == 1
         assert "def hello" in code_blocks[0].content
 

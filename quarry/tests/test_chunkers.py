@@ -8,7 +8,7 @@ from chonk.chunkers import ChunkerConfig, ChunkerRegistry
 from chonk.chunkers.fixed import FixedSizeChunker
 from chonk.chunkers.hierarchy import HierarchyChunker
 from chonk.chunkers.recursive import RecursiveChunker
-from chonk.core.document import Block, ChonkDocument, DocumentMetadata
+from chonk.core.document import Block, BlockType, ChonkDocument, DocumentMetadata
 
 
 class TestChunkerConfig:
@@ -112,7 +112,7 @@ class TestRecursiveChunker:
             blocks=[
                 Block(
                     id="b1",
-                    type="text",
+                    type=BlockType.TEXT,
                     content="First paragraph.\n\nSecond paragraph.\n\nThird paragraph.",
                     page=1,
                 ),
@@ -162,10 +162,10 @@ class TestHierarchyChunker:
             source_path="test.md",
             source_type="md",
             blocks=[
-                Block(id="h1", type="heading", content="Introduction", page=1, heading_level=1),
-                Block(id="p1", type="text", content="Intro content " * 20, page=1),
-                Block(id="h2", type="heading", content="Methods", page=1, heading_level=1),
-                Block(id="p2", type="text", content="Methods content " * 20, page=1),
+                Block(id="h1", type=BlockType.HEADING, content="Introduction", page=1, heading_level=1),
+                Block(id="p1", type=BlockType.TEXT, content="Intro content " * 20, page=1),
+                Block(id="h2", type=BlockType.HEADING, content="Methods", page=1, heading_level=1),
+                Block(id="p2", type=BlockType.TEXT, content="Methods content " * 20, page=1),
             ],
             chunks=[],
         )
@@ -190,14 +190,14 @@ class TestHierarchyChunker:
             source_path="test.md",
             source_type="md",
             blocks=[
-                Block(id="p1", type="text", content="Some text before code.", page=1),
+                Block(id="p1", type=BlockType.TEXT, content="Some text before code.", page=1),
                 Block(
                     id="c1",
-                    type="code",
+                    type=BlockType.CODE,
                     content="def function():\n    pass\n" * 10,
                     page=1,
                 ),
-                Block(id="p2", type="text", content="Some text after code.", page=1),
+                Block(id="p2", type=BlockType.TEXT, content="Some text after code.", page=1),
             ],
             chunks=[],
         )
