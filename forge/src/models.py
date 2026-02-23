@@ -420,3 +420,156 @@ class CurriculumVersion:
             status=CurriculumStatus(data.get("status", "draft")),
             created_at=datetime.fromisoformat(data["created_at"]),
         )
+
+
+# ===================================================================
+# Discovery Interview Types
+# ===================================================================
+
+
+class ResponseType(str, Enum):
+    """Type of response expected for a discovery question."""
+
+    FREE_TEXT = "free_text"
+    LIST_ITEMS = "list_items"
+    SCALE_1_5 = "scale_1_5"
+
+
+class DiscoveryPhase(str, Enum):
+    """Phases of the discipline discovery interview."""
+
+    ORIENTATION = "orientation"
+    DOCUMENTS = "documents"
+    COMPETENCIES = "competencies"
+    VOCABULARY = "vocabulary"
+
+
+class SessionStatus(str, Enum):
+    """Status of a discovery interview session."""
+
+    IN_PROGRESS = "in_progress"
+    COMPLETED = "completed"
+    ABANDONED = "abandoned"
+
+
+@dataclass
+class QuestionResponse:
+    """A response to a single discovery question.
+
+    Attributes:
+        question_id: ID of the question being answered.
+        raw_text: Free-form text as entered by the user.
+        items: Parsed list items (for LIST_ITEMS responses).
+        scale_value: 1-5 value (for SCALE_1_5 responses).
+        answered_at: When the response was recorded.
+    """
+
+    question_id: str
+    raw_text: str
+    items: list[str] = field(default_factory=list)
+    scale_value: int | None = None
+    answered_at: datetime = field(default_factory=datetime.now)
+
+    def to_dict(self) -> dict[str, Any]:
+        """Serialize to dictionary."""
+        return {
+            "question_id": self.question_id,
+            "raw_text": self.raw_text,
+            "items": self.items,
+            "scale_value": self.scale_value,
+            "answered_at": self.answered_at.isoformat(),
+        }
+
+    @classmethod
+    def from_dict(cls, data: dict[str, Any]) -> QuestionResponse:
+        """Deserialize from dictionary."""
+        return cls(
+            question_id=data["question_id"],
+            raw_text=data["raw_text"],
+            items=data.get("items", []),
+            scale_value=data.get("scale_value"),
+            answered_at=datetime.fromisoformat(data["answered_at"]),
+        )
+
+
+@dataclass
+class DiscoverySession:
+    """A discipline discovery interview session.
+
+    Attributes:
+        id: Unique identifier (prefixed with 'dsess_').
+        discipline_name: Working title provided at session start.
+        contributor_id: Who is conducting the interview.
+        current_phase: Current phase of the interview.
+        status: Current session status.
+        responses: Map of question_id to QuestionResponse.
+        generated_discipline_id: Set when session completes.
+        started_at: When the session was started.
+        updated_at: When the session was last modified.
+        completed_at: When the session was completed (if applicable).
+    """
+
+    id: str
+    discipline_name: str
+    contributor_id: str
+    current_phase: DiscoveryPhase = DiscoveryPhase.ORIENTATION
+    status: SessionStatus = SessionStatus.IN_PROGRESS
+    responses: dict[str, QuestionResponse] = field(default_factory=dict)
+    generated_discipline_id: str | None = None
+    started_at: datetime = field(default_factory=datetime.now)
+    updated_at: datetime = field(default_factory=datetime.now)
+    completed_at: datetime | None = None
+
+    @staticmethod
+    def generate_id() -> str:
+        """Generate a unique discovery session ID."""
+        return f"dsess_{uuid.uuid4().hex[:12]}"
+
+    def get_answered_question_ids(self) -> list[str]:
+        """Return IDs of all answered questions."""
+        return list(self.responses.keys())
+
+    def to_dict(self) -> dict[str, Any]:
+        """Serialize to dictionary."""
+        return {
+            "id": self.id,
+            "discipline_name": self.discipline_name,
+            "contributor_id": self.contributor_id,
+            "current_phase": self.current_phase.value,
+            "status": self.status.value,
+            "responses": {
+                k: v.to_dict() for k, v in self.responses.items()
+            },
+            "generated_discipline_id": self.generated_discipline_id,
+            "started_at": self.started_at.isoformat(),
+            "updated_at": self.updated_at.isoformat(),
+            "completed_at": (
+                self.completed_at.isoformat()
+                if self.completed_at
+                else None
+            ),
+        }
+
+    @classmethod
+    def from_dict(cls, data: dict[str, Any]) -> DiscoverySession:
+        """Deserialize from dictionary."""
+        responses_raw = data.get("responses", {})
+        responses = {
+            k: QuestionResponse.from_dict(v)
+            for k, v in responses_raw.items()
+        }
+        completed_at = data.get("completed_at")
+        if completed_at and isinstance(completed_at, str):
+            completed_at = datetime.fromisoformat(completed_at)
+        return cls(
+            id=data["id"],
+            discipline_name=data["discipline_name"],
+            contributor_id=data["contributor_id"],
+            current_phase=DiscoveryPhase(data["current_phase"]),
+            status=SessionStatus(data["status"]),
+            responses=responses,
+            generated_discipline_id=data.get("generated_discipline_id"),
+            started_at=datetime.fromisoformat(data["started_at"]),
+            updated_at=datetime.fromisoformat(data["updated_at"]),
+            completed_at=completed_at,
+        )

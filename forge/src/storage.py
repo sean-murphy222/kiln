@@ -21,8 +21,12 @@ from forge.src.models import (
     Discipline,
     DisciplineContributor,
     DisciplineStatus,
+    DiscoveryPhase,
+    DiscoverySession,
     Example,
+    QuestionResponse,
     ReviewStatus,
+    SessionStatus,
 )
 
 _SCHEMA_SQL = """
@@ -114,6 +118,25 @@ CREATE INDEX IF NOT EXISTS idx_competencies_discipline
     ON competencies(discipline_id);
 CREATE INDEX IF NOT EXISTS idx_curriculum_versions_discipline
     ON curriculum_versions(discipline_id);
+
+CREATE TABLE IF NOT EXISTS discovery_sessions (
+    id TEXT PRIMARY KEY,
+    discipline_name TEXT NOT NULL,
+    contributor_id TEXT NOT NULL,
+    current_phase TEXT NOT NULL DEFAULT 'orientation',
+    status TEXT NOT NULL DEFAULT 'in_progress',
+    responses_json TEXT NOT NULL DEFAULT '{}',
+    generated_discipline_id TEXT,
+    started_at TEXT NOT NULL,
+    updated_at TEXT NOT NULL,
+    completed_at TEXT,
+    FOREIGN KEY (contributor_id) REFERENCES contributors(id)
+);
+
+CREATE INDEX IF NOT EXISTS idx_discovery_sessions_contributor
+    ON discovery_sessions(contributor_id);
+CREATE INDEX IF NOT EXISTS idx_discovery_sessions_status
+    ON discovery_sessions(status);
 """
 
 
@@ -965,6 +988,98 @@ class ForgeStorage:
         return path
 
     # ---------------------------------------------------------------
+    # Discovery Sessions
+    # ---------------------------------------------------------------
+
+    def save_discovery_session(self, session: DiscoverySession) -> DiscoverySession:
+        """Insert or update a discovery session.
+
+        Args:
+            session: DiscoverySession to upsert.
+
+        Returns:
+            The saved session.
+        """
+        responses_json = json.dumps(
+            {k: v.to_dict() for k, v in session.responses.items()}
+        )
+        self._conn.execute(
+            "INSERT INTO discovery_sessions "
+            "(id, discipline_name, contributor_id, current_phase, "
+            "status, responses_json, generated_discipline_id, "
+            "started_at, updated_at, completed_at) "
+            "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?) "
+            "ON CONFLICT(id) DO UPDATE SET "
+            "discipline_name = excluded.discipline_name, "
+            "current_phase = excluded.current_phase, "
+            "status = excluded.status, "
+            "responses_json = excluded.responses_json, "
+            "generated_discipline_id = excluded.generated_discipline_id, "
+            "updated_at = excluded.updated_at, "
+            "completed_at = excluded.completed_at",
+            (
+                session.id,
+                session.discipline_name,
+                session.contributor_id,
+                session.current_phase.value,
+                session.status.value,
+                responses_json,
+                session.generated_discipline_id,
+                session.started_at.isoformat(),
+                session.updated_at.isoformat(),
+                session.completed_at.isoformat()
+                if session.completed_at
+                else None,
+            ),
+        )
+        self._conn.commit()
+        return session
+
+    def get_discovery_session(
+        self, session_id: str
+    ) -> DiscoverySession | None:
+        """Fetch a discovery session by ID.
+
+        Args:
+            session_id: The session's unique ID.
+
+        Returns:
+            DiscoverySession or None if not found.
+        """
+        row = self._conn.execute(
+            "SELECT * FROM discovery_sessions WHERE id = ?",
+            (session_id,),
+        ).fetchone()
+        if row is None:
+            return None
+        return self._row_to_discovery_session(row)
+
+    def list_discovery_sessions(
+        self,
+        contributor_id: str | None = None,
+        status: SessionStatus | None = None,
+    ) -> list[DiscoverySession]:
+        """List discovery sessions with optional filters.
+
+        Args:
+            contributor_id: Filter by contributor.
+            status: Filter by status.
+
+        Returns:
+            List of matching sessions.
+        """
+        query = "SELECT * FROM discovery_sessions WHERE 1=1"
+        params: list[str] = []
+        if contributor_id is not None:
+            query += " AND contributor_id = ?"
+            params.append(contributor_id)
+        if status is not None:
+            query += " AND status = ?"
+            params.append(status.value)
+        rows = self._conn.execute(query, params).fetchall()
+        return [self._row_to_discovery_session(r) for r in rows]
+
+    # ---------------------------------------------------------------
     # Row-to-model helpers
     # ---------------------------------------------------------------
 
@@ -1054,4 +1169,28 @@ class ForgeStorage:
             snapshot_json=row["snapshot_json"],
             status=CurriculumStatus(row["status"]),
             created_at=datetime.fromisoformat(row["created_at"]),
+        )
+
+    @staticmethod
+    def _row_to_discovery_session(row: sqlite3.Row) -> DiscoverySession:
+        """Convert a database row to a DiscoverySession."""
+        responses_raw = json.loads(row["responses_json"])
+        responses = {
+            k: QuestionResponse.from_dict(v)
+            for k, v in responses_raw.items()
+        }
+        completed_at = row["completed_at"]
+        if completed_at:
+            completed_at = datetime.fromisoformat(completed_at)
+        return DiscoverySession(
+            id=row["id"],
+            discipline_name=row["discipline_name"],
+            contributor_id=row["contributor_id"],
+            current_phase=DiscoveryPhase(row["current_phase"]),
+            status=SessionStatus(row["status"]),
+            responses=responses,
+            generated_discipline_id=row["generated_discipline_id"],
+            started_at=datetime.fromisoformat(row["started_at"]),
+            updated_at=datetime.fromisoformat(row["updated_at"]),
+            completed_at=completed_at,
         )
