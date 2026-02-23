@@ -11,6 +11,7 @@ from chonk.tier1.evaluation import (
     EvaluationReport,
     evaluate_classifier,
 )
+from chonk.tier1.fallback import ClassificationFallbackWorkflow, FallbackContext
 from chonk.tier1.fingerprinter import (
     ByteLevelFeatures,
     CharacterFeatures,
@@ -21,6 +22,8 @@ from chonk.tier1.fingerprinter import (
     RepetitionFeatures,
     StructuralRhythmFeatures,
 )
+from chonk.tier1.manual_store import ManualExample, ManualLabelStore
+from chonk.tier1.retraining import RetrainingResult, RetrainingService
 from chonk.tier1.taxonomy import DocumentType, DocumentTypeProfile
 from chonk.tier1.training_data import TrainingCorpus, generate_training_corpus
 
@@ -28,6 +31,7 @@ __all__ = [
     "ByteLevelFeatures",
     "CharacterFeatures",
     "ClassAccuracyResult",
+    "ClassificationFallbackWorkflow",
     "ClassificationResult",
     "DocumentClassifier",
     "DocumentFingerprint",
@@ -35,10 +39,15 @@ __all__ = [
     "DocumentType",
     "DocumentTypeProfile",
     "EvaluationReport",
+    "FallbackContext",
     "FeatureImportance",
     "FontFeatures",
     "LayoutFeatures",
+    "ManualExample",
+    "ManualLabelStore",
     "RepetitionFeatures",
+    "RetrainingResult",
+    "RetrainingService",
     "StructuralRhythmFeatures",
     "TrainingCorpus",
     "TrainingReport",
