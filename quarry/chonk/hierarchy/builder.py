@@ -33,8 +33,13 @@ class HierarchyBuilder:
         "FOREWORD" -> "FOREWORD"
         "Introduction" -> "Introduction"
         """
-        # Try numbered section (e.g., "E.5.3.5" or "3.66")
-        match = re.match(r"^([A-Z]?\d+(?:\.\d+)*)", heading_text.strip())
+        # Try numbered section (e.g., "3.66", "2.1.1")
+        match = re.match(r"^(\d+(?:\.\d+)*)", heading_text.strip())
+        if match:
+            return match.group(1)
+
+        # Try letter-prefixed section (e.g., "A.1", "E.5.3.5")
+        match = re.match(r"^([A-Z](?:\.\d+)+)", heading_text.strip())
         if match:
             return match.group(1)
 
@@ -49,24 +54,32 @@ class HierarchyBuilder:
         blocks: list[Block],
         document_id: str = "doc",
         metadata: dict[str, Any] | None = None,
+        repair_orphans: bool = False,
+        structural_hints: dict[str, Any] | None = None,
     ) -> HierarchyTree:
-        """
-        Build a hierarchy tree from a list of blocks.
+        """Build a hierarchy tree from a list of blocks.
 
         Strategy:
         1. Create root node
         2. For each heading block, create a node
         3. Attach content blocks to the current heading
         4. Build parent-child relationships based on heading levels
+        5. Optionally repair orphaned headings
 
         Args:
-            blocks: List of blocks from extraction
-            document_id: ID for the document
-            metadata: Optional metadata for the tree
+            blocks: List of blocks from extraction.
+            document_id: ID for the document.
+            metadata: Optional metadata for the tree.
+            repair_orphans: If True, merge orphan headings into parents.
+            structural_hints: Optional dict from Tier 1 analysis.
 
         Returns:
-            HierarchyTree with full structure
+            HierarchyTree with full structure.
         """
+        tree_metadata = dict(metadata or {})
+        if structural_hints:
+            tree_metadata.update(structural_hints)
+
         root = HierarchyNode(
             section_id="root",
             heading=None,
@@ -74,11 +87,10 @@ class HierarchyBuilder:
         )
 
         current_node = root
-        node_stack = [root]  # Stack to track hierarchy
+        node_stack = [root]
 
         for block in blocks:
             if block.type == BlockType.HEADING:
-                # Create new section node
                 section_id = HierarchyBuilder.extract_section_id(block.content)
                 heading_level = block.heading_level or 1
 
@@ -89,8 +101,6 @@ class HierarchyBuilder:
                     level=heading_level,
                 )
 
-                # Find the right parent based on level
-                # Pop stack until we find a parent with lower level
                 while len(node_stack) > 1 and node_stack[-1].level >= heading_level:
                     node_stack.pop()
 
@@ -100,14 +110,122 @@ class HierarchyBuilder:
                 current_node = node
 
             else:
-                # Add content to current section
                 current_node.add_content(block)
 
-        return HierarchyTree(
+        tree = HierarchyTree(
             root=root,
             document_id=document_id,
-            metadata=metadata or {},
+            metadata=tree_metadata,
         )
+
+        if repair_orphans:
+            HierarchyBuilder._repair_orphans(root)
+
+        return tree
+
+    @staticmethod
+    def _repair_orphans(node: HierarchyNode) -> None:
+        """Remove orphan leaf headings by merging them into their parent.
+
+        An orphan is a heading with no content and no children.
+        Its heading text is appended as a content block to the parent.
+
+        Args:
+            node: The node whose children to repair (recursive).
+        """
+        # Process children bottom-up so nested orphans resolve first
+        for child in list(node.children):
+            HierarchyBuilder._repair_orphans(child)
+
+        orphans = [
+            c for c in node.children
+            if c.heading and not c.content_blocks and not c.children
+        ]
+        for orphan in orphans:
+            node.children.remove(orphan)
+            # Convert the orphan heading into a content block on the parent
+            fallback_block = Block(
+                id=Block.generate_id(),
+                type=BlockType.TEXT,
+                content=orphan.heading or "",
+                page=orphan.heading_block.page if orphan.heading_block else 1,
+            )
+            node.content_blocks.append(fallback_block)
+
+    @staticmethod
+    def build_from_blocks_with_profile(
+        blocks: list[Block],
+        document_id: str,
+        fingerprint: Any,
+        document_type: Any,
+        repair_orphans: bool = True,
+    ) -> HierarchyTree:
+        """Build hierarchy enriched with Tier 1 structural profile.
+
+        Uses the fingerprint and document type classification to add
+        metadata about the document's structure and numbering scheme.
+
+        Args:
+            blocks: List of blocks from extraction.
+            document_id: ID for the document.
+            fingerprint: DocumentFingerprint from Tier 1.
+            document_type: DocumentType enum value.
+            repair_orphans: If True, merge orphan headings into parents.
+
+        Returns:
+            HierarchyTree with structural metadata.
+        """
+        from chonk.hierarchy.numbering import NumberingScheme
+
+        # Extract heading texts for numbering detection
+        heading_texts = [
+            b.content for b in blocks if b.type == BlockType.HEADING
+        ]
+        scheme = NumberingScheme.detect(heading_texts)
+
+        # Build fingerprint summary from available features
+        fp_summary = HierarchyBuilder._build_fingerprint_summary(fingerprint)
+
+        metadata: dict[str, Any] = {
+            "document_type": document_type.value
+            if hasattr(document_type, "value")
+            else str(document_type),
+            "numbering_scheme": scheme.to_dict(),
+            "fingerprint_summary": fp_summary,
+        }
+
+        return HierarchyBuilder.build_from_blocks(
+            blocks=blocks,
+            document_id=document_id,
+            metadata=metadata,
+            repair_orphans=repair_orphans,
+        )
+
+    @staticmethod
+    def _build_fingerprint_summary(fingerprint: Any) -> dict[str, Any]:
+        """Extract key structural info from a DocumentFingerprint.
+
+        Args:
+            fingerprint: DocumentFingerprint from Tier 1.
+
+        Returns:
+            Dictionary with key structural fields.
+        """
+        summary: dict[str, Any] = {
+            "page_count": 0,
+            "has_toc": False,
+            "font_count": 0,
+        }
+        if hasattr(fingerprint, "byte_features"):
+            bf = fingerprint.byte_features
+            summary["page_count"] = getattr(bf, "page_count", 0)
+        if hasattr(fingerprint, "structural_rhythm"):
+            sr = fingerprint.structural_rhythm
+            summary["has_toc"] = getattr(sr, "toc_present", False)
+        if hasattr(fingerprint, "font_features"):
+            ff = fingerprint.font_features
+            summary["font_count"] = getattr(ff, "font_count", 0)
+        return summary
 
     @staticmethod
     def build_from_docling_result(
