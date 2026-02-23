@@ -218,7 +218,11 @@ class HierarchyNode:
     def __repr__(self) -> str:
         """String representation for debugging."""
         heading_preview = (self.heading or "ROOT")[:40]
-        return f"<HierarchyNode {self.section_id} '{heading_preview}' level={self.level} children={len(self.children)}>"
+        n_children = len(self.children)
+        return (
+            f"<HierarchyNode {self.section_id} '{heading_preview}' "
+            f"level={self.level} children={n_children}>"
+        )
 
 
 @dataclass

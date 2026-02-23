@@ -5,8 +5,7 @@ from __future__ import annotations
 from chonk.core.document import Block, BlockType
 from chonk.hierarchy.analyzer import HierarchyAnalysis, HierarchyAnalyzer, HierarchyIssue
 from chonk.hierarchy.builder import HierarchyBuilder
-from chonk.hierarchy.tree import HierarchyNode, HierarchyTree
-
+from chonk.hierarchy.tree import HierarchyTree
 
 # ===================================================================
 # Helpers

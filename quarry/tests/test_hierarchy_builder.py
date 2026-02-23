@@ -2,12 +2,9 @@
 
 from __future__ import annotations
 
-import pytest
-
 from chonk.core.document import Block, BlockType
 from chonk.hierarchy.builder import HierarchyBuilder
 from chonk.hierarchy.tree import HierarchyTree
-
 
 # ===================================================================
 # Helpers

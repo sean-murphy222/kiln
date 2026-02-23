@@ -6,11 +6,10 @@ Analyzes hierarchy trees for quality, issues, and recommendations.
 
 from __future__ import annotations
 
-from collections import Counter
 from dataclasses import dataclass, field
 from typing import Any
 
-from chonk.hierarchy.tree import HierarchyNode, HierarchyTree
+from chonk.hierarchy.tree import HierarchyTree
 
 
 @dataclass
@@ -206,7 +205,10 @@ class HierarchyAnalyzer:
                     severity="warning",
                     issue_type="too_deep",
                     message=f"Document has {max_depth} levels of nesting (very deep)",
-                    suggested_fix="Deep nesting may indicate over-structured document. Consider flattening some levels.",
+                    suggested_fix=(
+                        "Deep nesting may indicate over-structured "
+                        "document. Consider flattening some levels."
+                    ),
                 )
             )
         elif max_depth == 1:
@@ -238,7 +240,10 @@ class HierarchyAnalyzer:
                     severity="info",
                     issue_type="imbalanced",
                     message=f"Tree is imbalanced (depth range: {depth_range} levels)",
-                    suggested_fix="Some sections are much deeper than others. This is OK for complex documents.",
+                    suggested_fix=(
+                        "Some sections are much deeper than others. "
+                        "This is OK for complex documents."
+                    ),
                 )
             )
 
