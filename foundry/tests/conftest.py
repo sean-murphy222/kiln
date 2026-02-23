@@ -154,8 +154,7 @@ def sample_test_jsonl(tmp_path: Path) -> Path:
             "instruction": "How do you perform a brake pad replacement?",
             "input": "",
             "output": (
-                "Remove wheel, remove caliper, replace pads,"
-                " reinstall caliper, torque bolts."
+                "Remove wheel, remove caliper, replace pads," " reinstall caliper, torque bolts."
             ),
             "metadata": {
                 "example_id": "ex_003",
@@ -199,8 +198,7 @@ def sample_test_jsonl(tmp_path: Path) -> Path:
             "instruction": "How do you diagnose a fuel system malfunction?",
             "input": "",
             "output": (
-                "Inspect fuel lines, check pump pressure,"
-                " test injectors, verify fuel quality."
+                "Inspect fuel lines, check pump pressure," " test injectors, verify fuel quality."
             ),
             "metadata": {
                 "example_id": "ex_006",
@@ -267,8 +265,7 @@ def sample_test_jsonl(tmp_path: Path) -> Path:
             "instruction": "What is the difference between AN and MS hardware?",
             "input": "",
             "output": (
-                "AN is Army-Navy standard, MS is Military Standard."
-                " Check dash number for size."
+                "AN is Army-Navy standard, MS is Military Standard." " Check dash number for size."
             ),
             "metadata": {
                 "example_id": "ex_011",
@@ -296,8 +293,7 @@ def sample_test_jsonl(tmp_path: Path) -> Path:
             "instruction": "What torque wrench is needed for engine bolts?",
             "input": "",
             "output": (
-                "Use calibrated torque wrench rated for specified range,"
-                " check TM for values."
+                "Use calibrated torque wrench rated for specified range," " check TM for values."
             ),
             "metadata": {
                 "example_id": "ex_013",
@@ -364,9 +360,7 @@ def mock_model():
         "What is the troubleshooting process for an electrical fault?": (
             "Check power source and test fuses."
         ),
-        "How do you diagnose a fuel system malfunction?": (
-            "Look at the fuel lines for damage."
-        ),
+        "How do you diagnose a fuel system malfunction?": ("Look at the fuel lines for damage."),
         "What safety steps are required before engine work?": (
             "Lock out power, verify zero energy, use PPE, follow safety checklist."
         ),
@@ -376,15 +370,9 @@ def mock_model():
         "How do you handle hazardous material spills?": (
             "Evacuate area, don PPE, contain spill, report to supervisor, follow MSDS."
         ),
-        "How do you identify the correct replacement part?": (
-            "Check the part number."
-        ),
-        "What is the difference between AN and MS hardware?": (
-            "They are different standards."
-        ),
-        "How do you read a parts breakdown diagram?": (
-            "Look at the diagram and find the part."
-        ),
+        "How do you identify the correct replacement part?": ("Check the part number."),
+        "What is the difference between AN and MS hardware?": ("They are different standards."),
+        "How do you read a parts breakdown diagram?": ("Look at the diagram and find the part."),
         "What torque wrench is needed for engine bolts?": (
             "Use calibrated torque wrench rated for specified range, check TM for values."
         ),
@@ -417,3 +405,124 @@ def diagnostic_config() -> DiagnosticConfig:
 def training_diagnostics() -> TrainingDiagnostics:
     """Returns TrainingDiagnostics instance with default config."""
     return TrainingDiagnostics()
+
+
+# ---------------------------------------------------------------------------
+# RAG integration fixtures (T-024)
+# ---------------------------------------------------------------------------
+
+
+@pytest.fixture
+def sample_chunks() -> list[dict]:
+    """Returns list of 5 mock chunk dicts with text, metadata, and scores.
+
+    Simulates retrieval results from Quarry with realistic TM content.
+    """
+    return [
+        {
+            "text": (
+                "To replace the hydraulic filter, first depressurize the system. "
+                "Remove the filter housing cover and extract the old element."
+            ),
+            "metadata": {
+                "chunk_id": "chunk_001",
+                "document_title": "TM 9-2320-280-20",
+                "section": "Chapter 3: Hydraulic System",
+                "page": 42,
+            },
+            "score": 0.95,
+        },
+        {
+            "text": (
+                "Install the new filter element ensuring the O-ring is properly seated. "
+                "Torque the housing cover to 25 ft-lbs."
+            ),
+            "metadata": {
+                "chunk_id": "chunk_002",
+                "document_title": "TM 9-2320-280-20",
+                "section": "Chapter 3: Hydraulic System",
+                "page": 43,
+            },
+            "score": 0.90,
+        },
+        {
+            "text": (
+                "After filter replacement, bleed the hydraulic system by cycling "
+                "the controls through full range of motion three times."
+            ),
+            "metadata": {
+                "chunk_id": "chunk_003",
+                "document_title": "TM 9-2320-280-20",
+                "section": "Chapter 3: Hydraulic System",
+                "page": 44,
+            },
+            "score": 0.85,
+        },
+        {
+            "text": (
+                "Verify system pressure is within 2800-3200 PSI after bleeding. "
+                "Check all fittings for leaks."
+            ),
+            "metadata": {
+                "chunk_id": "chunk_004",
+                "document_title": "TM 9-2320-280-20",
+                "section": "Section 3.5: Pressure Verification",
+                "page": 45,
+            },
+            "score": 0.80,
+        },
+        {
+            "text": (
+                "Record the filter replacement in the equipment maintenance log. "
+                "Note the date, mileage, and filter part number."
+            ),
+            "metadata": {
+                "chunk_id": "chunk_005",
+                "document_title": "TM 9-2320-280-20",
+                "section": "Section 3.6: Maintenance Records",
+                "page": 46,
+            },
+            "score": 0.75,
+        },
+    ]
+
+
+@pytest.fixture
+def mock_retrieval(sample_chunks: list[dict]):
+    """Returns a MockRetrievalAdapter pre-loaded with sample chunks.
+
+    Returns:
+        MockRetrievalAdapter instance.
+    """
+    from foundry.src.rag_integration import MockRetrievalAdapter
+
+    return MockRetrievalAdapter(chunks=sample_chunks)
+
+
+@pytest.fixture
+def rag_config():
+    """Returns a RAGConfig with default settings.
+
+    Returns:
+        RAGConfig instance.
+    """
+    from foundry.src.rag_integration import RAGConfig
+
+    return RAGConfig()
+
+
+@pytest.fixture
+def rag_pipeline(mock_model, mock_retrieval, rag_config):
+    """Returns a RAGPipeline with mock model and mock retrieval.
+
+    Args:
+        mock_model: MockInference fixture from T-022.
+        mock_retrieval: MockRetrievalAdapter fixture.
+        rag_config: RAGConfig fixture.
+
+    Returns:
+        RAGPipeline instance ready for testing.
+    """
+    from foundry.src.rag_integration import RAGPipeline
+
+    return RAGPipeline(model=mock_model, retrieval=mock_retrieval, config=rag_config)
