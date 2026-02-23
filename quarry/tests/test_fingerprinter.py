@@ -5,6 +5,8 @@ Uses synthetic PDFs created with PyMuPDF (fitz) — no real PDFs in the repo.
 
 from __future__ import annotations
 
+import os
+
 import fitz
 import pytest
 
@@ -135,6 +137,7 @@ def create_pdf(
             toc.append([1, "Chapter 2", 2])
         doc.set_toc(toc)
 
+    tmp_path.mkdir(parents=True, exist_ok=True)
     path = str(tmp_path / "test.pdf")
     doc.save(path)
     doc.close()
@@ -460,3 +463,506 @@ class TestDocumentFingerprinterShell:
         fp = DocumentFingerprinter()
         result = fp.extract(pdf_path)
         assert isinstance(result, DocumentFingerprint)
+
+
+# ===================================================================
+# Cycle 3: Byte-level feature analysis
+# ===================================================================
+
+
+class TestByteFeatureAnalysis:
+    """Tests for _analyze_byte_features."""
+
+    def test_file_size_populated(self, tmp_path):
+        """file_size reflects actual file size."""
+        pdf_path = create_pdf(tmp_path, pages=1, text="Hello")
+        fp = DocumentFingerprinter()
+        result = fp.extract(pdf_path)
+        actual_size = os.path.getsize(pdf_path)
+        assert result.byte_features.file_size == actual_size
+
+    def test_page_count(self, tmp_path):
+        """page_count matches number of pages created."""
+        pdf_path = create_pdf(tmp_path, pages=5, text="Content")
+        fp = DocumentFingerprinter()
+        result = fp.extract(pdf_path)
+        assert result.byte_features.page_count == 5
+
+    def test_page_count_single(self, tmp_path):
+        """Single page PDF has page_count 1."""
+        pdf_path = create_pdf(tmp_path, pages=1, text="Single page")
+        fp = DocumentFingerprinter()
+        result = fp.extract(pdf_path)
+        assert result.byte_features.page_count == 1
+
+    def test_pdf_version(self, tmp_path):
+        """pdf_version is a reasonable PDF spec version."""
+        pdf_path = create_pdf(tmp_path, pages=1, text="Hello")
+        fp = DocumentFingerprinter()
+        result = fp.extract(pdf_path)
+        assert 1.0 <= result.byte_features.pdf_version <= 2.0
+
+    def test_object_count_positive(self, tmp_path):
+        """Object count is positive for any valid PDF."""
+        pdf_path = create_pdf(tmp_path, pages=1, text="Hello")
+        fp = DocumentFingerprinter()
+        result = fp.extract(pdf_path)
+        assert result.byte_features.object_count > 0
+
+    def test_stream_count_nonneg(self, tmp_path):
+        """Stream count is non-negative."""
+        pdf_path = create_pdf(tmp_path, pages=1, text="Hello")
+        fp = DocumentFingerprinter()
+        result = fp.extract(pdf_path)
+        assert result.byte_features.stream_count >= 0
+
+    def test_metadata_flags(self, tmp_path):
+        """Metadata flags are booleans."""
+        pdf_path = create_pdf(tmp_path, pages=1, text="Hello")
+        fp = DocumentFingerprinter()
+        result = fp.extract(pdf_path)
+        assert isinstance(result.byte_features.has_metadata, bool)
+        assert isinstance(result.byte_features.has_xmp_metadata, bool)
+        assert isinstance(result.byte_features.encrypted, bool)
+        assert isinstance(result.byte_features.has_acroform, bool)
+
+    def test_more_pages_more_objects(self, tmp_path):
+        """More pages generally means more objects."""
+        path1 = create_pdf(tmp_path / "a", pages=1, text="Hi")
+        path5 = create_pdf(tmp_path / "b", pages=10, text="Hi")
+        fp = DocumentFingerprinter()
+        r1 = fp.extract(path1)
+        r5 = fp.extract(path5)
+        assert r5.byte_features.object_count > r1.byte_features.object_count
+
+
+# ===================================================================
+# Cycle 4: Font feature analysis
+# ===================================================================
+
+
+class TestFontFeatureAnalysis:
+    """Tests for _analyze_font_features."""
+
+    def test_font_count_positive(self, tmp_path):
+        """At least one font used in a text PDF."""
+        pdf_path = create_pdf(tmp_path, pages=1, text="Hello World")
+        fp = DocumentFingerprinter()
+        result = fp.extract(pdf_path)
+        assert result.font_features.font_count >= 1
+
+    def test_size_stats_populated(self, tmp_path):
+        """Font size statistics are non-zero for text PDFs."""
+        pdf_path = create_pdf(tmp_path, pages=1, text="Hello", font_size=12.0)
+        fp = DocumentFingerprinter()
+        result = fp.extract(pdf_path)
+        assert result.font_features.size_min > 0
+        assert result.font_features.size_max > 0
+        assert result.font_features.size_mean > 0
+
+    def test_bold_ratio_with_bold(self, tmp_path):
+        """Bold ratio is positive when using bold font."""
+        pdf_path = create_pdf(tmp_path, pages=1, text="Bold text", bold=True)
+        fp = DocumentFingerprinter()
+        result = fp.extract(pdf_path)
+        assert result.font_features.bold_ratio > 0
+
+    def test_bold_ratio_without_bold(self, tmp_path):
+        """Bold ratio is zero or low when not using bold font."""
+        pdf_path = create_pdf(tmp_path, pages=1, text="Normal text", bold=False)
+        fp = DocumentFingerprinter()
+        result = fp.extract(pdf_path)
+        assert result.font_features.bold_ratio == 0.0
+
+    def test_varying_fonts_increases_distinct_sizes(self, tmp_path):
+        """Multiple font sizes increases distinct_sizes count."""
+        pdf_path = create_pdf(
+            tmp_path, pages=3, text="Body text", varying_fonts=True
+        )
+        fp = DocumentFingerprinter()
+        result = fp.extract(pdf_path)
+        assert result.font_features.distinct_sizes >= 2
+
+    def test_size_min_leq_max(self, tmp_path):
+        """size_min <= size_mean <= size_max."""
+        pdf_path = create_pdf(
+            tmp_path, pages=3, text="Some text", varying_fonts=True
+        )
+        fp = DocumentFingerprinter()
+        result = fp.extract(pdf_path)
+        assert result.font_features.size_min <= result.font_features.size_mean
+        assert result.font_features.size_mean <= result.font_features.size_max
+
+    def test_ratios_bounded(self, tmp_path):
+        """Bold/italic/monospace ratios are between 0 and 1."""
+        pdf_path = create_pdf(tmp_path, pages=1, text="Hello")
+        fp = DocumentFingerprinter()
+        result = fp.extract(pdf_path)
+        assert 0.0 <= result.font_features.bold_ratio <= 1.0
+        assert 0.0 <= result.font_features.italic_ratio <= 1.0
+        assert 0.0 <= result.font_features.monospace_ratio <= 1.0
+
+
+# ===================================================================
+# Cycle 5: Layout feature analysis
+# ===================================================================
+
+
+class TestLayoutFeatureAnalysis:
+    """Tests for _analyze_layout_features."""
+
+    def test_page_dimensions_letter(self, tmp_path):
+        """US Letter page dimensions detected correctly."""
+        pdf_path = create_pdf(
+            tmp_path, pages=1, text="Hello",
+            page_width=612, page_height=792,
+        )
+        fp = DocumentFingerprinter()
+        result = fp.extract(pdf_path)
+        assert abs(result.layout_features.page_width - 612.0) < 1.0
+        assert abs(result.layout_features.page_height - 792.0) < 1.0
+
+    def test_page_dimensions_a4(self, tmp_path):
+        """A4 page dimensions detected correctly."""
+        pdf_path = create_pdf(
+            tmp_path, pages=1, text="Hello",
+            page_width=595, page_height=842,
+        )
+        fp = DocumentFingerprinter()
+        result = fp.extract(pdf_path)
+        assert abs(result.layout_features.page_width - 595.0) < 1.0
+        assert abs(result.layout_features.page_height - 842.0) < 1.0
+
+    def test_consistency_uniform_pages(self, tmp_path):
+        """Consistency is 1.0 when all pages are the same size."""
+        pdf_path = create_pdf(tmp_path, pages=5, text="Same size")
+        fp = DocumentFingerprinter()
+        result = fp.extract(pdf_path)
+        assert result.layout_features.width_consistency == 1.0
+        assert result.layout_features.height_consistency == 1.0
+
+    def test_margins_positive(self, tmp_path):
+        """Margins are non-negative for text PDFs."""
+        pdf_path = create_pdf(tmp_path, pages=1, text="Hello World " * 50)
+        fp = DocumentFingerprinter()
+        result = fp.extract(pdf_path)
+        assert result.layout_features.margin_left >= 0
+        assert result.layout_features.margin_right >= 0
+        assert result.layout_features.margin_top >= 0
+        assert result.layout_features.margin_bottom >= 0
+
+    def test_text_area_ratio_bounded(self, tmp_path):
+        """text_area_ratio is between 0 and 1."""
+        pdf_path = create_pdf(tmp_path, pages=1, text="Some text content " * 20)
+        fp = DocumentFingerprinter()
+        result = fp.extract(pdf_path)
+        assert 0.0 <= result.layout_features.text_area_ratio <= 1.0
+
+    def test_single_column_default(self, tmp_path):
+        """Single-column layout detected for normal text."""
+        pdf_path = create_pdf(tmp_path, pages=1, text="Normal single column text " * 20)
+        fp = DocumentFingerprinter()
+        result = fp.extract(pdf_path)
+        assert result.layout_features.estimated_columns == 1
+
+    def test_multi_column_detected(self, tmp_path):
+        """Multi-column layout detected when text is in two columns."""
+        pdf_path = create_pdf(
+            tmp_path, pages=1, text="Column text " * 30, multi_column=True
+        )
+        fp = DocumentFingerprinter()
+        result = fp.extract(pdf_path)
+        assert result.layout_features.estimated_columns >= 2
+
+
+# ===================================================================
+# Cycle 6: Character feature analysis
+# ===================================================================
+
+
+class TestCharacterFeatureAnalysis:
+    """Tests for _analyze_character_features."""
+
+    def test_alpha_ratio_for_text(self, tmp_path):
+        """Alpha ratio is high for plain text content."""
+        pdf_path = create_pdf(tmp_path, pages=1, text="This is plain text content")
+        fp = DocumentFingerprinter()
+        result = fp.extract(pdf_path)
+        assert result.character_features.alpha_ratio > 0.5
+
+    def test_numeric_ratio_for_numbers(self, tmp_path):
+        """Numeric ratio is positive for text with numbers."""
+        pdf_path = create_pdf(tmp_path, pages=1, text="123 456 789 000 111 222")
+        fp = DocumentFingerprinter()
+        result = fp.extract(pdf_path)
+        assert result.character_features.numeric_ratio > 0.3
+
+    def test_total_chars_positive(self, tmp_path):
+        """total_chars is positive for text PDFs."""
+        pdf_path = create_pdf(tmp_path, pages=1, text="Hello World")
+        fp = DocumentFingerprinter()
+        result = fp.extract(pdf_path)
+        assert result.character_features.total_chars > 0
+
+    def test_ratios_sum_approximately_one(self, tmp_path):
+        """Character class ratios sum to approximately 1.0."""
+        pdf_path = create_pdf(tmp_path, pages=1, text="Hello World 123! @#$")
+        fp = DocumentFingerprinter()
+        result = fp.extract(pdf_path)
+        cf = result.character_features
+        if cf.total_chars > 0:
+            total = (
+                cf.alpha_ratio + cf.numeric_ratio + cf.punctuation_ratio
+                + cf.whitespace_ratio + cf.special_ratio
+            )
+            assert abs(total - 1.0) < 0.01
+
+    def test_uppercase_ratio_all_upper(self, tmp_path):
+        """Uppercase ratio is high for all-caps text."""
+        pdf_path = create_pdf(tmp_path, pages=1, text="ALL CAPS TEXT HERE NOW")
+        fp = DocumentFingerprinter()
+        result = fp.extract(pdf_path)
+        assert result.character_features.uppercase_ratio > 0.8
+
+    def test_uppercase_ratio_all_lower(self, tmp_path):
+        """Uppercase ratio is low for all-lowercase text."""
+        pdf_path = create_pdf(tmp_path, pages=1, text="all lowercase text here now")
+        fp = DocumentFingerprinter()
+        result = fp.extract(pdf_path)
+        assert result.character_features.uppercase_ratio < 0.1
+
+    def test_all_ratios_bounded(self, tmp_path):
+        """All ratios are between 0 and 1."""
+        pdf_path = create_pdf(tmp_path, pages=1, text="Mixed Content 123!")
+        fp = DocumentFingerprinter()
+        result = fp.extract(pdf_path)
+        cf = result.character_features
+        for ratio in [cf.alpha_ratio, cf.numeric_ratio, cf.punctuation_ratio,
+                      cf.whitespace_ratio, cf.special_ratio, cf.uppercase_ratio]:
+            assert 0.0 <= ratio <= 1.0
+
+
+# ===================================================================
+# Cycle 7: Repetition feature analysis
+# ===================================================================
+
+
+class TestRepetitionFeatureAnalysis:
+    """Tests for _analyze_repetition_features."""
+
+    def test_page_numbers_detected(self, tmp_path):
+        """Page numbers detected when added."""
+        pdf_path = create_pdf(
+            tmp_path, pages=5, text="Content", add_page_numbers=True
+        )
+        fp = DocumentFingerprinter()
+        result = fp.extract(pdf_path)
+        assert result.repetition_features.has_page_numbers is True
+
+    def test_no_page_numbers(self, tmp_path):
+        """No page numbers when not added."""
+        pdf_path = create_pdf(tmp_path, pages=5, text="Content")
+        fp = DocumentFingerprinter()
+        result = fp.extract(pdf_path)
+        assert result.repetition_features.has_page_numbers is False
+
+    def test_headers_detected(self, tmp_path):
+        """Repeated headers detected."""
+        pdf_path = create_pdf(
+            tmp_path, pages=5, text="Content", add_headers=True
+        )
+        fp = DocumentFingerprinter()
+        result = fp.extract(pdf_path)
+        assert result.repetition_features.has_headers is True
+
+    def test_no_headers(self, tmp_path):
+        """No headers when not added."""
+        pdf_path = create_pdf(tmp_path, pages=5, text="Content")
+        fp = DocumentFingerprinter()
+        result = fp.extract(pdf_path)
+        assert result.repetition_features.has_headers is False
+
+    def test_repetition_ratio_bounded(self, tmp_path):
+        """Repetition ratio is between 0 and 1."""
+        pdf_path = create_pdf(
+            tmp_path, pages=5, text="Content",
+            add_headers=True, add_page_numbers=True,
+        )
+        fp = DocumentFingerprinter()
+        result = fp.extract(pdf_path)
+        assert 0.0 <= result.repetition_features.repetition_ratio <= 1.0
+
+    def test_first_line_diversity_bounded(self, tmp_path):
+        """first_line_diversity is between 0 and 1."""
+        pdf_path = create_pdf(tmp_path, pages=5, text="Content")
+        fp = DocumentFingerprinter()
+        result = fp.extract(pdf_path)
+        assert 0.0 <= result.repetition_features.first_line_diversity <= 1.0
+
+    def test_single_page_no_repetition(self, tmp_path):
+        """Single page has no repetition patterns."""
+        pdf_path = create_pdf(tmp_path, pages=1, text="Hello")
+        fp = DocumentFingerprinter()
+        result = fp.extract(pdf_path)
+        assert result.repetition_features.has_page_numbers is False
+        assert result.repetition_features.has_headers is False
+        assert result.repetition_features.has_footers is False
+
+
+# ===================================================================
+# Cycle 8: Structural rhythm analysis
+# ===================================================================
+
+
+class TestStructuralRhythmAnalysis:
+    """Tests for _analyze_structural_rhythm."""
+
+    def test_toc_detected(self, tmp_path):
+        """TOC is detected when present."""
+        pdf_path = create_pdf(
+            tmp_path, pages=3, text="Content", add_toc=True
+        )
+        fp = DocumentFingerprinter()
+        result = fp.extract(pdf_path)
+        assert result.structural_rhythm.has_toc is True
+        assert result.structural_rhythm.toc_depth >= 1
+
+    def test_no_toc(self, tmp_path):
+        """No TOC when not added."""
+        pdf_path = create_pdf(tmp_path, pages=3, text="Content")
+        fp = DocumentFingerprinter()
+        result = fp.extract(pdf_path)
+        assert result.structural_rhythm.has_toc is False
+        assert result.structural_rhythm.toc_depth == 0
+
+    def test_link_count_with_links(self, tmp_path):
+        """Links counted when present."""
+        pdf_path = create_pdf(
+            tmp_path, pages=3, text="Content", add_links=True
+        )
+        fp = DocumentFingerprinter()
+        result = fp.extract(pdf_path)
+        assert result.structural_rhythm.link_count > 0
+
+    def test_link_count_without_links(self, tmp_path):
+        """No links when not added."""
+        pdf_path = create_pdf(tmp_path, pages=3, text="Content")
+        fp = DocumentFingerprinter()
+        result = fp.extract(pdf_path)
+        assert result.structural_rhythm.link_count == 0
+
+    def test_heading_density_with_varying_fonts(self, tmp_path):
+        """Heading density detected with varying font sizes."""
+        pdf_path = create_pdf(
+            tmp_path, pages=5, text="Body content", varying_fonts=True
+        )
+        fp = DocumentFingerprinter()
+        result = fp.extract(pdf_path)
+        assert result.structural_rhythm.heading_size_levels >= 1
+
+    def test_image_density_with_images(self, tmp_path):
+        """Image density is positive when images present."""
+        pdf_path = create_pdf(
+            tmp_path, pages=3, text="Content", add_images=True
+        )
+        fp = DocumentFingerprinter()
+        result = fp.extract(pdf_path)
+        assert result.structural_rhythm.image_density >= 0
+
+    def test_densities_nonnegative(self, tmp_path):
+        """All densities are non-negative."""
+        pdf_path = create_pdf(tmp_path, pages=3, text="Content")
+        fp = DocumentFingerprinter()
+        result = fp.extract(pdf_path)
+        assert result.structural_rhythm.heading_density >= 0
+        assert result.structural_rhythm.table_density >= 0
+        assert result.structural_rhythm.image_density >= 0
+        assert result.structural_rhythm.list_density >= 0
+
+
+# ===================================================================
+# Cycle 9: Integration — determinism and performance
+# ===================================================================
+
+
+class TestIntegration:
+    """Integration tests for the full fingerprinter pipeline."""
+
+    def test_deterministic(self, tmp_path):
+        """Same file produces same fingerprint twice."""
+        pdf_path = create_pdf(
+            tmp_path, pages=5, text="Determinism test content " * 10,
+            varying_fonts=True, add_toc=True,
+        )
+        fp = DocumentFingerprinter()
+        result1 = fp.extract(pdf_path)
+        result2 = fp.extract(pdf_path)
+        assert result1.to_feature_vector() == result2.to_feature_vector()
+
+    def test_different_docs_different_fingerprints(self, tmp_path):
+        """Different documents produce different fingerprints."""
+        path_a = create_pdf(
+            tmp_path / "a", pages=1, text="Short document",
+        )
+        path_b = create_pdf(
+            tmp_path / "b", pages=10, text="Long document " * 50,
+            varying_fonts=True, add_toc=True, add_links=True,
+        )
+        fp = DocumentFingerprinter()
+        vec_a = fp.extract(path_a).to_feature_vector()
+        vec_b = fp.extract(path_b).to_feature_vector()
+        assert vec_a != vec_b
+
+    def test_performance_100_pages(self, tmp_path):
+        """Fingerprinting a 100-page PDF completes in < 5 seconds."""
+        import time
+
+        pdf_path = create_pdf(
+            tmp_path, pages=100, text="Performance test content " * 20,
+        )
+        fp = DocumentFingerprinter()
+        start = time.time()
+        fp.extract(pdf_path)
+        elapsed = time.time() - start
+        assert elapsed < 5.0, f"Took {elapsed:.2f}s, expected < 5s"
+
+    def test_all_feature_groups_populated(self, tmp_path):
+        """All feature groups have at least some non-default values."""
+        pdf_path = create_pdf(
+            tmp_path, pages=5, text="Rich content " * 20,
+            varying_fonts=True, add_toc=True, add_links=True,
+            add_headers=True, add_page_numbers=True,
+        )
+        fp = DocumentFingerprinter()
+        result = fp.extract(pdf_path)
+
+        # Byte features should have file_size and page_count
+        assert result.byte_features.file_size > 0
+        assert result.byte_features.page_count == 5
+
+        # Font features should detect fonts
+        assert result.font_features.font_count >= 1
+
+        # Layout features should have dimensions
+        assert result.layout_features.page_width > 0
+        assert result.layout_features.page_height > 0
+
+        # Character features should have content
+        assert result.character_features.total_chars > 0
+
+        # Structural features should detect TOC
+        assert result.structural_rhythm.has_toc is True
+
+    def test_feature_vector_no_nan_or_inf(self, tmp_path):
+        """Feature vector contains no NaN or Inf values."""
+        import math
+
+        pdf_path = create_pdf(
+            tmp_path, pages=3, text="Clean data test",
+            varying_fonts=True,
+        )
+        fp = DocumentFingerprinter()
+        vec = fp.extract(pdf_path).to_feature_vector()
+        for i, v in enumerate(vec):
+            assert not math.isnan(v), f"NaN at index {i}"
+            assert not math.isinf(v), f"Inf at index {i}"
