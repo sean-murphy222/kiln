@@ -14,6 +14,7 @@ from typing import Any, ClassVar
 
 from chonk.core.document import ChonkDocument, ChonkProject
 from chonk.exporters.base import BaseExporter, ExporterRegistry
+from chonk.exporters.schema import SCHEMA_VERSION
 
 
 @ExporterRegistry.register
@@ -32,7 +33,7 @@ class JSONExporter(BaseExporter):
         path = self._ensure_extension(path)
 
         export_data = {
-            "version": "1.0",
+            "version": SCHEMA_VERSION,
             "exported_at": datetime.now().isoformat(),
             "exporter": "chonk",
             "document": self._document_to_dict(document),
@@ -48,7 +49,7 @@ class JSONExporter(BaseExporter):
         path = self._ensure_extension(path)
 
         export_data = {
-            "version": "1.0",
+            "version": SCHEMA_VERSION,
             "exported_at": datetime.now().isoformat(),
             "exporter": "chonk",
             "project": {
@@ -56,12 +57,8 @@ class JSONExporter(BaseExporter):
                 "name": project.name,
                 "created_at": project.created_at.isoformat(),
                 "settings": project.settings.to_dict(),
-                "documents": [
-                    self._document_to_dict(doc) for doc in project.documents
-                ],
-                "test_suites": [
-                    suite.to_dict() for suite in project.test_suites
-                ],
+                "documents": [self._document_to_dict(doc) for doc in project.documents],
+                "test_suites": [suite.to_dict() for suite in project.test_suites],
             },
         }
 
@@ -83,9 +80,9 @@ class JSONExporter(BaseExporter):
                 "chunker": document.chunker_used,
                 "chunker_config": document.chunker_config,
                 "loaded_at": document.loaded_at.isoformat(),
-                "chunked_at": document.last_chunked_at.isoformat()
-                if document.last_chunked_at
-                else None,
+                "chunked_at": (
+                    document.last_chunked_at.isoformat() if document.last_chunked_at else None
+                ),
             },
             "chunks": [self._chunk_to_dict(c) for c in document.chunks],
         }
