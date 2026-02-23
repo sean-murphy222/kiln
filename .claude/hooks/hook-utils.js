@@ -23,9 +23,7 @@ function readStdin() {
  */
 function getProjectDir() {
   return (
-    process.env.CLAUDE_PROJECT_DIR ||
-    process.env.INIT_CWD ||
-    process.cwd()
+    process.env.CLAUDE_PROJECT_DIR || process.env.INIT_CWD || process.cwd()
   );
 }
 
@@ -55,13 +53,13 @@ function git(args, cwd) {
 /**
  * Run any command and return { stdout, exitCode }
  */
-function run(cmd, cwd) {
+function run(cmd, cwd, opts = {}) {
   try {
     const stdout = execSync(cmd, {
       cwd: cwd || getProjectDir(),
       encoding: "utf-8",
       stdio: ["pipe", "pipe", "pipe"],
-      timeout: 60000,
+      timeout: opts.timeout || 60000,
     });
     return { stdout: stdout.trim(), exitCode: 0 };
   } catch (e) {
@@ -120,7 +118,7 @@ function logSession(entry) {
     if (!fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true });
     fs.appendFileSync(
       logPath,
-      JSON.stringify({ ts: new Date().toISOString(), ...entry }) + "\n"
+      JSON.stringify({ ts: new Date().toISOString(), ...entry }) + "\n",
     );
   } catch {
     // Non-critical, don't fail the hook
