@@ -12,6 +12,7 @@ from chonk.tier1.fingerprinter import (
     ByteLevelFeatures,
     CharacterFeatures,
     DocumentFingerprint,
+    DocumentFingerprinter,
     FontFeatures,
     LayoutFeatures,
     RepetitionFeatures,
@@ -391,3 +392,71 @@ class TestDocumentFingerprint:
         vec = fp.to_feature_vector()
         assert vec[0] == 999.0  # file_size is first
         assert any(v != 0.0 for v in vec)
+
+
+# ===================================================================
+# Cycle 2: Fingerprinter shell — instantiation and input validation
+# ===================================================================
+
+
+class TestDocumentFingerprinterShell:
+    """Tests for DocumentFingerprinter instantiation and validation."""
+
+    def test_instantiation(self):
+        """Fingerprinter can be created."""
+        fp = DocumentFingerprinter()
+        assert fp is not None
+
+    def test_max_file_size_default(self):
+        """Default max file size is 100 MB."""
+        fp = DocumentFingerprinter()
+        assert fp.max_file_size == 100 * 1024 * 1024
+
+    def test_max_file_size_custom(self):
+        """Custom max file size is respected."""
+        fp = DocumentFingerprinter(max_file_size=50 * 1024 * 1024)
+        assert fp.max_file_size == 50 * 1024 * 1024
+
+    def test_extract_missing_file(self, tmp_path):
+        """Raises FileNotFoundError for nonexistent path."""
+        fp = DocumentFingerprinter()
+        with pytest.raises(FileNotFoundError):
+            fp.extract(tmp_path / "nonexistent.pdf")
+
+    def test_extract_non_pdf(self, tmp_path):
+        """Raises ValueError for non-PDF file."""
+        txt_file = tmp_path / "test.txt"
+        txt_file.write_text("not a pdf")
+        fp = DocumentFingerprinter()
+        with pytest.raises(ValueError, match="not a valid PDF"):
+            fp.extract(txt_file)
+
+    def test_extract_oversized_file(self, tmp_path):
+        """Raises ValueError for file exceeding max size."""
+        pdf_path = create_pdf(tmp_path, pages=1, text="small")
+        fp = DocumentFingerprinter(max_file_size=1)  # 1 byte limit
+        with pytest.raises(ValueError, match="exceeds maximum"):
+            fp.extract(pdf_path)
+
+    def test_extract_returns_fingerprint(self, tmp_path):
+        """extract() returns a DocumentFingerprint."""
+        pdf_path = create_pdf(tmp_path, pages=1, text="Hello World")
+        fp = DocumentFingerprinter()
+        result = fp.extract(pdf_path)
+        assert isinstance(result, DocumentFingerprint)
+
+    def test_extract_accepts_string_path(self, tmp_path):
+        """extract() accepts both str and Path."""
+        pdf_path = create_pdf(tmp_path, pages=1, text="Hello")
+        fp = DocumentFingerprinter()
+        result = fp.extract(pdf_path)  # str from create_pdf
+        assert isinstance(result, DocumentFingerprint)
+
+    def test_extract_accepts_path_object(self, tmp_path):
+        """extract() accepts pathlib.Path."""
+        from pathlib import Path
+
+        pdf_path = Path(create_pdf(tmp_path, pages=1, text="Hello"))
+        fp = DocumentFingerprinter()
+        result = fp.extract(pdf_path)
+        assert isinstance(result, DocumentFingerprint)

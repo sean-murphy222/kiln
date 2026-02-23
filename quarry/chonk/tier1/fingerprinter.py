@@ -11,8 +11,12 @@ Data flow::
 
 from __future__ import annotations
 
+import os
 from dataclasses import dataclass, field
-from typing import Any
+from pathlib import Path
+from typing import Any, Union
+
+import fitz
 
 
 # ---------------------------------------------------------------------------
@@ -380,3 +384,163 @@ class DocumentFingerprint:
             self.repetition_features,
             self.structural_rhythm,
         ]
+
+
+# ---------------------------------------------------------------------------
+# Fingerprinter class
+# ---------------------------------------------------------------------------
+
+_DEFAULT_MAX_FILE_SIZE = 100 * 1024 * 1024  # 100 MB
+_MAX_SAMPLE_PAGES = 50
+
+
+class DocumentFingerprinter:
+    """Extracts structural fingerprints from PDF documents.
+
+    Analyzes raw PDF structure statistically — no content parsing beyond
+    character-level stats — to produce a feature vector suitable for ML
+    document-type classification.
+
+    Args:
+        max_file_size: Maximum allowed file size in bytes.
+
+    Example::
+
+        fp = DocumentFingerprinter()
+        fingerprint = fp.extract("document.pdf")
+        vector = fingerprint.to_feature_vector()
+    """
+
+    def __init__(self, max_file_size: int = _DEFAULT_MAX_FILE_SIZE) -> None:
+        self.max_file_size = max_file_size
+
+    def extract(self, path: Union[str, Path]) -> DocumentFingerprint:
+        """Extract a structural fingerprint from a PDF file.
+
+        Args:
+            path: Path to the PDF file (str or pathlib.Path).
+
+        Returns:
+            DocumentFingerprint with all sub-features populated.
+
+        Raises:
+            FileNotFoundError: If the file does not exist.
+            ValueError: If the file is not a valid PDF or exceeds size limit.
+        """
+        path = Path(path)
+        self._validate_path(path)
+
+        doc = fitz.open(str(path))
+        try:
+            sampled = self._sample_pages(doc)
+            fingerprint = DocumentFingerprint(
+                byte_features=self._analyze_byte_features(doc, path),
+                font_features=self._analyze_font_features(doc, sampled),
+                layout_features=self._analyze_layout_features(doc, sampled),
+                character_features=self._analyze_character_features(doc, sampled),
+                repetition_features=self._analyze_repetition_features(doc, sampled),
+                structural_rhythm=self._analyze_structural_rhythm(doc, sampled),
+            )
+        finally:
+            doc.close()
+
+        return fingerprint
+
+    def _validate_path(self, path: Path) -> None:
+        """Validate that path points to a readable PDF within size limits.
+
+        Args:
+            path: Path to validate.
+
+        Raises:
+            FileNotFoundError: If file does not exist.
+            ValueError: If not a PDF or exceeds max size.
+        """
+        if not path.exists():
+            raise FileNotFoundError(f"File not found: {path}")
+
+        file_size = os.path.getsize(path)
+        if file_size > self.max_file_size:
+            raise ValueError(
+                f"File size ({file_size} bytes) exceeds maximum "
+                f"({self.max_file_size} bytes)"
+            )
+
+        # Verify it's actually a PDF by checking magic bytes
+        with open(path, "rb") as f:
+            header = f.read(5)
+        if header != b"%PDF-":
+            raise ValueError(f"{path.name} is not a valid PDF file")
+
+    def _sample_pages(self, doc: fitz.Document) -> list[int]:
+        """Select pages to sample for analysis.
+
+        Strategy: first 3, last 2, and evenly-spaced middle pages,
+        up to _MAX_SAMPLE_PAGES total.
+
+        Args:
+            doc: Open fitz.Document.
+
+        Returns:
+            Sorted list of 0-based page indices.
+        """
+        n = len(doc)
+        if n <= _MAX_SAMPLE_PAGES:
+            return list(range(n))
+
+        indices: set[int] = set()
+
+        # First 3
+        for i in range(min(3, n)):
+            indices.add(i)
+
+        # Last 2
+        for i in range(max(0, n - 2), n):
+            indices.add(i)
+
+        # Evenly spaced middle
+        remaining = _MAX_SAMPLE_PAGES - len(indices)
+        if remaining > 0 and n > 5:
+            step = max(1, (n - 5) // remaining)
+            for i in range(3, n - 2, step):
+                indices.add(i)
+                if len(indices) >= _MAX_SAMPLE_PAGES:
+                    break
+
+        return sorted(indices)
+
+    def _analyze_byte_features(
+        self, doc: fitz.Document, path: Path
+    ) -> ByteLevelFeatures:
+        """Stub: byte-level analysis (implemented in cycle 3)."""
+        return ByteLevelFeatures()
+
+    def _analyze_font_features(
+        self, doc: fitz.Document, sampled: list[int]
+    ) -> FontFeatures:
+        """Stub: font analysis (implemented in cycle 4)."""
+        return FontFeatures()
+
+    def _analyze_layout_features(
+        self, doc: fitz.Document, sampled: list[int]
+    ) -> LayoutFeatures:
+        """Stub: layout analysis (implemented in cycle 5)."""
+        return LayoutFeatures()
+
+    def _analyze_character_features(
+        self, doc: fitz.Document, sampled: list[int]
+    ) -> CharacterFeatures:
+        """Stub: character analysis (implemented in cycle 6)."""
+        return CharacterFeatures()
+
+    def _analyze_repetition_features(
+        self, doc: fitz.Document, sampled: list[int]
+    ) -> RepetitionFeatures:
+        """Stub: repetition analysis (implemented in cycle 7)."""
+        return RepetitionFeatures()
+
+    def _analyze_structural_rhythm(
+        self, doc: fitz.Document, sampled: list[int]
+    ) -> StructuralRhythmFeatures:
+        """Stub: structural rhythm (implemented in cycle 8)."""
+        return StructuralRhythmFeatures()
