@@ -102,5 +102,5 @@ warn_unused_ignores = true
 
 [tool.pytest.ini_options]
 asyncio_mode = "auto"
-testpaths = ["quarry/tests", "forge/tests"]
+testpaths = ["quarry/tests", "forge/tests", "foundry/tests"]
 norecursedirs = ["scripts/archive-old-chonk", "scripts/archive*", "*.egg", ".eggs", "dist", "build", "docs", ".tox", ".git", "__pycache__"]
