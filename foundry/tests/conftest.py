@@ -526,3 +526,19 @@ def rag_pipeline(mock_model, mock_retrieval, rag_config):
     from foundry.src.rag_integration import RAGPipeline
 
     return RAGPipeline(model=mock_model, retrieval=mock_retrieval, config=rag_config)
+
+
+@pytest.fixture
+def regression_config():
+    """Returns RegressionConfig with defaults."""
+    from foundry.src.regression import RegressionConfig
+
+    return RegressionConfig()
+
+
+@pytest.fixture
+def regression_checker(regression_config):
+    """Returns RegressionChecker instance."""
+    from foundry.src.regression import RegressionChecker
+
+    return RegressionChecker(config=regression_config)
