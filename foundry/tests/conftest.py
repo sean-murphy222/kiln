@@ -8,6 +8,7 @@ from pathlib import Path
 import pytest
 
 from foundry.src.diagnostics import DiagnosticConfig, TrainingDiagnostics
+from foundry.src.merging import AdapterInfo, MergeConfig
 
 
 def _make_training_record(
@@ -542,3 +543,71 @@ def regression_checker(regression_config):
     from foundry.src.regression import RegressionChecker
 
     return RegressionChecker(config=regression_config)
+
+
+# ===================================================================
+# Model merging fixtures (T-026)
+# ===================================================================
+
+
+@pytest.fixture
+def adapter_info_a(tmp_path: Path) -> AdapterInfo:
+    """Returns AdapterInfo for discipline A (Hydraulic Systems).
+
+    Creates a mock adapter directory to simulate a trained adapter.
+    """
+    adapter_dir = tmp_path / "adapter_hydraulics"
+    adapter_dir.mkdir(parents=True, exist_ok=True)
+    return AdapterInfo(
+        adapter_path=adapter_dir,
+        discipline_id="disc_hydraulics",
+        discipline_name="Hydraulic Systems",
+        base_model="microsoft/phi-3-mini-4k-instruct",
+        base_model_family="phi",
+        lora_rank=16,
+        training_run_id="run_hydra001",
+    )
+
+
+@pytest.fixture
+def adapter_info_b(tmp_path: Path) -> AdapterInfo:
+    """Returns AdapterInfo for discipline B (Electrical Systems).
+
+    Same base model as adapter_info_a for compatibility.
+    """
+    adapter_dir = tmp_path / "adapter_electrical"
+    adapter_dir.mkdir(parents=True, exist_ok=True)
+    return AdapterInfo(
+        adapter_path=adapter_dir,
+        discipline_id="disc_electrical",
+        discipline_name="Electrical Systems",
+        base_model="microsoft/phi-3-mini-4k-instruct",
+        base_model_family="phi",
+        lora_rank=16,
+        training_run_id="run_elec001",
+    )
+
+
+@pytest.fixture
+def incompatible_adapter(tmp_path: Path) -> AdapterInfo:
+    """Returns AdapterInfo with a different base model.
+
+    Incompatible with adapter_info_a and adapter_info_b.
+    """
+    adapter_dir = tmp_path / "adapter_incompatible"
+    adapter_dir.mkdir(parents=True, exist_ok=True)
+    return AdapterInfo(
+        adapter_path=adapter_dir,
+        discipline_id="disc_weapons",
+        discipline_name="Weapons Systems",
+        base_model="meta-llama/Llama-3-8B-Instruct",
+        base_model_family="llama",
+        lora_rank=16,
+        training_run_id="run_weap001",
+    )
+
+
+@pytest.fixture
+def merge_config() -> MergeConfig:
+    """Returns MergeConfig with defaults."""
+    return MergeConfig()
