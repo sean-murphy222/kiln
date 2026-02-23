@@ -1,0 +1,108 @@
+{
+  "version": "1.1",
+  "exported_at": "2026-02-23T12:00:00",
+  "exporter": "chonk",
+  "document": {
+    "id": "doc_abc123def4",
+    "source": "TM-9-2320-280-20.pdf",
+    "source_type": "pdf",
+    "metadata": {
+      "title": "TM 9-2320-280-20 Unit Maintenance Manual",
+      "author": "U.S. Army TACOM",
+      "subject": "HMMWV Maintenance",
+      "keywords": ["HMMWV", "M998", "maintenance"],
+      "created_date": null,
+      "modified_date": null,
+      "page_count": 847,
+      "word_count": 285000,
+      "file_size_bytes": 52428800,
+      "custom": {}
+    },
+    "processing": {
+      "loader": "pdf_loader",
+      "parser": "docling",
+      "chunker": "hierarchy",
+      "chunker_config": {
+        "target_tokens": 400,
+        "overlap_tokens": 50
+      },
+      "loaded_at": "2026-02-23T11:55:00",
+      "chunked_at": "2026-02-23T11:58:32"
+    },
+    "chunks": [
+      {
+        "id": "chunk_001abc",
+        "content": "CHAPTER 3\nENGINE MAINTENANCE\n\nSection I. Air Induction System\n\n3-1. AIR CLEANER ELEMENT REPLACEMENT\n\na. Removal.\n(1) Open hood.\n(2) Disconnect air cleaner outlet duct from air cleaner.\n(3) Release two latches securing air cleaner cover.\n(4) Remove air cleaner cover.\n(5) Remove air cleaner element.\n\nb. Cleaning/Inspection.\n(1) Inspect air cleaner element for holes, tears, or other damage. Replace if damaged.\n(2) Clean air cleaner housing interior with clean cloth.",
+        "token_count": 112,
+        "quality": {
+          "token_range": 0.95,
+          "sentence_complete": 1.0,
+          "hierarchy_preserved": 1.0,
+          "table_integrity": 1.0,
+          "reference_complete": 1.0,
+          "overall": 0.988
+        },
+        "hierarchy_path": "Chapter 3 > Engine Maintenance > Air Induction System > Air Cleaner Element Replacement",
+        "page_range": [42, 43],
+        "block_ids": ["block_301", "block_302", "block_303"],
+        "user_metadata": {
+          "tags": ["maintenance", "engine", "air-filter"],
+          "hierarchy_hint": null,
+          "notes": null,
+          "custom": {}
+        },
+        "system_metadata": {
+          "enrichment_applied": true,
+          "enrichment_fields": {
+            "tm_number": "TM 9-2320-280-20",
+            "maintenance_level": "unit",
+            "work_package": "WP 0045 00",
+            "section_number": "3-1"
+          },
+          "enrichment_quality": 0.92,
+          "start_page": 42,
+          "end_page": 43
+        },
+        "is_modified": false,
+        "is_locked": false
+      },
+      {
+        "id": "chunk_002def",
+        "content": "3-2. TURBOCHARGER INSPECTION\n\nINITIAL SETUP:\nTools: General mechanic's tool kit (Item 1, WP 0176 00)\nParts: Gasket (NSN 2940-01-234-5678)\n\na. Inspection.\n(1) Inspect turbocharger for oil leaks at all connections.\n(2) Check turbocharger wheel for free rotation.\n(3) Check for unusual noise during operation.\n\nWARNING: Allow engine to cool before performing turbocharger maintenance. Hot surfaces can cause severe burns.",
+        "token_count": 95,
+        "quality": {
+          "token_range": 0.9,
+          "sentence_complete": 1.0,
+          "hierarchy_preserved": 1.0,
+          "table_integrity": 1.0,
+          "reference_complete": 0.9,
+          "overall": 0.965
+        },
+        "hierarchy_path": "Chapter 3 > Engine Maintenance > Turbocharger Inspection",
+        "page_range": [48, 49],
+        "block_ids": ["block_310", "block_311", "block_312"],
+        "user_metadata": {
+          "tags": ["maintenance", "engine", "turbocharger"],
+          "hierarchy_hint": null,
+          "notes": null,
+          "custom": {}
+        },
+        "system_metadata": {
+          "enrichment_applied": true,
+          "enrichment_fields": {
+            "tm_number": "TM 9-2320-280-20",
+            "maintenance_level": "unit",
+            "nsn": "2940-01-234-5678",
+            "work_package": "WP 0176 00",
+            "section_number": "3-2"
+          },
+          "enrichment_quality": 0.95,
+          "start_page": 48,
+          "end_page": 49
+        },
+        "is_modified": false,
+        "is_locked": false
+      }
+    ]
+  }
+}
