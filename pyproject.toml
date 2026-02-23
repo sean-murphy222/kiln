@@ -79,7 +79,7 @@ all-extractors = [
 chonk = "chonk.cli:main"
 
 [tool.hatch.build.targets.wheel]
-packages = ["src/chonk"]
+packages = ["quarry/chonk"]
 
 [tool.black]
 line-length = 100
@@ -98,4 +98,5 @@ warn_unused_ignores = true
 
 [tool.pytest.ini_options]
 asyncio_mode = "auto"
-testpaths = ["tests"]
+testpaths = ["quarry/tests"]
+norecursedirs = ["scripts/archive-old-chonk", "scripts/archive*", "*.egg", ".eggs", "dist", "build", "docs", ".tox", ".git", "__pycache__"]

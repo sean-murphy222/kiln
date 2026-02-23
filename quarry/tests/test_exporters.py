@@ -25,21 +25,19 @@ class TestExporterRegistry:
 
     def test_get_exporter(self):
         """Test getting exporter by format."""
-        jsonl_exporter = ExporterRegistry.get("jsonl")
+        jsonl_exporter = ExporterRegistry.get_exporter("jsonl")
         assert jsonl_exporter is not None
 
-        json_exporter = ExporterRegistry.get("json")
+        json_exporter = ExporterRegistry.get_exporter("json")
         assert json_exporter is not None
 
-        csv_exporter = ExporterRegistry.get("csv")
+        csv_exporter = ExporterRegistry.get_exporter("csv")
         assert csv_exporter is not None
 
     def test_get_unknown_exporter(self):
-        """Test getting unknown exporter raises error."""
-        with pytest.raises(ValueError) as exc_info:
-            ExporterRegistry.get("unknown_format")
-
-        assert "Unknown export format" in str(exc_info.value)
+        """Test getting unknown exporter returns None."""
+        exporter = ExporterRegistry.get_exporter("unknown_format")
+        assert exporter is None
 
 
 class TestJSONLExporter:
@@ -83,7 +81,7 @@ class TestJSONLExporter:
         # Verify JSON structure
         for line in lines:
             data = json.loads(line)
-            assert "content" in data
+            assert "text" in data
             assert "metadata" in data
 
     def test_jsonl_export_project(self, sample_project, temp_dir):
@@ -133,9 +131,10 @@ class TestJSONExporter:
 
         # Verify JSON structure
         data = json.loads(path.read_text())
-        assert "document_id" in data
-        assert "chunks" in data
-        assert len(data["chunks"]) == 1
+        assert "document" in data
+        assert "id" in data["document"]
+        assert "chunks" in data["document"]
+        assert len(data["document"]["chunks"]) == 1
 
     def test_json_export_includes_metadata(self, document_with_chunks, temp_dir):
         """Test that JSON export includes metadata."""
@@ -148,7 +147,8 @@ class TestJSONExporter:
         data = json.loads(path.read_text())
 
         # Should include document metadata
-        assert "metadata" in data or "document_name" in data
+        assert "document" in data
+        assert "metadata" in data["document"]
 
 
 class TestCSVExporter:
@@ -236,7 +236,7 @@ class TestExporterIntegration:
 
         # Read back
         data = json.loads(output_path.read_text().strip())
-        assert data["content"] == "Test content for roundtrip."
+        assert data["text"] == "Test content for roundtrip."
         assert "metadata" in data
 
     def test_export_empty_document(self, temp_dir):

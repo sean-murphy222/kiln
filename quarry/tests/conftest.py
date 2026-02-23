@@ -9,6 +9,7 @@ import pytest
 
 from chonk.core.document import (
     Block,
+    BlockType,
     Chunk,
     ChonkDocument,
     ChonkProject,
@@ -22,52 +23,52 @@ def sample_blocks() -> list[Block]:
     return [
         Block(
             id="block_1",
-            type="heading",
+            type=BlockType.HEADING,
             content="Introduction",
             page=1,
             heading_level=1,
         ),
         Block(
             id="block_2",
-            type="text",
+            type=BlockType.TEXT,
             content="This is the first paragraph of content. It contains important information about the topic being discussed.",
             page=1,
         ),
         Block(
             id="block_3",
-            type="text",
+            type=BlockType.TEXT,
             content="Here is another paragraph that continues the discussion with more details and examples.",
             page=1,
         ),
         Block(
             id="block_4",
-            type="heading",
+            type=BlockType.HEADING,
             content="Methods",
             page=2,
             heading_level=1,
         ),
         Block(
             id="block_5",
-            type="text",
+            type=BlockType.TEXT,
             content="The methods section describes the approach used in this study. We employed several techniques.",
             page=2,
         ),
         Block(
             id="block_6",
-            type="code",
+            type=BlockType.CODE,
             content="def example():\n    return 'Hello, World!'",
             page=2,
         ),
         Block(
             id="block_7",
-            type="heading",
+            type=BlockType.HEADING,
             content="Results",
             page=3,
             heading_level=1,
         ),
         Block(
             id="block_8",
-            type="text",
+            type=BlockType.TEXT,
             content="The results show significant improvements across all metrics measured in this experiment.",
             page=3,
         ),
@@ -82,6 +83,7 @@ def sample_document(sample_blocks: list[Block]) -> ChonkDocument:
         source_path=Path("test_document.pdf"),
         source_type="pdf",
         blocks=sample_blocks,
+        chunks=[],
         metadata=DocumentMetadata(
             title="Test Document",
             author="Test Author",

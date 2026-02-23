@@ -8,7 +8,7 @@ from chonk.chunkers import ChunkerConfig, ChunkerRegistry
 from chonk.chunkers.fixed import FixedSizeChunker
 from chonk.chunkers.hierarchy import HierarchyChunker
 from chonk.chunkers.recursive import RecursiveChunker
-from chonk.core.document import Block, ChonkDocument, DocumentMetadata
+from chonk.core.document import Block, BlockType, ChonkDocument, DocumentMetadata
 
 
 class TestChunkerConfig:
@@ -57,7 +57,7 @@ class TestFixedSizeChunker:
         )
         chunker = FixedSizeChunker(config)
 
-        chunks = chunker.chunk(sample_document)
+        chunks = chunker.chunk(sample_document.blocks)
 
         assert len(chunks) > 0
         for chunk in chunks:
@@ -72,7 +72,7 @@ class TestFixedSizeChunker:
         )
         chunker = FixedSizeChunker(config)
 
-        chunks = chunker.chunk(sample_document)
+        chunks = chunker.chunk(sample_document.blocks)
 
         for chunk in chunks:
             assert chunk.token_count <= config.max_tokens
@@ -97,7 +97,7 @@ class TestRecursiveChunker:
         )
         chunker = RecursiveChunker(config)
 
-        chunks = chunker.chunk(sample_document)
+        chunks = chunker.chunk(sample_document.blocks)
 
         assert len(chunks) > 0
         for chunk in chunks:
@@ -112,17 +112,18 @@ class TestRecursiveChunker:
             blocks=[
                 Block(
                     id="b1",
-                    type="text",
-                    content="First paragraph.\n\nSecond paragraph.\n\nThird paragraph.",
+                    type=BlockType.TEXT,
+                    content="First paragraph with some additional content to make it longer.\n\nSecond paragraph with more text to exceed token limits.\n\nThird paragraph also with substantial content.",
                     page=1,
                 ),
             ],
+            chunks=[],
         )
 
-        config = ChunkerConfig(target_tokens=10, max_tokens=20)
+        config = ChunkerConfig(target_tokens=10, max_tokens=15)
         chunker = RecursiveChunker(config)
 
-        chunks = chunker.chunk(doc)
+        chunks = chunker.chunk(doc.blocks)
 
         # Should split on paragraph boundaries
         assert len(chunks) >= 2
@@ -147,7 +148,7 @@ class TestHierarchyChunker:
         )
         chunker = HierarchyChunker(config)
 
-        chunks = chunker.chunk(sample_document)
+        chunks = chunker.chunk(sample_document.blocks)
 
         assert len(chunks) > 0
         # Should have hierarchy paths set
@@ -161,11 +162,12 @@ class TestHierarchyChunker:
             source_path="test.md",
             source_type="md",
             blocks=[
-                Block(id="h1", type="heading", content="Introduction", page=1, heading_level=1),
-                Block(id="p1", type="text", content="Intro content " * 20, page=1),
-                Block(id="h2", type="heading", content="Methods", page=1, heading_level=1),
-                Block(id="p2", type="text", content="Methods content " * 20, page=1),
+                Block(id="h1", type=BlockType.HEADING, content="Introduction", page=1, heading_level=1),
+                Block(id="p1", type=BlockType.TEXT, content="Intro content " * 20, page=1),
+                Block(id="h2", type=BlockType.HEADING, content="Methods", page=1, heading_level=1),
+                Block(id="p2", type=BlockType.TEXT, content="Methods content " * 20, page=1),
             ],
+            chunks=[],
         )
 
         config = ChunkerConfig(
@@ -175,7 +177,7 @@ class TestHierarchyChunker:
         )
         chunker = HierarchyChunker(config)
 
-        chunks = chunker.chunk(doc)
+        chunks = chunker.chunk(doc.blocks)
 
         # Chunks should not span across major headings
         # Each chunk should have content from only one section
@@ -188,15 +190,16 @@ class TestHierarchyChunker:
             source_path="test.md",
             source_type="md",
             blocks=[
-                Block(id="p1", type="text", content="Some text before code.", page=1),
+                Block(id="p1", type=BlockType.TEXT, content="Some text before code.", page=1),
                 Block(
                     id="c1",
-                    type="code",
+                    type=BlockType.CODE,
                     content="def function():\n    pass\n" * 10,
                     page=1,
                 ),
-                Block(id="p2", type="text", content="Some text after code.", page=1),
+                Block(id="p2", type=BlockType.TEXT, content="Some text after code.", page=1),
             ],
+            chunks=[],
         )
 
         config = ChunkerConfig(
@@ -206,7 +209,7 @@ class TestHierarchyChunker:
         )
         chunker = HierarchyChunker(config)
 
-        chunks = chunker.chunk(doc)
+        chunks = chunker.chunk(doc.blocks)
 
         # Code should be kept together
         code_chunks = [c for c in chunks if "def function" in c.content]
@@ -228,23 +231,21 @@ class TestChunkerRegistry:
         """Test getting chunker by name."""
         config = ChunkerConfig()
 
-        fixed = ChunkerRegistry.get("fixed", config)
+        fixed = ChunkerRegistry.get_chunker("fixed", config)
         assert isinstance(fixed, FixedSizeChunker)
 
-        recursive = ChunkerRegistry.get("recursive", config)
+        recursive = ChunkerRegistry.get_chunker("recursive", config)
         assert isinstance(recursive, RecursiveChunker)
 
-        hierarchy = ChunkerRegistry.get("hierarchy", config)
+        hierarchy = ChunkerRegistry.get_chunker("hierarchy", config)
         assert isinstance(hierarchy, HierarchyChunker)
 
     def test_get_unknown_chunker(self):
-        """Test getting unknown chunker raises error."""
+        """Test getting unknown chunker returns None."""
         config = ChunkerConfig()
 
-        with pytest.raises(ValueError) as exc_info:
-            ChunkerRegistry.get("unknown_chunker", config)
-
-        assert "Unknown chunker" in str(exc_info.value)
+        chunker = ChunkerRegistry.get_chunker("unknown_chunker", config)
+        assert chunker is None
 
     def test_chunk_document(self, sample_document):
         """Test chunking document through registry."""

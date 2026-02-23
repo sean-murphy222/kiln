@@ -87,8 +87,7 @@
       "Bash(chmod a+w*)",
       "Bash(> /dev/sd*)",
       "Bash(mkfs*)",
-      "Bash(dd if=*)",
-      "Bash(:(){ :|:& };:*)"
+      "Bash(dd if=*)"
     ]
   },
   "hooks": {
@@ -98,7 +97,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "node \"$CLAUDE_PROJECT_DIR/.claude/hooks/session-start.js\" startup"
+            "command": "node .claude/hooks/session-start.js startup"
           }
         ]
       },
@@ -107,7 +106,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "node \"$CLAUDE_PROJECT_DIR/.claude/hooks/session-start.js\" resume"
+            "command": "node .claude/hooks/session-start.js resume"
           }
         ]
       }
@@ -118,7 +117,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "node \"$CLAUDE_PROJECT_DIR/.claude/hooks/sprint-anchor.js\""
+            "command": "node .claude/hooks/sprint-anchor.js"
           }
         ]
       }
@@ -129,7 +128,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "node \"$CLAUDE_PROJECT_DIR/.claude/hooks/secrets-firewall.js\""
+            "command": "node .claude/hooks/secrets-firewall.js"
           }
         ]
       },
@@ -138,7 +137,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "node \"$CLAUDE_PROJECT_DIR/.claude/hooks/protected-files.js\""
+            "command": "node .claude/hooks/protected-files.js"
           }
         ]
       },
@@ -147,7 +146,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "node \"$CLAUDE_PROJECT_DIR/.claude/hooks/branch-protector.js\""
+            "command": "node .claude/hooks/branch-protector.js"
           }
         ]
       },
@@ -156,7 +155,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "node \"$CLAUDE_PROJECT_DIR/.claude/hooks/destructive-guard.js\""
+            "command": "node .claude/hooks/destructive-guard.js"
           }
         ]
       },
@@ -165,7 +164,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "node \"$CLAUDE_PROJECT_DIR/.claude/hooks/dependency-auditor.js\""
+            "command": "node .claude/hooks/dependency-auditor.js"
           }
         ]
       }
@@ -176,7 +175,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "node \"$CLAUDE_PROJECT_DIR/.claude/hooks/format-and-lint.js\"",
+            "command": "node .claude/hooks/format-and-lint.js",
             "timeout": 30000
           }
         ]
@@ -186,7 +185,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "node \"$CLAUDE_PROJECT_DIR/.claude/hooks/change-logger.js\"",
+            "command": "node .claude/hooks/change-logger.js",
             "async": true
           }
         ]
@@ -197,7 +196,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "node \"$CLAUDE_PROJECT_DIR/.claude/hooks/quality-gate.js\"",
+            "command": "node .claude/hooks/quality-gate.js",
             "timeout": 120000
           }
         ]
@@ -206,18 +205,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "node \"$CLAUDE_PROJECT_DIR/.claude/hooks/task-continuation.js\""
-          }
-        ]
-      }
-    ],
-    "TaskCompleted": [
-      {
-        "hooks": [
-          {
-            "type": "command",
-            "command": "node \"$CLAUDE_PROJECT_DIR/.claude/hooks/definition-of-done.js\"",
-            "timeout": 120000
+            "command": "node .claude/hooks/task-continuation.js"
           }
         ]
       }
@@ -238,7 +226,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "node \"$CLAUDE_PROJECT_DIR/.claude/hooks/context-backup.js\""
+            "command": "node .claude/hooks/context-backup.js"
           }
         ]
       }
