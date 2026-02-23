@@ -7,6 +7,8 @@ from pathlib import Path
 
 import pytest
 
+from foundry.src.diagnostics import DiagnosticConfig, TrainingDiagnostics
+
 
 def _make_training_record(
     index: int,
@@ -403,3 +405,15 @@ def evaluation_runner():
     from foundry.src.evaluation import EvaluationRunner
 
     return EvaluationRunner()
+
+
+@pytest.fixture
+def diagnostic_config() -> DiagnosticConfig:
+    """Returns DiagnosticConfig with defaults."""
+    return DiagnosticConfig()
+
+
+@pytest.fixture
+def training_diagnostics() -> TrainingDiagnostics:
+    """Returns TrainingDiagnostics instance with default config."""
+    return TrainingDiagnostics()
