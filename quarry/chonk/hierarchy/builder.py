@@ -33,8 +33,13 @@ class HierarchyBuilder:
         "FOREWORD" -> "FOREWORD"
         "Introduction" -> "Introduction"
         """
-        # Try numbered section (e.g., "E.5.3.5" or "3.66")
-        match = re.match(r"^([A-Z]?\d+(?:\.\d+)*)", heading_text.strip())
+        # Try numbered section (e.g., "3.66", "2.1.1")
+        match = re.match(r"^(\d+(?:\.\d+)*)", heading_text.strip())
+        if match:
+            return match.group(1)
+
+        # Try letter-prefixed section (e.g., "A.1", "E.5.3.5")
+        match = re.match(r"^([A-Z](?:\.\d+)+)", heading_text.strip())
         if match:
             return match.group(1)
 
