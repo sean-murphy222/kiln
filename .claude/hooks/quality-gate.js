@@ -24,9 +24,13 @@ try {
         .trim()
         .split("\n")
         .map((line) => {
-          try { return JSON.parse(line).file; } catch { return null; }
+          try {
+            return JSON.parse(line).file;
+          } catch {
+            return null;
+          }
         })
-        .filter(Boolean)
+        .filter(Boolean),
     ),
   ];
 } catch {
@@ -51,7 +55,9 @@ if (fs.existsSync(path.join(projectDir, "package.json"))) {
   fs.existsSync(path.join(projectDir, "setup.py")) ||
   fs.existsSync(path.join(projectDir, "tests"))
 ) {
-  testResult = run("python -m pytest --tb=short", projectDir);
+  testResult = run("python -m pytest --tb=short", projectDir, {
+    timeout: 600000,
+  });
 } else {
   testResult = { stdout: "", exitCode: 0 };
 }
@@ -78,7 +84,9 @@ for (const file of modified) {
       report.push(`LINT: ${file}\n${stdout}`);
     }
   } else if ([".js", ".jsx", ".ts", ".tsx"].includes(ext)) {
-    if (fs.existsSync(path.join(projectDir, "node_modules", ".bin", "eslint"))) {
+    if (
+      fs.existsSync(path.join(projectDir, "node_modules", ".bin", "eslint"))
+    ) {
       const { exitCode, stdout } = run(`npx eslint "${file}"`, projectDir);
       if (exitCode !== 0 && stdout) {
         lintFail = true;
@@ -119,12 +127,12 @@ if (diff) {
         line.startsWith("+") &&
         !line.startsWith("+++") &&
         secretPattern.test(line) &&
-        !/#.*TODO|#.*FIXME|\.example/.test(line)
+        !/#.*TODO|#.*FIXME|\.example/.test(line),
     );
   if (secretLines.length > 0) {
     failures++;
     report.push(
-      `SECRETS DETECTED in diff:\n${secretLines.slice(0, 5).join("\n")}`
+      `SECRETS DETECTED in diff:\n${secretLines.slice(0, 5).join("\n")}`,
     );
   } else {
     feedback("  No secrets detected.");
@@ -145,7 +153,7 @@ if (branch && branch !== "main" && branch !== "master") {
     if (conflicts > 0) {
       failures++;
       report.push(
-        `CONFLICT: ${conflicts} merge conflict(s) with origin/main. Rebase needed.`
+        `CONFLICT: ${conflicts} merge conflict(s) with origin/main. Rebase needed.`,
       );
     } else {
       feedback("  No conflicts with main.");
