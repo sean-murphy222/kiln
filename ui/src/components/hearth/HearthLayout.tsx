@@ -1,56 +1,188 @@
-import { Flame, MessageSquare, BookMarked, SlidersHorizontal, ThumbsUp } from 'lucide-react';
+import { useState, useCallback } from 'react';
+import { Flame, PanelLeftClose, PanelLeft, PanelRightClose, PanelRight } from 'lucide-react';
+import { cn } from '@/lib/cn';
+import { useHearthStore } from '@/store/useHearthStore';
+import type { Citation } from '@/store/useHearthStore';
 import { ToolHeader } from '@/components/shell/ToolHeader';
+import { ConversationList } from './ConversationList';
+import { ChatArea } from './ChatArea';
+import { CitationPanel } from './CitationPanel';
+import { ModelSwitcher } from './ModelSwitcher';
 
 export function HearthLayout() {
+  const {
+    conversations,
+    activeConversationId,
+    modelSlots,
+    activeModelId,
+    citationPanelOpen,
+    isStreaming,
+    setActiveConversation,
+    setConversations,
+    addMessage,
+    setActiveModel,
+    toggleCitationPanel,
+    setStreaming,
+  } = useHearthStore();
+
+  const [conversationListOpen, setConversationListOpen] = useState(true);
+  const [activeCitationId, setActiveCitationId] = useState<string | null>(null);
+
+  const activeConversation = conversations.find((c) => c.id === activeConversationId);
+  const activeMessages = activeConversation?.messages ?? [];
+
+  // Citations from the last assistant message
+  const lastAssistantMsg = [...activeMessages].reverse().find((m) => m.role === 'assistant');
+  const activeCitations = lastAssistantMsg?.citations ?? [];
+
+  const handleNewChat = useCallback(() => {
+    const newConv = {
+      id: `conv-${Date.now()}`,
+      title: 'New conversation',
+      model_id: activeModelId ?? '',
+      messages: [],
+      created_at: new Date().toISOString(),
+      updated_at: new Date().toISOString(),
+    };
+    setConversations([newConv, ...conversations]);
+    setActiveConversation(newConv.id);
+  }, [conversations, activeModelId, setConversations, setActiveConversation]);
+
+  const handleSend = useCallback(
+    (content: string) => {
+      if (!activeConversationId) {
+        // Auto-create conversation
+        handleNewChat();
+        return;
+      }
+
+      // Add user message
+      const userMsg = {
+        id: `msg-${Date.now()}`,
+        role: 'user' as const,
+        content,
+        citations: [],
+        timestamp: new Date().toISOString(),
+      };
+      addMessage(activeConversationId, userMsg);
+
+      // Simulate assistant response (will be replaced by real API call)
+      setStreaming(true);
+      setTimeout(() => {
+        const assistantMsg = {
+          id: `msg-${Date.now() + 1}`,
+          role: 'assistant' as const,
+          content:
+            'This is a placeholder response. The Hearth backend API is required for real inference. ' +
+            'When connected, responses will include citations like [1] and [2] that reference your processed documents.',
+          citations: [
+            {
+              id: `cit-${Date.now()}`,
+              document_title: 'TM-9-2320-280-10',
+              section: '2.3 Engine Maintenance',
+              page: 42,
+              relevance_score: 0.92,
+              snippet:
+                'Preventive maintenance checks should be performed at regular intervals as specified in the maintenance allocation chart.',
+            },
+            {
+              id: `cit-${Date.now() + 1}`,
+              document_title: 'TM-9-2320-280-10',
+              section: '4.1 Troubleshooting',
+              page: 87,
+              relevance_score: 0.76,
+              snippet:
+                'If the engine fails to start after three attempts, check the fuel supply, battery connections, and starter motor relay.',
+            },
+          ],
+          timestamp: new Date().toISOString(),
+        };
+        addMessage(activeConversationId, assistantMsg);
+        setStreaming(false);
+      }, 1500);
+    },
+    [activeConversationId, addMessage, setStreaming, handleNewChat],
+  );
+
+  const handleCitationClick = useCallback((citation: Citation) => {
+    setActiveCitationId(citation.id);
+    if (!citationPanelOpen) toggleCitationPanel();
+  }, [citationPanelOpen, toggleCitationPanel]);
+
+  const handleDeleteConversation = useCallback(
+    (id: string) => {
+      setConversations(conversations.filter((c) => c.id !== id));
+      if (activeConversationId === id) {
+        setActiveConversation(null);
+      }
+    },
+    [conversations, activeConversationId, setConversations, setActiveConversation],
+  );
+
   return (
     <div className="flex flex-col h-full">
+      {/* Header */}
       <ToolHeader
         icon={Flame}
         title="Hearth"
         color="#D4A058"
-      />
+        breadcrumb={activeConversation ? [activeConversation.title] : undefined}
+      >
+        {/* Panel toggles */}
+        <button
+          onClick={() => setConversationListOpen(!conversationListOpen)}
+          className="btn-ghost btn-icon btn-sm"
+          title={conversationListOpen ? 'Hide conversations' : 'Show conversations'}
+        >
+          {conversationListOpen ? <PanelLeftClose size={15} /> : <PanelLeft size={15} />}
+        </button>
+        <button
+          onClick={toggleCitationPanel}
+          className="btn-ghost btn-icon btn-sm"
+          title={citationPanelOpen ? 'Hide citations' : 'Show citations'}
+        >
+          {citationPanelOpen ? <PanelRightClose size={15} /> : <PanelRight size={15} />}
+        </button>
 
-      <div className="flex-1 flex items-center justify-center">
-        <div className="text-center max-w-md animate-fade-in">
-          <div
-            className="w-16 h-16 rounded-2xl mx-auto mb-6 flex items-center justify-center"
-            style={{ background: 'rgba(212, 160, 88, 0.08)' }}
-          >
-            <Flame size={28} className="text-hearth-glow" strokeWidth={1.5} />
-          </div>
+        {/* Model selector */}
+        <ModelSwitcher
+          models={modelSlots}
+          activeModelId={activeModelId}
+          onSelect={setActiveModel}
+        />
+      </ToolHeader>
 
-          <h2 className="font-display text-xl font-semibold text-kiln-200 mb-2">
-            Inference & Chat
-          </h2>
-          <p className="text-sm text-kiln-400 mb-8 leading-relaxed">
-            Query your fine-tuned models with document context.
-            Citations, model switching, and feedback capture.
-          </p>
+      {/* Three-column layout */}
+      <div className="flex-1 flex overflow-hidden">
+        {/* Left: Conversation list */}
+        {conversationListOpen && (
+          <ConversationList
+            conversations={conversations}
+            activeId={activeConversationId}
+            onSelect={setActiveConversation}
+            onNew={handleNewChat}
+            onDelete={handleDeleteConversation}
+          />
+        )}
 
-          <div className="grid grid-cols-2 gap-3 text-left">
-            {[
-              { icon: MessageSquare, label: 'Chat Interface', desc: 'Streaming responses' },
-              { icon: BookMarked, label: 'Citations', desc: 'Source attribution' },
-              { icon: SlidersHorizontal, label: 'Model Switcher', desc: 'Hot-swap LoRAs' },
-              { icon: ThumbsUp, label: 'Feedback', desc: 'Route to improvement' },
-            ].map(({ icon: Icon, label, desc }) => (
-              <div
-                key={label}
-                className="card p-3 flex items-start gap-3"
-              >
-                <Icon size={16} className="text-hearth-glow mt-0.5 flex-shrink-0" strokeWidth={1.5} />
-                <div>
-                  <div className="text-xs font-medium text-kiln-200">{label}</div>
-                  <div className="text-2xs text-kiln-500">{desc}</div>
-                </div>
-              </div>
-            ))}
-          </div>
-
-          <p className="text-2xs text-kiln-600 mt-8">
-            Backend API required — Sprint 13
-          </p>
+        {/* Center: Chat area */}
+        <div className="flex-1 min-w-0">
+          <ChatArea
+            messages={activeMessages}
+            isStreaming={isStreaming}
+            onSend={handleSend}
+            onCitationClick={handleCitationClick}
+          />
         </div>
+
+        {/* Right: Citation panel */}
+        {citationPanelOpen && (
+          <CitationPanel
+            citations={activeCitations}
+            activeCitationId={activeCitationId}
+            onClose={toggleCitationPanel}
+          />
+        )}
       </div>
     </div>
   );
