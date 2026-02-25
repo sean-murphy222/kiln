@@ -13,7 +13,7 @@ function createWindow() {
     height: 900,
     minWidth: 1000,
     minHeight: 700,
-    backgroundColor: '#1a1c2c',
+    backgroundColor: '#0C0E12',
     titleBarStyle: 'hiddenInset',
     webPreferences: {
       nodeIntegration: false,
@@ -40,12 +40,12 @@ function startPythonBackend() {
   // For development, we assume it's started separately
   if (isDev) {
     console.log('Development mode: Python backend should be started separately');
-    console.log('Run: cd src && uvicorn chonk.server:app --reload --port 8420');
+    console.log('Run: cd quarry && uvicorn chonk.server:app --reload --port 8420');
     return;
   }
 
   // Production: start bundled Python
-  const pythonPath = path.join(process.resourcesPath, 'python', 'chonk-server');
+  const pythonPath = path.join(process.resourcesPath, 'python', 'kiln-server');
   pythonProcess = spawn(pythonPath, [], {
     cwd: process.resourcesPath,
   });
@@ -83,7 +83,7 @@ ipcMain.handle('dialog:openProject', async () => {
   const result = await dialog.showOpenDialog(mainWindow, {
     properties: ['openFile'],
     filters: [
-      { name: 'CHONK Project', extensions: ['chonk'] },
+      { name: 'Kiln Project', extensions: ['kiln'] },
     ],
   });
   return result;
@@ -105,7 +105,7 @@ ipcMain.handle('dialog:saveProject', async (event, defaultPath) => {
   const result = await dialog.showSaveDialog(mainWindow, {
     defaultPath: defaultPath,
     filters: [
-      { name: 'CHONK Project', extensions: ['chonk'] },
+      { name: 'Kiln Project', extensions: ['kiln'] },
     ],
   });
   return result;
