@@ -57,23 +57,23 @@ export function TestPanel() {
   };
 
   return (
-    <div className="h-full flex flex-col bg-surface-panel">
+    <div className="h-full flex flex-col bg-kiln-800">
       {/* Header */}
       <div className="panel-header">Test Retrieval</div>
 
       {/* Search input */}
-      <div className="p-3 border-b border-chonk-slate">
+      <div className="p-3 border-b border-kiln-600">
         <div className="relative">
           <input
             type="text"
-            className="input-pixel pr-10"
+            className="input-field pr-10"
             placeholder="Type a test query..."
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
             onKeyDown={(e) => e.key === 'Enter' && handleSearch()}
           />
           <button
-            className="absolute right-2 top-1/2 -translate-y-1/2 p-1 text-chonk-gray hover:text-accent-primary"
+            className="absolute right-2 top-1/2 -translate-y-1/2 p-1 text-kiln-500 hover:text-ember"
             onClick={handleSearch}
             disabled={isSearching}
           >
@@ -84,7 +84,7 @@ export function TestPanel() {
             )}
           </button>
         </div>
-        <p className="text-xs text-chonk-gray mt-2">
+        <p className="text-xs text-kiln-500 mt-2">
           {selectedDocumentId
             ? 'Searching current document'
             : 'Searching all documents'}
@@ -104,11 +104,11 @@ export function TestPanel() {
             ))}
           </div>
         ) : searchQuery && !isSearching ? (
-          <div className="p-4 text-center text-chonk-gray text-sm">
+          <div className="p-4 text-center text-kiln-500 text-sm">
             No results found
           </div>
         ) : (
-          <div className="p-4 text-center text-chonk-gray text-sm">
+          <div className="p-4 text-center text-kiln-500 text-sm">
             <p>Test your chunks before export</p>
             <p className="mt-2 text-xs">
               Type a query to see which chunks match
@@ -118,11 +118,11 @@ export function TestPanel() {
       </div>
 
       {/* Test suites section */}
-      <div className="border-t border-chonk-slate">
+      <div className="border-t border-kiln-600">
         <div className="panel-header flex items-center justify-between">
           <span>Test Suites</span>
           <button
-            className="text-chonk-gray hover:text-accent-primary"
+            className="text-kiln-500 hover:text-ember"
             onClick={() => setShowCreateSuite(!showCreateSuite)}
           >
             <Plus size={14} />
@@ -130,10 +130,10 @@ export function TestPanel() {
         </div>
 
         {showCreateSuite && (
-          <div className="p-3 border-b border-chonk-slate">
+          <div className="p-3 border-b border-kiln-600">
             <input
               type="text"
-              className="input-pixel text-sm mb-2"
+              className="input-field text-sm mb-2"
               placeholder="Suite name..."
               value={testSuiteName}
               onChange={(e) => setTestSuiteName(e.target.value)}
@@ -142,13 +142,13 @@ export function TestPanel() {
             />
             <div className="flex gap-2">
               <button
-                className="btn-pixel text-xs flex-1"
+                className="btn-secondary text-xs flex-1"
                 onClick={() => setShowCreateSuite(false)}
               >
                 Cancel
               </button>
               <button
-                className="btn-pixel-primary text-xs flex-1"
+                className="btn-primary text-xs flex-1"
                 onClick={handleCreateSuite}
               >
                 Create
@@ -159,7 +159,7 @@ export function TestPanel() {
 
         <div className="p-2 max-h-40 overflow-y-auto">
           {project?.test_suites.length === 0 ? (
-            <p className="text-xs text-chonk-gray text-center py-2">
+            <p className="text-xs text-kiln-500 text-center py-2">
               No test suites yet
             </p>
           ) : (
@@ -183,21 +183,21 @@ interface SearchResultCardProps {
 function SearchResultCard({ result, onClick }: SearchResultCardProps) {
   const scoreColor =
     result.score >= 0.8
-      ? 'text-accent-success'
+      ? 'text-success'
       : result.score >= 0.65
-      ? 'text-accent-warning'
-      : 'text-accent-error';
+      ? 'text-warning'
+      : 'text-error';
 
   const scoreBg =
     result.score >= 0.8
-      ? 'bg-accent-success/20'
+      ? 'bg-success/20'
       : result.score >= 0.65
-      ? 'bg-accent-warning/20'
-      : 'bg-accent-error/20';
+      ? 'bg-warning/20'
+      : 'bg-error/20';
 
   return (
     <div
-      className="card-pixel p-3 cursor-pointer hover:bg-surface-card transition-colors"
+      className="card p-3 cursor-pointer hover:bg-kiln-700 transition-colors"
       onClick={onClick}
     >
       {/* Header */}
@@ -211,7 +211,7 @@ function SearchResultCard({ result, onClick }: SearchResultCardProps) {
           </span>
         </div>
         {result.page_range && (
-          <span className="text-xs text-chonk-gray">
+          <span className="text-xs text-kiln-500">
             p.{result.page_range[0]}
             {result.page_range[0] !== result.page_range[1] &&
               `-${result.page_range[1]}`}
@@ -221,19 +221,19 @@ function SearchResultCard({ result, onClick }: SearchResultCardProps) {
 
       {/* Hierarchy path */}
       {result.hierarchy_path && (
-        <p className="text-xs text-chonk-light mb-1 truncate">
+        <p className="text-xs text-kiln-300 mb-1 truncate">
           {result.hierarchy_path}
         </p>
       )}
 
       {/* Content preview */}
-      <p className="text-xs text-chonk-gray line-clamp-2">
+      <p className="text-xs text-kiln-500 line-clamp-2">
         {result.content_preview}
       </p>
 
       {/* Document name */}
       {result.document_name && (
-        <p className="text-xs text-chonk-slate mt-1">
+        <p className="text-xs text-kiln-600 mt-1">
           {result.document_name}
         </p>
       )}
@@ -274,24 +274,24 @@ function TestSuiteItem({ suite }: TestSuiteItemProps) {
   };
 
   return (
-    <div className="flex items-center gap-2 px-2 py-1.5 rounded hover:bg-surface-card">
-      <span className="flex-1 text-sm text-chonk-light truncate">
+    <div className="flex items-center gap-2 px-2 py-1.5 rounded hover:bg-kiln-700">
+      <span className="flex-1 text-sm text-kiln-300 truncate">
         {suite.name}
       </span>
-      <span className="text-xs text-chonk-gray">
+      <span className="text-xs text-kiln-500">
         {suite.queries.length}
       </span>
 
       {result && (
         <div className="flex items-center gap-1">
           {result.passed > 0 && (
-            <span className="flex items-center gap-0.5 text-xs text-accent-success">
+            <span className="flex items-center gap-0.5 text-xs text-success">
               <Check size={10} />
               {result.passed}
             </span>
           )}
           {result.failed > 0 && (
-            <span className="flex items-center gap-0.5 text-xs text-accent-error">
+            <span className="flex items-center gap-0.5 text-xs text-error">
               <X size={10} />
               {result.failed}
             </span>
@@ -300,7 +300,7 @@ function TestSuiteItem({ suite }: TestSuiteItemProps) {
       )}
 
       <button
-        className="p-1 text-chonk-gray hover:text-accent-primary"
+        className="p-1 text-kiln-500 hover:text-ember"
         onClick={handleRun}
         disabled={isRunning || suite.queries.length === 0}
         title="Run test suite"

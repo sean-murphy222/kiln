@@ -104,11 +104,11 @@ export function Toolbar() {
   }, []);
 
   return (
-    <div className="h-12 bg-surface-panel border-b border-chonk-slate flex items-center px-4 gap-2">
+    <div className="h-12 bg-kiln-800 border-b border-kiln-600 flex items-center px-4 gap-2">
       {/* Left side - toggles */}
       <button
-        className={`p-2 rounded hover:bg-surface-card transition-colors ${
-          sidebarOpen ? 'text-accent-primary' : 'text-chonk-gray'
+        className={`p-2 rounded hover:bg-kiln-700 transition-colors ${
+          sidebarOpen ? 'text-ember' : 'text-kiln-500'
         }`}
         onClick={toggleSidebar}
         title="Toggle sidebar"
@@ -117,7 +117,7 @@ export function Toolbar() {
       </button>
 
       {/* Project name */}
-      <div className="text-pixel text-xs text-chonk-light ml-2">
+      <div className="text-pixel text-xs text-kiln-300 ml-2">
         {project?.name ?? 'CHONK'}
       </div>
 
@@ -126,7 +126,7 @@ export function Toolbar() {
 
       {/* Actions */}
       <button
-        className="btn-pixel-primary flex items-center gap-2 py-1.5 px-3"
+        className="btn-primary flex items-center gap-2 py-1.5 px-3"
         onClick={handleUpload}
         title="Add document"
       >
@@ -135,7 +135,7 @@ export function Toolbar() {
       </button>
 
       <button
-        className="p-2 rounded hover:bg-surface-card text-chonk-light transition-colors"
+        className="p-2 rounded hover:bg-kiln-700 text-kiln-300 transition-colors"
         onClick={handleSave}
         title="Save project"
       >
@@ -143,19 +143,19 @@ export function Toolbar() {
       </button>
 
       <button
-        className="p-2 rounded hover:bg-surface-card text-chonk-light transition-colors"
+        className="p-2 rounded hover:bg-kiln-700 text-kiln-300 transition-colors"
         onClick={handleExport}
         title="Export chunks"
       >
         <Download size={20} />
       </button>
 
-      <div className="w-px h-6 bg-chonk-slate mx-2" />
+      <div className="w-px h-6 bg-kiln-600 mx-2" />
 
       {/* Test panel toggle */}
       <button
-        className={`p-2 rounded hover:bg-surface-card transition-colors ${
-          testPanelOpen ? 'text-accent-primary' : 'text-chonk-gray'
+        className={`p-2 rounded hover:bg-kiln-700 transition-colors ${
+          testPanelOpen ? 'text-ember' : 'text-kiln-500'
         }`}
         onClick={toggleTestPanel}
         title="Toggle test panel"
@@ -164,7 +164,7 @@ export function Toolbar() {
       </button>
 
       <button
-        className="p-2 rounded hover:bg-surface-card text-chonk-gray transition-colors"
+        className="p-2 rounded hover:bg-kiln-700 text-kiln-500 transition-colors"
         title="Settings"
         onClick={() => setShowSettingsModal(true)}
       >

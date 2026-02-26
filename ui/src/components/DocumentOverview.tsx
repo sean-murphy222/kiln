@@ -16,40 +16,40 @@ export function DocumentOverview({ document, onSelectChunk, selectedChunkId }: D
   const avgTokens = Math.round(totalTokens / document.chunks.length);
 
   return (
-    <div className="h-full flex flex-col bg-surface-bg">
+    <div className="h-full flex flex-col bg-kiln-900">
       {/* Header */}
-      <div className="border-b-2 border-black p-4 bg-surface-panel">
+      <div className="border-b-2 border-black p-4 bg-kiln-800">
         <div className="flex items-center justify-between mb-3">
-          <h2 className="text-pixel text-lg text-chonk-light">DOCUMENT CHUNKS</h2>
-          <span className="text-xs text-chonk-gray">
+          <h2 className="text-pixel text-lg text-kiln-300">DOCUMENT CHUNKS</h2>
+          <span className="text-xs text-kiln-500">
             Click any chunk to view details
           </span>
         </div>
 
         {/* Stats */}
         <div className="grid grid-cols-3 gap-3">
-          <div className="bg-surface-bg border border-black p-2">
+          <div className="bg-kiln-900 border border-black p-2">
             <div className="flex items-center gap-2 mb-1">
-              <Layers size={14} className="text-accent-primary" />
-              <span className="text-xs text-chonk-gray">Total Chunks</span>
+              <Layers size={14} className="text-ember" />
+              <span className="text-xs text-kiln-500">Total Chunks</span>
             </div>
-            <div className="text-pixel text-xl text-chonk-light">{document.chunks.length}</div>
+            <div className="text-pixel text-xl text-kiln-300">{document.chunks.length}</div>
           </div>
 
-          <div className="bg-surface-bg border border-black p-2">
+          <div className="bg-kiln-900 border border-black p-2">
             <div className="flex items-center gap-2 mb-1">
-              <Hash size={14} className="text-accent-primary" />
-              <span className="text-xs text-chonk-gray">Avg Tokens</span>
+              <Hash size={14} className="text-ember" />
+              <span className="text-xs text-kiln-500">Avg Tokens</span>
             </div>
-            <div className="text-pixel text-xl text-chonk-light">{avgTokens}</div>
+            <div className="text-pixel text-xl text-kiln-300">{avgTokens}</div>
           </div>
 
-          <div className="bg-surface-bg border border-black p-2">
+          <div className="bg-kiln-900 border border-black p-2">
             <div className="flex items-center gap-2 mb-1">
-              <FileText size={14} className="text-accent-primary" />
-              <span className="text-xs text-chonk-gray">Total Tokens</span>
+              <FileText size={14} className="text-ember" />
+              <span className="text-xs text-kiln-500">Total Tokens</span>
             </div>
-            <div className="text-pixel text-xl text-chonk-light">{totalTokens.toLocaleString()}</div>
+            <div className="text-pixel text-xl text-kiln-300">{totalTokens.toLocaleString()}</div>
           </div>
         </div>
 
@@ -72,30 +72,30 @@ export function DocumentOverview({ document, onSelectChunk, selectedChunkId }: D
               className={`
                 border-2 p-3 cursor-pointer transition-colors
                 ${isSelected
-                  ? 'border-accent-primary bg-accent-primary/10'
-                  : 'border-black bg-surface-panel hover:bg-surface-bg'
+                  ? 'border-ember bg-ember/10'
+                  : 'border-black bg-kiln-800 hover:bg-kiln-900'
                 }
               `}
             >
               {/* Chunk Header */}
               <div className="flex items-center justify-between mb-2">
                 <div className="flex items-center gap-2">
-                  <span className="text-xs font-bold text-accent-primary">
+                  <span className="text-xs font-bold text-ember">
                     Chunk {index + 1}
                   </span>
                   {chunk.hierarchy_path && (
-                    <span className="text-xs text-chonk-gray truncate max-w-xs">
+                    <span className="text-xs text-kiln-500 truncate max-w-xs">
                       {chunk.hierarchy_path}
                     </span>
                   )}
                 </div>
-                <span className="text-xs text-chonk-gray">
+                <span className="text-xs text-kiln-500">
                   {chunk.token_count} tokens
                 </span>
               </div>
 
               {/* Content Preview */}
-              <p className="text-sm text-chonk-light line-clamp-3">
+              <p className="text-sm text-kiln-300 line-clamp-3">
                 {chunk.content}
               </p>
 
@@ -105,7 +105,7 @@ export function DocumentOverview({ document, onSelectChunk, selectedChunkId }: D
                   {chunk.user_metadata.tags.map((tag, i) => (
                     <span
                       key={i}
-                      className="text-xs px-2 py-0.5 bg-accent-primary/20 border border-accent-primary text-accent-primary"
+                      className="text-xs px-2 py-0.5 bg-ember/20 border border-ember text-ember"
                     >
                       {tag}
                     </span>

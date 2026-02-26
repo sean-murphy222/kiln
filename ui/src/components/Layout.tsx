@@ -52,7 +52,7 @@ export function Layout() {
 
   return (
     <DropZone>
-      <div className="h-screen flex flex-col bg-surface-bg">
+      <div className="h-screen flex flex-col bg-kiln-900">
         {/* Toolbar */}
         <Toolbar />
 
@@ -68,7 +68,7 @@ export function Layout() {
           >
             <AlertTriangle size={18} />
             <span>Diagnostic</span>
-            <span className="text-xs px-2 py-0.5 bg-accent-primary rounded">MVP</span>
+            <span className="text-xs px-2 py-0.5 bg-ember rounded">MVP</span>
           </button>
           <button
             onClick={() => setViewMode('workflow')}
@@ -148,14 +148,14 @@ export function Layout() {
                 </div>
 
                 {/* Chunk panel */}
-                <div className="w-80 flex-shrink-0 border-l border-chonk-slate">
+                <div className="w-80 flex-shrink-0 border-l border-kiln-600">
                   <ChunkPanel />
                 </div>
               </div>
 
               {/* Test panel */}
               {testPanelOpen && (
-                <div className="w-96 flex-shrink-0 border-l border-chonk-slate">
+                <div className="w-96 flex-shrink-0 border-l border-kiln-600">
                   <TestPanel />
                 </div>
               )}
@@ -166,14 +166,14 @@ export function Layout() {
         {/* Help buttons */}
         <div className="fixed bottom-4 right-4 flex flex-col gap-2">
           <button
-            className="p-3 rounded-full bg-accent-primary border-2 border-black text-black hover:bg-accent-primary/80 transition-colors shadow-lg font-bold"
+            className="p-3 rounded-full bg-ember border-2 border-black text-black hover:bg-ember/80 transition-colors shadow-lg font-bold"
             onClick={() => setShowTour(true)}
             title="Show workflow guide"
           >
             ?
           </button>
           <button
-            className="p-2 rounded-full bg-surface-panel border border-chonk-slate text-chonk-gray hover:text-accent-primary hover:border-accent-primary transition-colors shadow-lg"
+            className="p-2 rounded-full bg-kiln-800 border border-kiln-600 text-kiln-500 hover:text-ember hover:border-ember transition-colors shadow-lg"
             onClick={() => setShowShortcutsModal(true)}
             title="Keyboard shortcuts"
           >
@@ -195,11 +195,11 @@ export function Layout() {
         {/* Global Loading Overlay */}
         {isLoading && (
           <div className="fixed inset-0 z-50 bg-black/70 flex items-center justify-center">
-            <div className="bg-surface-panel border-4 border-accent-primary p-8 rounded-lg shadow-2xl">
+            <div className="bg-kiln-800 border-4 border-ember p-8 rounded-lg shadow-2xl">
               <div className="flex flex-col items-center gap-4">
-                <Loader2 className="w-12 h-12 text-accent-primary animate-spin" />
-                <p className="text-pixel text-lg text-chonk-light">Processing...</p>
-                <p className="text-xs text-chonk-gray">
+                <Loader2 className="w-12 h-12 text-ember animate-spin" />
+                <p className="text-pixel text-lg text-kiln-300">Processing...</p>
+                <p className="text-xs text-kiln-500">
                   Uploading and extracting document
                 </p>
               </div>

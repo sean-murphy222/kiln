@@ -53,7 +53,7 @@ export function ChunkPanel() {
 
   if (!document) {
     return (
-      <div className="h-full flex items-center justify-center text-chonk-gray text-sm">
+      <div className="h-full flex items-center justify-center text-kiln-500 text-sm">
         No document selected
       </div>
     );
@@ -61,32 +61,32 @@ export function ChunkPanel() {
 
   return (
     <>
-    <div className="h-full flex flex-col bg-surface-panel">
+    <div className="h-full flex flex-col bg-kiln-800">
       {/* Header */}
       <div className="panel-header flex items-center justify-between">
         <span>Chunks</span>
         <div className="flex items-center gap-2">
           <button
-            className="text-chonk-gray hover:text-accent-primary"
+            className="text-kiln-500 hover:text-ember"
             onClick={() => setShowRechunkModal(true)}
             title="Rechunk document"
           >
             <RefreshCw size={14} />
           </button>
-          <span className="text-chonk-gray">{document.chunks.length}</span>
+          <span className="text-kiln-500">{document.chunks.length}</span>
         </div>
       </div>
 
       {/* Actions */}
       {selectedChunkIds.length > 0 && (
-        <div className="px-3 py-2 border-b border-chonk-slate flex items-center gap-2">
-          <span className="text-xs text-chonk-gray">
+        <div className="px-3 py-2 border-b border-kiln-600 flex items-center gap-2">
+          <span className="text-xs text-kiln-500">
             {selectedChunkIds.length} selected
           </span>
           <div className="flex-1" />
           {selectedChunkIds.length === 1 && (
             <button
-              className="btn-pixel py-1 px-2 text-xs flex items-center gap-1"
+              className="btn-secondary py-1 px-2 text-xs flex items-center gap-1"
               onClick={() => setSplitModalChunk(selectedChunks![0])}
               title="Split selected chunk"
             >
@@ -96,7 +96,7 @@ export function ChunkPanel() {
           )}
           {selectedChunkIds.length >= 2 && (
             <button
-              className="btn-pixel py-1 px-2 text-xs flex items-center gap-1"
+              className="btn-secondary py-1 px-2 text-xs flex items-center gap-1"
               onClick={handleMerge}
               title="Merge selected chunks"
             >
@@ -105,7 +105,7 @@ export function ChunkPanel() {
             </button>
           )}
           <button
-            className="text-xs text-chonk-gray hover:text-chonk-light"
+            className="text-xs text-kiln-500 hover:text-kiln-300"
             onClick={clearChunkSelection}
           >
             Clear
@@ -156,17 +156,17 @@ function ChunkListItem({
 }: ChunkListItemProps) {
   const qualityColor =
     chunk.quality.overall >= 0.85
-      ? 'bg-accent-success'
+      ? 'bg-success'
       : chunk.quality.overall >= 0.7
-      ? 'bg-accent-warning'
-      : 'bg-accent-error';
+      ? 'bg-warning'
+      : 'bg-error';
 
   return (
     <div
       className={`
-        px-3 py-2 border-b border-chonk-slate/50 cursor-pointer
+        px-3 py-2 border-b border-kiln-600/50 cursor-pointer
         transition-colors
-        ${isSelected ? 'bg-accent-primary/20' : 'hover:bg-surface-card'}
+        ${isSelected ? 'bg-ember/20' : 'hover:bg-kiln-700'}
       `}
       onClick={onSelect}
     >
@@ -179,30 +179,30 @@ function ChunkListItem({
             e.stopPropagation();
             onToggle();
           }}
-          className="w-4 h-4 rounded border-chonk-slate bg-surface-bg"
+          className="w-4 h-4 rounded border-kiln-600 bg-kiln-900"
         />
 
         {/* Chunk info */}
         <div className="flex-1 min-w-0">
           <div className="flex items-center gap-2">
-            <span className="text-xs font-mono text-chonk-gray">
+            <span className="text-xs font-mono text-kiln-500">
               #{index + 1}
             </span>
             {chunk.is_locked && (
-              <Lock size={12} className="text-accent-warning" />
+              <Lock size={12} className="text-warning" />
             )}
             {chunk.is_modified && (
-              <span className="w-1.5 h-1.5 rounded-full bg-accent-primary" />
+              <span className="w-1.5 h-1.5 rounded-full bg-ember" />
             )}
           </div>
-          <p className="text-xs text-chonk-light truncate mt-0.5">
+          <p className="text-xs text-kiln-300 truncate mt-0.5">
             {chunk.content.slice(0, 60)}...
           </p>
         </div>
 
         {/* Quality indicator */}
         <div className="flex items-center gap-2">
-          <span className="text-xs text-chonk-gray">
+          <span className="text-xs text-kiln-500">
             {chunk.token_count}
           </span>
           <div
@@ -218,13 +218,13 @@ function ChunkListItem({
           {chunk.user_metadata.tags.slice(0, 3).map((tag) => (
             <span
               key={tag}
-              className="text-[10px] px-1.5 py-0.5 rounded bg-surface-card text-chonk-light"
+              className="text-[10px] px-1.5 py-0.5 rounded bg-kiln-700 text-kiln-300"
             >
               {tag}
             </span>
           ))}
           {chunk.user_metadata.tags.length > 3 && (
-            <span className="text-[10px] text-chonk-gray">
+            <span className="text-[10px] text-kiln-500">
               +{chunk.user_metadata.tags.length - 3}
             </span>
           )}
@@ -284,10 +284,10 @@ function ChunkDetail({ chunk, document }: ChunkDetailProps) {
   };
 
   return (
-    <div className="border-t border-chonk-slate bg-surface-bg">
+    <div className="border-t border-kiln-600 bg-kiln-900">
       {/* Header */}
       <button
-        className="w-full px-3 py-2 flex items-center gap-2 text-left hover:bg-surface-card"
+        className="w-full px-3 py-2 flex items-center gap-2 text-left hover:bg-kiln-700"
         onClick={() => setIsExpanded(!isExpanded)}
       >
         {isExpanded ? (
@@ -295,7 +295,7 @@ function ChunkDetail({ chunk, document }: ChunkDetailProps) {
         ) : (
           <ChevronRight size={14} />
         )}
-        <span className="text-xs font-medium text-chonk-light">
+        <span className="text-xs font-medium text-kiln-300">
           Chunk Details
         </span>
       </button>
@@ -305,12 +305,12 @@ function ChunkDetail({ chunk, document }: ChunkDetailProps) {
           {/* Stats */}
           <div className="grid grid-cols-2 gap-2 text-xs">
             <div>
-              <span className="text-chonk-gray">Tokens:</span>
-              <span className="ml-2 text-chonk-white">{chunk.token_count}</span>
+              <span className="text-kiln-500">Tokens:</span>
+              <span className="ml-2 text-kiln-100">{chunk.token_count}</span>
             </div>
             <div>
-              <span className="text-chonk-gray">Quality:</span>
-              <span className="ml-2 text-chonk-white">
+              <span className="text-kiln-500">Quality:</span>
+              <span className="ml-2 text-kiln-100">
                 {Math.round(chunk.quality.overall * 100)}%
               </span>
             </div>
@@ -318,8 +318,8 @@ function ChunkDetail({ chunk, document }: ChunkDetailProps) {
 
           {/* Quality breakdown */}
           {chunk.quality.overall < 0.85 && (
-            <div className="p-2 rounded bg-accent-warning/10 border border-accent-warning/30">
-              <div className="flex items-center gap-2 text-xs text-accent-warning">
+            <div className="p-2 rounded bg-warning/10 border border-warning/30">
+              <div className="flex items-center gap-2 text-xs text-warning">
                 <AlertTriangle size={12} />
                 <span>Quality issues detected</span>
               </div>
@@ -329,18 +329,18 @@ function ChunkDetail({ chunk, document }: ChunkDetailProps) {
           {/* Tags */}
           <div>
             <div className="flex items-center gap-2 mb-2">
-              <Tag size={12} className="text-chonk-gray" />
-              <span className="text-xs text-chonk-gray">Tags</span>
+              <Tag size={12} className="text-kiln-500" />
+              <span className="text-xs text-kiln-500">Tags</span>
             </div>
             <div className="flex flex-wrap gap-1">
               {chunk.user_metadata.tags.map((tag) => (
                 <span
                   key={tag}
-                  className="text-xs px-2 py-0.5 rounded bg-surface-card text-chonk-light flex items-center gap-1"
+                  className="text-xs px-2 py-0.5 rounded bg-kiln-700 text-kiln-300 flex items-center gap-1"
                 >
                   {tag}
                   <button
-                    className="hover:text-accent-error"
+                    className="hover:text-error"
                     onClick={() => handleRemoveTag(tag)}
                   >
                     ×
@@ -349,7 +349,7 @@ function ChunkDetail({ chunk, document }: ChunkDetailProps) {
               ))}
               <input
                 type="text"
-                className="text-xs px-2 py-0.5 w-20 bg-transparent border-b border-chonk-slate text-chonk-white placeholder:text-chonk-gray focus:outline-none focus:border-accent-primary"
+                className="text-xs px-2 py-0.5 w-20 bg-transparent border-b border-kiln-600 text-kiln-100 placeholder:text-kiln-500 focus:outline-none focus:border-ember"
                 placeholder="Add..."
                 value={newTag}
                 onChange={(e) => setNewTag(e.target.value)}
@@ -361,7 +361,7 @@ function ChunkDetail({ chunk, document }: ChunkDetailProps) {
           {/* Actions */}
           <div className="flex gap-2">
             <button
-              className="btn-pixel py-1 px-2 text-xs flex items-center gap-1"
+              className="btn-secondary py-1 px-2 text-xs flex items-center gap-1"
               onClick={handleToggleLock}
             >
               {chunk.is_locked ? (

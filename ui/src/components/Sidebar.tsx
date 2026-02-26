@@ -34,11 +34,11 @@ export function Sidebar() {
   };
 
   return (
-    <div className="h-full bg-surface-panel flex flex-col border-r border-chonk-slate">
+    <div className="h-full bg-kiln-800 flex flex-col border-r border-kiln-600">
       {/* Header */}
       <div className="panel-header flex items-center justify-between">
         <span>Documents</span>
-        <span className="text-chonk-gray">
+        <span className="text-kiln-500">
           {project?.documents.length ?? 0}
         </span>
       </div>
@@ -46,7 +46,7 @@ export function Sidebar() {
       {/* Document list */}
       <div className="flex-1 overflow-y-auto">
         {project?.documents.length === 0 ? (
-          <div className="p-4 text-center text-chonk-gray text-sm">
+          <div className="p-4 text-center text-kiln-500 text-sm">
             <p>No documents yet.</p>
             <p className="mt-2">Click "Add Doc" to get started.</p>
           </div>
@@ -63,8 +63,8 @@ export function Sidebar() {
                     group flex items-center gap-2 px-3 py-2 rounded cursor-pointer
                     transition-colors
                     ${isSelected
-                      ? 'bg-accent-primary/20 text-accent-primary'
-                      : 'hover:bg-surface-card text-chonk-light'
+                      ? 'bg-ember/20 text-ember'
+                      : 'hover:bg-kiln-700 text-kiln-300'
                     }
                   `}
                   onClick={() => selectDocument(doc.id)}
@@ -77,11 +77,11 @@ export function Sidebar() {
                   <span className="flex-1 truncate text-sm" title={filename}>
                     {filename}
                   </span>
-                  <span className="text-xs text-chonk-gray">
+                  <span className="text-xs text-kiln-500">
                     {doc.chunks.length}
                   </span>
                   <button
-                    className="opacity-0 group-hover:opacity-100 p-1 hover:text-accent-error transition-opacity"
+                    className="opacity-0 group-hover:opacity-100 p-1 hover:text-error transition-opacity"
                     onClick={(e) => handleDeleteDocument(e, doc.id)}
                     title="Delete document"
                   >
@@ -95,7 +95,7 @@ export function Sidebar() {
       </div>
 
       {/* Project info */}
-      <div className="border-t border-chonk-slate p-3 text-xs text-chonk-gray">
+      <div className="border-t border-kiln-600 p-3 text-xs text-kiln-500">
         <div className="flex justify-between">
           <span>Chunks</span>
           <span>
