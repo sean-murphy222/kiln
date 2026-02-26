@@ -1,8 +1,13 @@
-"""
-FastAPI server for CHONK.
+"""FastAPI server for CHONK (Quarry document processing).
 
 Provides REST API endpoints for the Electron UI to communicate
-with the Python backend.
+with the Python backend. Endpoints are registered on an ``APIRouter``
+so that the unified ``kiln_server.py`` can mount them under a prefix.
+
+The standalone ``app`` object includes the router directly and can
+still be run independently::
+
+    uvicorn chonk.server:app --reload --port 8420
 """
 
 from __future__ import annotations
@@ -12,7 +17,7 @@ from datetime import datetime
 from pathlib import Path
 from typing import Any
 
-from fastapi import FastAPI, File, HTTPException, UploadFile
+from fastapi import APIRouter, FastAPI, File, HTTPException, UploadFile
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 
@@ -41,14 +46,20 @@ from chonk.loaders import LoaderRegistry
 from chonk.testing import RetrievalTester
 from chonk.utils.quality import QualityAnalyzer
 
-# Initialize FastAPI app
+# ---------------------------------------------------------------------------
+# Router: all Quarry/CHONK endpoints live here so that external apps
+# (e.g. kiln_server.py) can mount them via ``include_router(router)``.
+# ---------------------------------------------------------------------------
+router = APIRouter()
+
+# Initialize standalone FastAPI app (backward-compatible entry point)
 app = FastAPI(
     title="CHONK API",
     description="Visual Document Chunking Studio for RAG Pipelines",
     version="0.1.0",
 )
 
-# Enable CORS for Electron
+# Enable CORS for standalone mode
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"],
@@ -157,7 +168,7 @@ class ProjectCreateRequest(BaseModel):
 # ============================================================================
 
 
-@app.post("/api/project/new")
+@router.post("/api/project/new")
 async def create_project(request: ProjectCreateRequest) -> dict[str, Any]:
     """Create a new project."""
     project = ChonkProject(
@@ -178,7 +189,7 @@ async def create_project(request: ProjectCreateRequest) -> dict[str, Any]:
     }
 
 
-@app.post("/api/project/open")
+@router.post("/api/project/open")
 async def open_project(path: str) -> dict[str, Any]:
     """Open an existing project."""
     try:
@@ -201,7 +212,7 @@ async def open_project(path: str) -> dict[str, Any]:
         raise HTTPException(status_code=400, detail=str(e))
 
 
-@app.post("/api/project/save")
+@router.post("/api/project/save")
 async def save_project(path: str | None = None) -> dict[str, Any]:
     """Save the current project."""
     project = _get_project()
@@ -215,7 +226,7 @@ async def save_project(path: str | None = None) -> dict[str, Any]:
         raise HTTPException(status_code=400, detail=str(e))
 
 
-@app.get("/api/project")
+@router.get("/api/project")
 async def get_project() -> dict[str, Any]:
     """Get current project info."""
     project = _get_project()
@@ -227,7 +238,7 @@ async def get_project() -> dict[str, Any]:
 # ============================================================================
 
 
-@app.post("/api/documents/upload")
+@router.post("/api/documents/upload")
 async def upload_document(
     file: UploadFile = File(...),
     extraction_tier: str | None = None,
@@ -342,7 +353,7 @@ def _extract_with_strategy(
         return extractor.extract(path)
 
 
-@app.get("/api/documents/{document_id}")
+@router.get("/api/documents/{document_id}")
 async def get_document(document_id: str) -> dict[str, Any]:
     """Get a document by ID."""
     project = _get_project()
@@ -352,7 +363,7 @@ async def get_document(document_id: str) -> dict[str, Any]:
     return document.to_dict()
 
 
-@app.delete("/api/documents/{document_id}")
+@router.delete("/api/documents/{document_id}")
 async def delete_document(document_id: str) -> dict[str, Any]:
     """Remove a document from the project."""
     project = _get_project()
@@ -374,7 +385,7 @@ async def delete_document(document_id: str) -> dict[str, Any]:
 # ============================================================================
 
 
-@app.post("/api/documents/{document_id}/rechunk")
+@router.post("/api/documents/{document_id}/rechunk")
 async def rechunk_document(
     document_id: str, config: ChunkConfigRequest
 ) -> dict[str, Any]:
@@ -419,7 +430,7 @@ async def rechunk_document(
     }
 
 
-@app.post("/api/chunks/merge")
+@router.post("/api/chunks/merge")
 async def merge_chunks(request: MergeRequest) -> dict[str, Any]:
     """Merge multiple chunks into one."""
     project = _get_project()
@@ -483,7 +494,7 @@ async def merge_chunks(request: MergeRequest) -> dict[str, Any]:
     return merged_chunk.to_dict()
 
 
-@app.post("/api/chunks/split")
+@router.post("/api/chunks/split")
 async def split_chunk(request: SplitRequest) -> dict[str, Any]:
     """Split a chunk at the specified position."""
     project = _get_project()
@@ -567,7 +578,7 @@ async def split_chunk(request: SplitRequest) -> dict[str, Any]:
     }
 
 
-@app.put("/api/chunks/{chunk_id}")
+@router.put("/api/chunks/{chunk_id}")
 async def update_chunk(chunk_id: str, request: ChunkUpdateRequest) -> dict[str, Any]:
     """Update chunk metadata."""
     project = _get_project()
@@ -601,7 +612,7 @@ async def update_chunk(chunk_id: str, request: ChunkUpdateRequest) -> dict[str, 
 # ============================================================================
 
 
-@app.post("/api/test/search")
+@router.post("/api/test/search")
 async def search_chunks(request: SearchRequest) -> dict[str, Any]:
     """Search chunks with a query."""
     tester: RetrievalTester = _state.get("tester")
@@ -616,7 +627,7 @@ async def search_chunks(request: SearchRequest) -> dict[str, Any]:
     }
 
 
-@app.get("/api/test/status")
+@router.get("/api/test/status")
 async def get_test_status() -> dict[str, Any]:
     """Get indexing status."""
     tester: RetrievalTester = _state.get("tester")
@@ -629,7 +640,7 @@ async def get_test_status() -> dict[str, Any]:
     }
 
 
-@app.post("/api/test/reindex")
+@router.post("/api/test/reindex")
 async def reindex_chunks() -> dict[str, Any]:
     """Force re-indexing of all chunks."""
     project = _get_project()
@@ -643,7 +654,7 @@ async def reindex_chunks() -> dict[str, Any]:
     }
 
 
-@app.post("/api/test-suites")
+@router.post("/api/test-suites")
 async def create_test_suite(name: str) -> dict[str, Any]:
     """Create a new test suite."""
     project = _get_project()
@@ -657,7 +668,7 @@ async def create_test_suite(name: str) -> dict[str, Any]:
     return suite.to_dict()
 
 
-@app.post("/api/test-suites/{suite_id}/queries")
+@router.post("/api/test-suites/{suite_id}/queries")
 async def add_test_query(
     suite_id: str, request: TestQueryRequest
 ) -> dict[str, Any]:
@@ -681,7 +692,7 @@ async def add_test_query(
     return query.to_dict()
 
 
-@app.post("/api/test-suites/{suite_id}/run")
+@router.post("/api/test-suites/{suite_id}/run")
 async def run_test_suite(
     suite_id: str,
     top_k: int = 5,
@@ -703,7 +714,7 @@ async def run_test_suite(
     return report.to_dict()
 
 
-@app.get("/api/test-suites/{suite_id}/coverage")
+@router.get("/api/test-suites/{suite_id}/coverage")
 async def get_coverage(suite_id: str, top_k: int = 5) -> dict[str, Any]:
     """Get coverage analysis for a test suite."""
     project = _get_project()
@@ -724,7 +735,7 @@ async def get_coverage(suite_id: str, top_k: int = 5) -> dict[str, Any]:
 # ============================================================================
 
 
-@app.post("/api/export")
+@router.post("/api/export")
 async def export_chunks(request: ExportRequest) -> dict[str, Any]:
     """Export chunks to file."""
     project = _get_project()
@@ -756,7 +767,7 @@ async def export_chunks(request: ExportRequest) -> dict[str, Any]:
         raise HTTPException(status_code=400, detail=str(e))
 
 
-@app.get("/api/export/formats")
+@router.get("/api/export/formats")
 async def get_export_formats() -> dict[str, Any]:
     """Get available export formats."""
     return {
@@ -769,7 +780,7 @@ async def get_export_formats() -> dict[str, Any]:
 # ============================================================================
 
 
-@app.get("/api/documents/{document_id}/quality")
+@router.get("/api/documents/{document_id}/quality")
 async def get_quality_report(document_id: str) -> dict[str, Any]:
     """Get quality analysis for a document."""
     project = _get_project()
@@ -781,7 +792,7 @@ async def get_quality_report(document_id: str) -> dict[str, Any]:
     return analyzer.analyze_document(document)
 
 
-@app.get("/api/chunks/{chunk_id}/suggestions")
+@router.get("/api/chunks/{chunk_id}/suggestions")
 async def get_chunk_suggestions(chunk_id: str) -> dict[str, Any]:
     """Get improvement suggestions for a chunk."""
     project = _get_project()
@@ -805,7 +816,7 @@ async def get_chunk_suggestions(chunk_id: str) -> dict[str, Any]:
 # ============================================================================
 
 
-@app.get("/api/loaders")
+@router.get("/api/loaders")
 async def get_available_loaders() -> dict[str, Any]:
     """Get available document loaders and supported formats."""
     return {
@@ -813,7 +824,7 @@ async def get_available_loaders() -> dict[str, Any]:
     }
 
 
-@app.get("/api/chunkers")
+@router.get("/api/chunkers")
 async def get_available_chunkers() -> dict[str, Any]:
     """Get available chunking strategies."""
     return {
@@ -821,7 +832,7 @@ async def get_available_chunkers() -> dict[str, Any]:
     }
 
 
-@app.get("/api/health")
+@router.get("/api/health")
 async def health_check() -> dict[str, Any]:
     """Health check endpoint."""
     return {
@@ -830,7 +841,7 @@ async def health_check() -> dict[str, Any]:
     }
 
 
-@app.get("/api/extractors")
+@router.get("/api/extractors")
 async def get_available_extractors() -> dict[str, Any]:
     """Get available extraction tiers and their status."""
     available = get_available_tiers()
@@ -873,13 +884,13 @@ async def get_available_extractors() -> dict[str, Any]:
 # ============================================================================
 
 
-@app.get("/api/settings")
+@router.get("/api/settings")
 async def get_settings() -> dict[str, Any]:
     """Get application settings."""
     return _state["settings"]
 
 
-@app.post("/api/settings")
+@router.post("/api/settings")
 async def save_settings(settings: dict[str, Any]) -> dict[str, Any]:
     """Save application settings."""
     # Update settings, preserving any that weren't sent
@@ -896,7 +907,7 @@ class HierarchyBuildRequest(BaseModel):
     document_id: str
 
 
-@app.post("/api/hierarchy/build")
+@router.post("/api/hierarchy/build")
 async def build_hierarchy(request: HierarchyBuildRequest) -> dict[str, Any]:
     """Build hierarchy tree from document blocks."""
     project = _get_project()
@@ -918,7 +929,7 @@ async def build_hierarchy(request: HierarchyBuildRequest) -> dict[str, Any]:
     return tree.to_dict()
 
 
-@app.get("/api/hierarchy/{document_id}")
+@router.get("/api/hierarchy/{document_id}")
 async def get_hierarchy(document_id: str) -> dict[str, Any]:
     """Get hierarchy tree for a document."""
     project = _get_project()
@@ -939,7 +950,7 @@ async def get_hierarchy(document_id: str) -> dict[str, Any]:
     return tree.to_dict()
 
 
-@app.get("/api/hierarchy/{document_id}/stats")
+@router.get("/api/hierarchy/{document_id}/stats")
 async def get_hierarchy_stats(document_id: str) -> dict[str, Any]:
     """Get hierarchy statistics for a document."""
     project = _get_project()
@@ -976,7 +987,7 @@ class CompareStrategiesRequest(BaseModel):
     strategies: list[dict[str, Any]]
 
 
-@app.post("/api/chunk/compare")
+@router.post("/api/chunk/compare")
 async def compare_strategies(request: CompareStrategiesRequest) -> dict[str, Any]:
     """Compare different chunking strategies."""
     project = _get_project()
@@ -1029,7 +1040,7 @@ class PreviewChunksRequest(BaseModel):
     heading_weight: float = 1.5
 
 
-@app.post("/api/chunk/preview")
+@router.post("/api/chunk/preview")
 async def preview_chunks(request: PreviewChunksRequest) -> dict[str, Any]:
     """Preview chunks without saving them to the document."""
     project = _get_project()
@@ -1083,14 +1094,14 @@ async def preview_chunks(request: PreviewChunksRequest) -> dict[str, Any]:
 # ============================================================================
 
 
-class TestQueryRequest(BaseModel):
+class StrategyTestRequest(BaseModel):
     query: str
     strategies: list[str]
     document_id: str | None = None
 
 
-@app.post("/api/test/query")
-async def test_query(request: TestQueryRequest) -> dict[str, Any]:
+@router.post("/api/test/query")
+async def test_query(request: StrategyTestRequest) -> dict[str, Any]:
     """Test a query against different chunking strategies."""
     project = _get_project()
 
@@ -1171,7 +1182,7 @@ class CompareStrategiesQueryRequest(BaseModel):
     document_id: str | None = None
 
 
-@app.post("/api/test/compare-strategies")
+@router.post("/api/test/compare-strategies")
 async def compare_strategies_query(request: CompareStrategiesQueryRequest) -> dict[str, Any]:
     """Compare strategies across multiple queries."""
     results = []
@@ -1220,7 +1231,7 @@ class DiagnosticRequest(BaseModel):
     top_k: int = 5  # For question testing
 
 
-@app.post("/api/diagnostics/analyze")
+@router.post("/api/diagnostics/analyze")
 async def analyze_chunks(request: DiagnosticRequest) -> dict[str, Any]:
     """
     Run diagnostic analysis on document chunks.
@@ -1266,7 +1277,7 @@ async def analyze_chunks(request: DiagnosticRequest) -> dict[str, Any]:
     return result
 
 
-@app.get("/api/diagnostics/{document_id}/problems")
+@router.get("/api/diagnostics/{document_id}/problems")
 async def get_problems(document_id: str) -> dict[str, Any]:
     """Get all detected problems for a document (static analysis only)."""
     project = _get_project()
@@ -1292,7 +1303,7 @@ class GenerateQuestionsRequest(BaseModel):
     document_id: str
 
 
-@app.post("/api/diagnostics/generate-questions")
+@router.post("/api/diagnostics/generate-questions")
 async def generate_questions(request: GenerateQuestionsRequest) -> dict[str, Any]:
     """Generate diagnostic questions from chunks."""
     project = _get_project()
@@ -1331,7 +1342,7 @@ class TestQuestionsRequest(BaseModel):
     top_k: int = 5
 
 
-@app.post("/api/diagnostics/test-questions")
+@router.post("/api/diagnostics/test-questions")
 async def test_questions(request: TestQuestionsRequest) -> dict[str, Any]:
     """Run question-based diagnostic tests."""
     project = _get_project()
@@ -1364,7 +1375,7 @@ class PreviewFixesRequest(BaseModel):
     auto_resolve_conflicts: bool = True
 
 
-@app.post("/api/diagnostics/preview-fixes")
+@router.post("/api/diagnostics/preview-fixes")
 async def preview_fixes(request: PreviewFixesRequest) -> dict[str, Any]:
     """
     Preview automatic fixes for detected problems.
@@ -1405,7 +1416,7 @@ class ApplyFixesRequest(BaseModel):
     validate: bool = True  # Re-run diagnostics after fixes
 
 
-@app.post("/api/diagnostics/apply-fixes")
+@router.post("/api/diagnostics/apply-fixes")
 async def apply_fixes(request: ApplyFixesRequest) -> dict[str, Any]:
     """
     Apply automatic fixes to document chunks.
@@ -1509,6 +1520,13 @@ def _get_retrieval_tester() -> RetrievalTester:
         tester = RetrievalTester()
         _state["tester"] = tester
     return tester
+
+
+# ============================================================================
+# Mount router on the standalone app (backward compatibility)
+# ============================================================================
+
+app.include_router(router)
 
 
 # ============================================================================

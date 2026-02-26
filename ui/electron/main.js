@@ -40,26 +40,27 @@ function startPythonBackend() {
   // For development, we assume it's started separately
   if (isDev) {
     console.log('Development mode: Python backend should be started separately');
-    console.log('Run: cd quarry && uvicorn chonk.server:app --reload --port 8420');
+    console.log('Run: uvicorn kiln_server:app --reload --port 8420');
+    console.log('  (from the project root, mounts all tools: Quarry, Forge, Foundry, Hearth)');
     return;
   }
 
-  // Production: start bundled Python
+  // Production: start bundled Python (unified Kiln server)
   const pythonPath = path.join(process.resourcesPath, 'python', 'kiln-server');
   pythonProcess = spawn(pythonPath, [], {
     cwd: process.resourcesPath,
   });
 
   pythonProcess.stdout.on('data', (data) => {
-    console.log(`Python: ${data}`);
+    console.log(`Kiln: ${data}`);
   });
 
   pythonProcess.stderr.on('data', (data) => {
-    console.error(`Python Error: ${data}`);
+    console.error(`Kiln Error: ${data}`);
   });
 
   pythonProcess.on('close', (code) => {
-    console.log(`Python process exited with code ${code}`);
+    console.log(`Kiln server exited with code ${code}`);
   });
 }
 

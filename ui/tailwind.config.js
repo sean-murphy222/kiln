@@ -58,38 +58,12 @@ export default {
         'error': '#D45B5B',
         'info': '#5B9BD4',
 
-        // Legacy aliases — remove after Quarry component migration (T-054)
-        'surface': {
-          'bg': '#0C0E12',
-          'panel': '#161921',
-          'card': '#1E222D',
-          'hover': '#2A3040',
-        },
-        'accent': {
-          'primary': '#E8734A',
-          'secondary': '#D4915C',
-          'success': '#5CB87A',
-          'warning': '#E0A84C',
-          'error': '#D45B5B',
-        },
-        'chonk': {
-          'black': '#0C0E12',
-          'white': '#F4F5F8',
-          'light': '#B8C0D0',
-          'gray': '#4A5468',
-          'slate': '#2A3040',
-          'navy': '#1E222D',
-          'sky': '#5B9BD4',
-          'teal': '#6BA089',
-        },
       },
       fontFamily: {
         'display': ['"DM Sans"', 'system-ui', 'sans-serif'],
         'body': ['"IBM Plex Sans"', 'system-ui', 'sans-serif'],
         'mono': ['"IBM Plex Mono"', 'monospace'],
-        // Legacy alias
         'sans': ['"IBM Plex Sans"', 'system-ui', 'sans-serif'],
-        'pixel': ['"IBM Plex Sans"', 'system-ui', 'sans-serif'],
       },
       fontSize: {
         '2xs': ['0.625rem', { lineHeight: '0.875rem' }],
@@ -100,13 +74,6 @@ export default {
         'kiln-lg': '0 4px 16px rgba(0, 0, 0, 0.4)',
         'kiln-glow': '0 0 20px rgba(232, 115, 74, 0.15)',
         'card-edge': 'inset 0 1px 0 rgba(255, 255, 255, 0.04)',
-        // Legacy aliases
-        'pixel': '0 2px 8px rgba(0, 0, 0, 0.3)',
-        'pixel-sm': '0 1px 2px rgba(0, 0, 0, 0.3)',
-        'pixel-inset': 'inset 0 1px 3px rgba(0, 0, 0, 0.2)',
-      },
-      borderWidth: {
-        'pixel': '1px',
       },
       borderRadius: {
         'kiln': '6px',

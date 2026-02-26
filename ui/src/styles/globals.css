@@ -327,46 +327,6 @@ body::before {
   @apply border-t border-kiln-600/50;
 }
 
-/* ============================================
-   Legacy — pixel aliases (remove after T-054)
-   ============================================ */
-
-.pixel-border {
-  @apply border border-kiln-600;
-}
-
-.pixel-shadow {
-  @apply shadow-kiln-sm;
-}
-
-.btn-pixel {
-  @apply btn-secondary;
-}
-
-.btn-pixel-primary {
-  @apply btn-primary;
-}
-
-.btn-pixel-success {
-  @apply btn bg-success/15 text-success border border-success/20;
-  @apply hover:bg-success/25;
-}
-
-.btn-pixel-danger {
-  @apply btn-danger;
-}
-
-.card-pixel {
-  @apply card;
-}
-
-.input-pixel {
-  @apply input-field;
-}
-
-.text-pixel {
-  @apply font-display text-sm;
-}
 
 /* ============================================
    Animations

@@ -27,17 +27,17 @@ const shortcuts: Shortcut[] = [
 export function KeyboardShortcutsModal({ onClose }: KeyboardShortcutsModalProps) {
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60">
-      <div className="card-pixel w-full max-w-md animate-slide-up">
+      <div className="card w-full max-w-md animate-slide-up">
         {/* Header */}
-        <div className="flex items-center justify-between px-4 py-3 border-b border-chonk-slate">
+        <div className="flex items-center justify-between px-4 py-3 border-b border-kiln-600">
           <div className="flex items-center gap-2">
-            <Keyboard size={18} className="text-accent-primary" />
-            <h2 className="text-sm font-medium text-chonk-white">
+            <Keyboard size={18} className="text-ember" />
+            <h2 className="text-sm font-medium text-kiln-100">
               Keyboard Shortcuts
             </h2>
           </div>
           <button
-            className="p-1 text-chonk-gray hover:text-chonk-white"
+            className="p-1 text-kiln-500 hover:text-kiln-100"
             onClick={onClose}
           >
             <X size={18} />
@@ -50,19 +50,19 @@ export function KeyboardShortcutsModal({ onClose }: KeyboardShortcutsModalProps)
             {shortcuts.map((shortcut, index) => (
               <div
                 key={index}
-                className="flex items-center justify-between py-2 px-3 rounded bg-surface-card"
+                className="flex items-center justify-between py-2 px-3 rounded bg-kiln-700"
               >
-                <span className="text-sm text-chonk-light">
+                <span className="text-sm text-kiln-300">
                   {shortcut.description}
                 </span>
                 <div className="flex items-center gap-1">
                   {shortcut.keys.map((key, keyIndex) => (
                     <span key={keyIndex}>
-                      <kbd className="px-2 py-1 text-xs font-mono bg-surface-bg border border-chonk-slate rounded text-chonk-white">
+                      <kbd className="px-2 py-1 text-xs font-mono bg-kiln-900 border border-kiln-600 rounded text-kiln-100">
                         {key}
                       </kbd>
                       {keyIndex < shortcut.keys.length - 1 && (
-                        <span className="text-chonk-gray mx-1">+</span>
+                        <span className="text-kiln-500 mx-1">+</span>
                       )}
                     </span>
                   ))}
@@ -71,14 +71,14 @@ export function KeyboardShortcutsModal({ onClose }: KeyboardShortcutsModalProps)
             ))}
           </div>
 
-          <div className="mt-4 p-3 rounded bg-surface-bg border border-chonk-slate">
-            <p className="text-xs text-chonk-gray">
-              <span className="text-accent-primary">Tip:</span> On macOS, use{' '}
-              <kbd className="px-1 py-0.5 text-[10px] font-mono bg-surface-card border border-chonk-slate rounded">
+          <div className="mt-4 p-3 rounded bg-kiln-900 border border-kiln-600">
+            <p className="text-xs text-kiln-500">
+              <span className="text-ember">Tip:</span> On macOS, use{' '}
+              <kbd className="px-1 py-0.5 text-[10px] font-mono bg-kiln-700 border border-kiln-600 rounded">
                 Cmd
               </kbd>{' '}
               instead of{' '}
-              <kbd className="px-1 py-0.5 text-[10px] font-mono bg-surface-card border border-chonk-slate rounded">
+              <kbd className="px-1 py-0.5 text-[10px] font-mono bg-kiln-700 border border-kiln-600 rounded">
                 Ctrl
               </kbd>
             </p>
@@ -86,8 +86,8 @@ export function KeyboardShortcutsModal({ onClose }: KeyboardShortcutsModalProps)
         </div>
 
         {/* Footer */}
-        <div className="flex items-center justify-end px-4 py-3 border-t border-chonk-slate">
-          <button className="btn-pixel" onClick={onClose}>
+        <div className="flex items-center justify-end px-4 py-3 border-t border-kiln-600">
+          <button className="btn-secondary" onClick={onClose}>
             Close
           </button>
         </div>

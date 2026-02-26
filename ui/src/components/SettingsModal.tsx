@@ -103,15 +103,15 @@ export function SettingsModal({ onClose }: SettingsModalProps) {
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60">
-      <div className="card-pixel w-full max-w-2xl max-h-[80vh] flex flex-col animate-slide-up">
+      <div className="card w-full max-w-2xl max-h-[80vh] flex flex-col animate-slide-up">
         {/* Header */}
-        <div className="flex items-center justify-between px-4 py-3 border-b border-chonk-slate">
+        <div className="flex items-center justify-between px-4 py-3 border-b border-kiln-600">
           <div className="flex items-center gap-2">
-            <Settings size={18} className="text-accent-primary" />
-            <h2 className="text-sm font-medium text-chonk-white">Settings</h2>
+            <Settings size={18} className="text-ember" />
+            <h2 className="text-sm font-medium text-kiln-100">Settings</h2>
           </div>
           <button
-            className="p-1 text-chonk-gray hover:text-chonk-white"
+            className="p-1 text-kiln-500 hover:text-kiln-100"
             onClick={onClose}
           >
             <X size={18} />
@@ -119,7 +119,7 @@ export function SettingsModal({ onClose }: SettingsModalProps) {
         </div>
 
         {/* Tabs */}
-        <div className="flex border-b border-chonk-slate">
+        <div className="flex border-b border-kiln-600">
           {tabs.map((tab) => {
             const Icon = tab.icon;
             return (
@@ -128,8 +128,8 @@ export function SettingsModal({ onClose }: SettingsModalProps) {
                 className={`
                   flex items-center gap-2 px-4 py-2 text-xs font-medium transition-colors
                   ${activeTab === tab.id
-                    ? 'text-accent-primary border-b-2 border-accent-primary'
-                    : 'text-chonk-gray hover:text-chonk-light'
+                    ? 'text-ember border-b-2 border-ember'
+                    : 'text-kiln-500 hover:text-kiln-300'
                   }
                 `}
                 onClick={() => setActiveTab(tab.id)}
@@ -162,19 +162,19 @@ export function SettingsModal({ onClose }: SettingsModalProps) {
         </div>
 
         {/* Footer */}
-        <div className="flex items-center justify-between px-4 py-3 border-t border-chonk-slate">
+        <div className="flex items-center justify-between px-4 py-3 border-t border-kiln-600">
           <button
-            className="text-xs text-chonk-gray hover:text-accent-error"
+            className="text-xs text-kiln-500 hover:text-error"
             onClick={handleReset}
           >
             Reset to Defaults
           </button>
           <div className="flex items-center gap-3">
-            <button className="btn-pixel" onClick={onClose} disabled={isSaving}>
+            <button className="btn-secondary" onClick={onClose} disabled={isSaving}>
               Cancel
             </button>
             <button
-              className="btn-pixel-primary flex items-center gap-2"
+              className="btn-primary flex items-center gap-2"
               onClick={handleSave}
               disabled={isSaving || !hasChanges}
             >
@@ -218,10 +218,10 @@ function ExtractionSettings({
   return (
     <div className="space-y-6">
       <div>
-        <h3 className="text-sm font-medium text-chonk-white mb-4">
+        <h3 className="text-sm font-medium text-kiln-100 mb-4">
           PDF Extraction Engine
         </h3>
-        <p className="text-xs text-chonk-gray mb-4">
+        <p className="text-xs text-kiln-500 mb-4">
           Choose how PDF documents are parsed. Higher tiers provide better
           accuracy for complex documents but may be slower.
         </p>
@@ -233,8 +233,8 @@ function ExtractionSettings({
                 flex items-start gap-3 p-3 rounded transition-colors
                 ${!e.available ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'}
                 ${settings.extraction_tier === e.id
-                  ? 'bg-accent-primary/20 border border-accent-primary'
-                  : 'bg-surface-card border border-transparent hover:border-chonk-slate'
+                  ? 'bg-ember/20 border border-ember'
+                  : 'bg-kiln-700 border border-transparent hover:border-kiln-600'
                 }
               `}
             >
@@ -250,22 +250,22 @@ function ExtractionSettings({
               <div className="flex-1">
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-2">
-                    <span className="text-sm font-medium text-chonk-white">
+                    <span className="text-sm font-medium text-kiln-100">
                       {e.name}
                     </span>
                     {e.tier > 0 && (
-                      <span className="px-1.5 py-0.5 text-[10px] rounded bg-chonk-slate text-chonk-light">
+                      <span className="px-1.5 py-0.5 text-[10px] rounded bg-kiln-600 text-kiln-300">
                         Tier {e.tier}
                       </span>
                     )}
                   </div>
                   {!e.available && e.install_hint && (
-                    <code className="text-[10px] text-accent-secondary bg-surface-bg px-1.5 py-0.5 rounded">
+                    <code className="text-[10px] text-forge-heat bg-kiln-900 px-1.5 py-0.5 rounded">
                       {e.install_hint}
                     </code>
                   )}
                 </div>
-                <div className="text-xs text-chonk-gray mt-1">{e.description}</div>
+                <div className="text-xs text-kiln-500 mt-1">{e.description}</div>
               </div>
             </label>
           ))}
@@ -273,7 +273,7 @@ function ExtractionSettings({
       </div>
 
       <div>
-        <h3 className="text-sm font-medium text-chonk-white mb-4">
+        <h3 className="text-sm font-medium text-kiln-100 mb-4">
           Advanced Options
         </h3>
         <label className="flex items-center gap-3 cursor-pointer">
@@ -281,11 +281,11 @@ function ExtractionSettings({
             type="checkbox"
             checked={settings.extraction_auto_upgrade}
             onChange={(e) => updateSetting('extraction_auto_upgrade', e.target.checked)}
-            className="w-4 h-4 rounded border-chonk-slate bg-surface-bg"
+            className="w-4 h-4 rounded border-kiln-600 bg-kiln-900"
           />
           <div>
-            <span className="text-sm text-chonk-light">Auto-upgrade for complex documents</span>
-            <p className="text-xs text-chonk-gray">
+            <span className="text-sm text-kiln-300">Auto-upgrade for complex documents</span>
+            <p className="text-xs text-kiln-500">
               Automatically use a higher tier when many tables, scanned pages,
               or multi-column layouts are detected.
             </p>
@@ -293,9 +293,9 @@ function ExtractionSettings({
         </label>
       </div>
 
-      <div className="p-3 rounded bg-surface-card border border-chonk-slate">
-        <p className="text-xs text-chonk-gray">
-          <span className="text-accent-primary">Tip:</span> For most documents,
+      <div className="p-3 rounded bg-kiln-700 border border-kiln-600">
+        <p className="text-xs text-kiln-500">
+          <span className="text-ember">Tip:</span> For most documents,
           the Fast tier provides excellent results. Use Enhanced or AI tiers
           for academic papers, scanned documents, or complex table-heavy PDFs.
         </p>
@@ -326,7 +326,7 @@ function ChunkingSettings({ settings, updateSetting }: SettingsSectionProps) {
   return (
     <div className="space-y-6">
       <div>
-        <h3 className="text-sm font-medium text-chonk-white mb-4">
+        <h3 className="text-sm font-medium text-kiln-100 mb-4">
           Default Chunking Strategy
         </h3>
         <div className="space-y-2">
@@ -336,8 +336,8 @@ function ChunkingSettings({ settings, updateSetting }: SettingsSectionProps) {
               className={`
                 flex items-start gap-3 p-3 rounded cursor-pointer transition-colors
                 ${settings.default_chunker === c.id
-                  ? 'bg-accent-primary/20 border border-accent-primary'
-                  : 'bg-surface-card border border-transparent hover:border-chonk-slate'
+                  ? 'bg-ember/20 border border-ember'
+                  : 'bg-kiln-700 border border-transparent hover:border-kiln-600'
                 }
               `}
             >
@@ -350,8 +350,8 @@ function ChunkingSettings({ settings, updateSetting }: SettingsSectionProps) {
                 className="mt-1"
               />
               <div>
-                <div className="text-sm font-medium text-chonk-white">{c.name}</div>
-                <div className="text-xs text-chonk-gray">{c.description}</div>
+                <div className="text-sm font-medium text-kiln-100">{c.name}</div>
+                <div className="text-xs text-kiln-500">{c.description}</div>
               </div>
             </label>
           ))}
@@ -359,17 +359,17 @@ function ChunkingSettings({ settings, updateSetting }: SettingsSectionProps) {
       </div>
 
       <div>
-        <h3 className="text-sm font-medium text-chonk-white mb-4">
+        <h3 className="text-sm font-medium text-kiln-100 mb-4">
           Default Token Settings
         </h3>
         <div className="grid grid-cols-2 gap-4">
           <div>
-            <label className="block text-xs text-chonk-gray mb-2">
+            <label className="block text-xs text-kiln-500 mb-2">
               Target Tokens
             </label>
             <input
               type="number"
-              className="input-pixel"
+              className="input-field"
               value={settings.default_target_tokens}
               onChange={(e) =>
                 updateSetting('default_target_tokens', parseInt(e.target.value) || 400)
@@ -377,17 +377,17 @@ function ChunkingSettings({ settings, updateSetting }: SettingsSectionProps) {
               min={50}
               max={2000}
             />
-            <p className="text-[10px] text-chonk-slate mt-1">
+            <p className="text-[10px] text-kiln-600 mt-1">
               Ideal chunk size (200-500 recommended)
             </p>
           </div>
           <div>
-            <label className="block text-xs text-chonk-gray mb-2">
+            <label className="block text-xs text-kiln-500 mb-2">
               Max Tokens
             </label>
             <input
               type="number"
-              className="input-pixel"
+              className="input-field"
               value={settings.default_max_tokens}
               onChange={(e) =>
                 updateSetting('default_max_tokens', parseInt(e.target.value) || 600)
@@ -395,15 +395,15 @@ function ChunkingSettings({ settings, updateSetting }: SettingsSectionProps) {
               min={100}
               max={4000}
             />
-            <p className="text-[10px] text-chonk-slate mt-1">Maximum chunk size</p>
+            <p className="text-[10px] text-kiln-600 mt-1">Maximum chunk size</p>
           </div>
           <div>
-            <label className="block text-xs text-chonk-gray mb-2">
+            <label className="block text-xs text-kiln-500 mb-2">
               Min Tokens
             </label>
             <input
               type="number"
-              className="input-pixel"
+              className="input-field"
               value={settings.default_min_tokens}
               onChange={(e) =>
                 updateSetting('default_min_tokens', parseInt(e.target.value) || 100)
@@ -411,17 +411,17 @@ function ChunkingSettings({ settings, updateSetting }: SettingsSectionProps) {
               min={10}
               max={500}
             />
-            <p className="text-[10px] text-chonk-slate mt-1">
+            <p className="text-[10px] text-kiln-600 mt-1">
               Merge chunks smaller than this
             </p>
           </div>
           <div>
-            <label className="block text-xs text-chonk-gray mb-2">
+            <label className="block text-xs text-kiln-500 mb-2">
               Overlap Tokens
             </label>
             <input
               type="number"
-              className="input-pixel"
+              className="input-field"
               value={settings.default_overlap_tokens}
               onChange={(e) =>
                 updateSetting('default_overlap_tokens', parseInt(e.target.value) || 50)
@@ -429,7 +429,7 @@ function ChunkingSettings({ settings, updateSetting }: SettingsSectionProps) {
               min={0}
               max={200}
             />
-            <p className="text-[10px] text-chonk-slate mt-1">
+            <p className="text-[10px] text-kiln-600 mt-1">
               Content shared between chunks
             </p>
           </div>
@@ -464,7 +464,7 @@ function EmbeddingSettings({ settings, updateSetting }: SettingsSectionProps) {
   return (
     <div className="space-y-6">
       <div>
-        <h3 className="text-sm font-medium text-chonk-white mb-4">
+        <h3 className="text-sm font-medium text-kiln-100 mb-4">
           Embedding Model
         </h3>
         <div className="space-y-2">
@@ -474,8 +474,8 @@ function EmbeddingSettings({ settings, updateSetting }: SettingsSectionProps) {
               className={`
                 flex items-start gap-3 p-3 rounded cursor-pointer transition-colors
                 ${settings.embedding_model === m.id
-                  ? 'bg-accent-primary/20 border border-accent-primary'
-                  : 'bg-surface-card border border-transparent hover:border-chonk-slate'
+                  ? 'bg-ember/20 border border-ember'
+                  : 'bg-kiln-700 border border-transparent hover:border-kiln-600'
                 }
               `}
             >
@@ -489,12 +489,12 @@ function EmbeddingSettings({ settings, updateSetting }: SettingsSectionProps) {
               />
               <div className="flex-1">
                 <div className="flex items-center justify-between">
-                  <span className="text-sm font-medium text-chonk-white">
+                  <span className="text-sm font-medium text-kiln-100">
                     {m.name}
                   </span>
-                  <span className="text-[10px] text-chonk-slate">{m.size}</span>
+                  <span className="text-[10px] text-kiln-600">{m.size}</span>
                 </div>
-                <div className="text-xs text-chonk-gray">{m.description}</div>
+                <div className="text-xs text-kiln-500">{m.description}</div>
               </div>
             </label>
           ))}
@@ -502,16 +502,16 @@ function EmbeddingSettings({ settings, updateSetting }: SettingsSectionProps) {
       </div>
 
       <div>
-        <h3 className="text-sm font-medium text-chonk-white mb-4">
+        <h3 className="text-sm font-medium text-kiln-100 mb-4">
           Performance
         </h3>
         <div>
-          <label className="block text-xs text-chonk-gray mb-2">
+          <label className="block text-xs text-kiln-500 mb-2">
             Batch Size
           </label>
           <input
             type="number"
-            className="input-pixel w-32"
+            className="input-field w-32"
             value={settings.embedding_batch_size}
             onChange={(e) =>
               updateSetting('embedding_batch_size', parseInt(e.target.value) || 32)
@@ -519,15 +519,15 @@ function EmbeddingSettings({ settings, updateSetting }: SettingsSectionProps) {
             min={1}
             max={128}
           />
-          <p className="text-[10px] text-chonk-slate mt-1">
+          <p className="text-[10px] text-kiln-600 mt-1">
             Number of chunks to embed at once. Higher = faster but uses more memory.
           </p>
         </div>
       </div>
 
-      <div className="p-3 rounded bg-surface-card border border-chonk-slate">
-        <p className="text-xs text-chonk-gray">
-          <span className="text-accent-primary">Note:</span> Changing the embedding
+      <div className="p-3 rounded bg-kiln-700 border border-kiln-600">
+        <p className="text-xs text-kiln-500">
+          <span className="text-ember">Note:</span> Changing the embedding
           model will require re-embedding all chunks. This may take a while for
           large projects.
         </p>
@@ -540,7 +540,7 @@ function AppearanceSettings({ settings, updateSetting }: SettingsSectionProps) {
   return (
     <div className="space-y-6">
       <div>
-        <h3 className="text-sm font-medium text-chonk-white mb-4">
+        <h3 className="text-sm font-medium text-kiln-100 mb-4">
           Theme
         </h3>
         <div className="flex gap-3">
@@ -548,8 +548,8 @@ function AppearanceSettings({ settings, updateSetting }: SettingsSectionProps) {
             className={`
               flex-1 p-4 rounded cursor-pointer text-center transition-colors
               ${settings.theme === 'dark'
-                ? 'bg-accent-primary/20 border-2 border-accent-primary'
-                : 'bg-surface-card border-2 border-transparent hover:border-chonk-slate'
+                ? 'bg-ember/20 border-2 border-ember'
+                : 'bg-kiln-700 border-2 border-transparent hover:border-kiln-600'
               }
             `}
           >
@@ -561,15 +561,15 @@ function AppearanceSettings({ settings, updateSetting }: SettingsSectionProps) {
               onChange={(e) => updateSetting('theme', e.target.value)}
               className="sr-only"
             />
-            <div className="w-12 h-8 mx-auto mb-2 rounded bg-chonk-black border border-chonk-slate" />
-            <span className="text-sm text-chonk-light">Dark</span>
+            <div className="w-12 h-8 mx-auto mb-2 rounded bg-kiln-950 border border-kiln-600" />
+            <span className="text-sm text-kiln-300">Dark</span>
           </label>
           <label
             className={`
               flex-1 p-4 rounded cursor-pointer text-center transition-colors opacity-50
               ${settings.theme === 'light'
-                ? 'bg-accent-primary/20 border-2 border-accent-primary'
-                : 'bg-surface-card border-2 border-transparent'
+                ? 'bg-ember/20 border-2 border-ember'
+                : 'bg-kiln-700 border-2 border-transparent'
               }
             `}
             title="Coming soon"
@@ -582,13 +582,13 @@ function AppearanceSettings({ settings, updateSetting }: SettingsSectionProps) {
               className="sr-only"
             />
             <div className="w-12 h-8 mx-auto mb-2 rounded bg-gray-200 border border-gray-300" />
-            <span className="text-sm text-chonk-gray">Light (Soon)</span>
+            <span className="text-sm text-kiln-500">Light (Soon)</span>
           </label>
         </div>
       </div>
 
       <div>
-        <h3 className="text-sm font-medium text-chonk-white mb-4">
+        <h3 className="text-sm font-medium text-kiln-100 mb-4">
           Quality Indicators
         </h3>
         <label className="flex items-center gap-3 cursor-pointer">
@@ -596,11 +596,11 @@ function AppearanceSettings({ settings, updateSetting }: SettingsSectionProps) {
             type="checkbox"
             checked={settings.show_quality_warnings}
             onChange={(e) => updateSetting('show_quality_warnings', e.target.checked)}
-            className="w-4 h-4 rounded border-chonk-slate bg-surface-bg"
+            className="w-4 h-4 rounded border-kiln-600 bg-kiln-900"
           />
           <div>
-            <span className="text-sm text-chonk-light">Show quality warnings</span>
-            <p className="text-xs text-chonk-gray">
+            <span className="text-sm text-kiln-300">Show quality warnings</span>
+            <p className="text-xs text-kiln-500">
               Display warnings for chunks with low quality scores
             </p>
           </div>
@@ -608,7 +608,7 @@ function AppearanceSettings({ settings, updateSetting }: SettingsSectionProps) {
       </div>
 
       <div>
-        <h3 className="text-sm font-medium text-chonk-white mb-4">
+        <h3 className="text-sm font-medium text-kiln-100 mb-4">
           Auto-Save
         </h3>
         <label className="flex items-center gap-3 cursor-pointer">
@@ -616,13 +616,13 @@ function AppearanceSettings({ settings, updateSetting }: SettingsSectionProps) {
             type="checkbox"
             checked={settings.auto_save}
             onChange={(e) => updateSetting('auto_save', e.target.checked)}
-            className="w-4 h-4 rounded border-chonk-slate bg-surface-bg"
+            className="w-4 h-4 rounded border-kiln-600 bg-kiln-900"
           />
           <div>
-            <span className="text-sm text-chonk-light">
+            <span className="text-sm text-kiln-300">
               Automatically save project changes
             </span>
-            <p className="text-xs text-chonk-gray">
+            <p className="text-xs text-kiln-500">
               Save changes automatically when editing chunks or metadata
             </p>
           </div>

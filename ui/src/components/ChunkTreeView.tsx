@@ -91,27 +91,27 @@ function TreeNode({
       {/* Section Header (if not root) */}
       {label && (
         <div
-          className="flex items-center gap-2 py-2 px-2 cursor-pointer hover:bg-surface-bg transition-colors"
+          className="flex items-center gap-2 py-2 px-2 cursor-pointer hover:bg-kiln-900 transition-colors"
           style={{ paddingLeft: `${indent}px` }}
           onClick={() => setExpanded(!expanded)}
         >
           {hasChildren ? (
             expanded ? (
-              <ChevronDown size={16} className="text-accent-primary flex-shrink-0" />
+              <ChevronDown size={16} className="text-ember flex-shrink-0" />
             ) : (
-              <ChevronRight size={16} className="text-chonk-gray flex-shrink-0" />
+              <ChevronRight size={16} className="text-kiln-500 flex-shrink-0" />
             )
           ) : (
             <div className="w-4" />
           )}
 
-          <Layers size={14} className="text-accent-primary flex-shrink-0" />
+          <Layers size={14} className="text-ember flex-shrink-0" />
 
-          <span className="text-sm font-bold text-chonk-light flex-1 min-w-0">
+          <span className="text-sm font-bold text-kiln-300 flex-1 min-w-0">
             {label}
           </span>
 
-          <span className="text-xs text-chonk-gray flex-shrink-0">
+          <span className="text-xs text-kiln-500 flex-shrink-0">
             {totalChunks} {totalChunks === 1 ? 'chunk' : 'chunks'}
           </span>
         </div>
@@ -130,24 +130,24 @@ function TreeNode({
                 className={`
                   flex items-start gap-2 py-2 px-2 cursor-pointer transition-colors
                   ${isSelected
-                    ? 'bg-accent-primary/10 border-l-4 border-accent-primary'
-                    : 'hover:bg-surface-bg border-l-4 border-transparent'
+                    ? 'bg-ember/10 border-l-4 border-ember'
+                    : 'hover:bg-kiln-900 border-l-4 border-transparent'
                   }
                 `}
                 style={{ paddingLeft: `${indent + 24}px` }}
               >
-                <FileText size={14} className="text-chonk-gray flex-shrink-0 mt-0.5" />
+                <FileText size={14} className="text-kiln-500 flex-shrink-0 mt-0.5" />
 
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center gap-2 mb-1">
-                    <span className="text-xs font-bold text-accent-primary">
+                    <span className="text-xs font-bold text-ember">
                       Chunk {index + 1}
                     </span>
-                    <span className="text-xs text-chonk-gray">
+                    <span className="text-xs text-kiln-500">
                       {chunk.token_count} tokens
                     </span>
                   </div>
-                  <p className="text-xs text-chonk-light line-clamp-2">
+                  <p className="text-xs text-kiln-300 line-clamp-2">
                     {chunk.content}
                   </p>
                 </div>
@@ -180,28 +180,28 @@ export function ChunkTreeView({ chunks, onSelectChunk, selectedChunkId }: ChunkT
   const hasHierarchy = chunks.some(c => c.hierarchy_path);
 
   return (
-    <div className="h-full flex flex-col bg-surface-bg">
+    <div className="h-full flex flex-col bg-kiln-900">
       {/* Header */}
-      <div className="border-b-2 border-black p-4 bg-surface-panel">
-        <h2 className="text-pixel text-lg text-chonk-light mb-3">
+      <div className="border-b-2 border-black p-4 bg-kiln-800">
+        <h2 className="text-pixel text-lg text-kiln-300 mb-3">
           {hasHierarchy ? 'DOCUMENT STRUCTURE' : 'DOCUMENT CHUNKS'}
         </h2>
 
         {/* Stats */}
         <div className="grid grid-cols-3 gap-3 mb-3">
-          <div className="bg-surface-bg border border-black p-2">
-            <div className="text-xs text-chonk-gray mb-1">Total Chunks</div>
-            <div className="text-pixel text-xl text-chonk-light">{chunks.length}</div>
+          <div className="bg-kiln-900 border border-black p-2">
+            <div className="text-xs text-kiln-500 mb-1">Total Chunks</div>
+            <div className="text-pixel text-xl text-kiln-300">{chunks.length}</div>
           </div>
 
-          <div className="bg-surface-bg border border-black p-2">
-            <div className="text-xs text-chonk-gray mb-1">Avg Tokens</div>
-            <div className="text-pixel text-xl text-chonk-light">{avgTokens}</div>
+          <div className="bg-kiln-900 border border-black p-2">
+            <div className="text-xs text-kiln-500 mb-1">Avg Tokens</div>
+            <div className="text-pixel text-xl text-kiln-300">{avgTokens}</div>
           </div>
 
-          <div className="bg-surface-bg border border-black p-2">
-            <div className="text-xs text-chonk-gray mb-1">Total Tokens</div>
-            <div className="text-pixel text-xl text-chonk-light">{totalTokens.toLocaleString()}</div>
+          <div className="bg-kiln-900 border border-black p-2">
+            <div className="text-xs text-kiln-500 mb-1">Total Tokens</div>
+            <div className="text-pixel text-xl text-kiln-300">{totalTokens.toLocaleString()}</div>
           </div>
         </div>
 
@@ -243,20 +243,20 @@ export function ChunkTreeView({ chunks, onSelectChunk, selectedChunkId }: ChunkT
                   className={`
                     border-2 p-3 cursor-pointer transition-colors
                     ${isSelected
-                      ? 'border-accent-primary bg-accent-primary/10'
-                      : 'border-black bg-surface-panel hover:bg-surface-bg'
+                      ? 'border-ember bg-ember/10'
+                      : 'border-black bg-kiln-800 hover:bg-kiln-900'
                     }
                   `}
                 >
                   <div className="flex items-center justify-between mb-2">
-                    <span className="text-xs font-bold text-accent-primary">
+                    <span className="text-xs font-bold text-ember">
                       Chunk {index + 1}
                     </span>
-                    <span className="text-xs text-chonk-gray">
+                    <span className="text-xs text-kiln-500">
                       {chunk.token_count} tokens
                     </span>
                   </div>
-                  <p className="text-sm text-chonk-light line-clamp-3">
+                  <p className="text-sm text-kiln-300 line-clamp-3">
                     {chunk.content}
                   </p>
                 </div>

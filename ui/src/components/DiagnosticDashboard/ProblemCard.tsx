@@ -55,8 +55,8 @@ export function ProblemCard({ problem, chunk, isSelected, onClick }: ProblemCard
       onClick={onClick}
       className={`
         border-2 border-black p-3 cursor-pointer
-        hover:bg-surface-bg transition-colors
-        ${isSelected ? 'bg-accent-primary/10' : 'bg-surface-bg'}
+        hover:bg-kiln-900 transition-colors
+        ${isSelected ? 'bg-ember/10' : 'bg-kiln-900'}
       `}
     >
       <div className="flex items-start justify-between mb-2">
@@ -72,14 +72,14 @@ export function ProblemCard({ problem, chunk, isSelected, onClick }: ProblemCard
           {problem.severity.toUpperCase()}
         </div>
       </div>
-      <p className="text-xs text-chonk-gray mb-2">{problem.description}</p>
+      <p className="text-xs text-kiln-500 mb-2">{problem.description}</p>
       {chunk && (
-        <p className="text-xs text-chonk-gray truncate">
+        <p className="text-xs text-kiln-500 truncate">
           Chunk: {chunk.content.substring(0, 60)}...
         </p>
       )}
       {problem.suggestedFix && (
-        <div className="mt-2 pt-2 border-t border-chonk-gray/20">
+        <div className="mt-2 pt-2 border-t border-kiln-500/20">
           <p className="text-xs text-green-400">
             <span className="font-bold">Suggested Fix:</span> {problem.suggestedFix}
           </p>

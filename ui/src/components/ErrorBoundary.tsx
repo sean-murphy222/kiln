@@ -49,18 +49,18 @@ export class ErrorBoundary extends Component<Props, State> {
       }
 
       return (
-        <div className="h-screen flex items-center justify-center bg-surface-bg p-8">
-          <div className="card-pixel max-w-lg w-full">
+        <div className="h-screen flex items-center justify-center bg-kiln-900 p-8">
+          <div className="card max-w-lg w-full">
             {/* Header */}
-            <div className="flex items-center gap-3 p-4 border-b border-chonk-slate">
-              <div className="w-10 h-10 rounded-full bg-accent-error/20 flex items-center justify-center">
-                <AlertTriangle className="text-accent-error" size={24} />
+            <div className="flex items-center gap-3 p-4 border-b border-kiln-600">
+              <div className="w-10 h-10 rounded-full bg-error/20 flex items-center justify-center">
+                <AlertTriangle className="text-error" size={24} />
               </div>
               <div>
-                <h1 className="text-lg font-bold text-chonk-white">
+                <h1 className="text-lg font-bold text-kiln-100">
                   Something went wrong
                 </h1>
-                <p className="text-sm text-chonk-gray">
+                <p className="text-sm text-kiln-500">
                   CHONK encountered an unexpected error
                 </p>
               </div>
@@ -69,8 +69,8 @@ export class ErrorBoundary extends Component<Props, State> {
             {/* Error details */}
             <div className="p-4 space-y-4">
               {this.state.error && (
-                <div className="p-3 rounded bg-surface-bg border border-accent-error/30">
-                  <p className="text-xs font-mono text-accent-error break-all">
+                <div className="p-3 rounded bg-kiln-900 border border-error/30">
+                  <p className="text-xs font-mono text-error break-all">
                     {this.state.error.message}
                   </p>
                 </div>
@@ -78,18 +78,18 @@ export class ErrorBoundary extends Component<Props, State> {
 
               {this.state.errorInfo && (
                 <details className="group">
-                  <summary className="flex items-center gap-2 text-xs text-chonk-gray cursor-pointer hover:text-chonk-light">
+                  <summary className="flex items-center gap-2 text-xs text-kiln-500 cursor-pointer hover:text-kiln-300">
                     <Bug size={14} />
                     <span>Technical details</span>
                   </summary>
-                  <pre className="mt-2 p-2 rounded bg-surface-bg text-[10px] font-mono text-chonk-gray overflow-auto max-h-48">
+                  <pre className="mt-2 p-2 rounded bg-kiln-900 text-[10px] font-mono text-kiln-500 overflow-auto max-h-48">
                     {this.state.errorInfo.componentStack}
                   </pre>
                 </details>
               )}
 
-              <div className="p-3 rounded bg-surface-card">
-                <p className="text-sm text-chonk-light">
+              <div className="p-3 rounded bg-kiln-700">
+                <p className="text-sm text-kiln-300">
                   Your work should be safe. Try refreshing the page or restarting the app.
                   If the problem persists, please report it.
                 </p>
@@ -97,24 +97,24 @@ export class ErrorBoundary extends Component<Props, State> {
             </div>
 
             {/* Actions */}
-            <div className="flex items-center justify-between p-4 border-t border-chonk-slate">
+            <div className="flex items-center justify-between p-4 border-t border-kiln-600">
               <a
                 href="https://github.com/anthropics/claude-code/issues"
                 target="_blank"
                 rel="noopener noreferrer"
-                className="text-xs text-chonk-gray hover:text-accent-primary"
+                className="text-xs text-kiln-500 hover:text-ember"
               >
                 Report issue
               </a>
               <div className="flex gap-2">
                 <button
-                  className="btn-pixel flex items-center gap-2"
+                  className="btn-secondary flex items-center gap-2"
                   onClick={this.handleReset}
                 >
                   Try again
                 </button>
                 <button
-                  className="btn-pixel-primary flex items-center gap-2"
+                  className="btn-primary flex items-center gap-2"
                   onClick={this.handleReload}
                 >
                   <RefreshCw size={14} />

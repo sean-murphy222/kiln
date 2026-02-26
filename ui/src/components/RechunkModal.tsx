@@ -66,17 +66,17 @@ export function RechunkModal({
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60">
-      <div className="card-pixel w-full max-w-lg animate-slide-up">
+      <div className="card w-full max-w-lg animate-slide-up">
         {/* Header */}
-        <div className="flex items-center justify-between px-4 py-3 border-b border-chonk-slate">
+        <div className="flex items-center justify-between px-4 py-3 border-b border-kiln-600">
           <div className="flex items-center gap-2">
-            <Sliders size={18} className="text-accent-primary" />
-            <h2 className="text-sm font-medium text-chonk-white">
+            <Sliders size={18} className="text-ember" />
+            <h2 className="text-sm font-medium text-kiln-100">
               Rechunk Document
             </h2>
           </div>
           <button
-            className="p-1 text-chonk-gray hover:text-chonk-white"
+            className="p-1 text-kiln-500 hover:text-kiln-100"
             onClick={onClose}
           >
             <X size={18} />
@@ -85,14 +85,14 @@ export function RechunkModal({
 
         {/* Content */}
         <div className="p-4 space-y-6">
-          <p className="text-sm text-chonk-gray">
+          <p className="text-sm text-kiln-500">
             Adjust chunking settings for{' '}
-            <span className="text-chonk-white">{documentName}</span>
+            <span className="text-kiln-100">{documentName}</span>
           </p>
 
           {/* Chunker selection */}
           <div>
-            <label className="block text-xs text-chonk-gray mb-2">
+            <label className="block text-xs text-kiln-500 mb-2">
               Chunking Strategy
             </label>
             <div className="space-y-2">
@@ -102,8 +102,8 @@ export function RechunkModal({
                   className={`
                     flex items-start gap-3 p-3 rounded cursor-pointer transition-colors
                     ${chunker === c.id
-                      ? 'bg-accent-primary/20 border border-accent-primary'
-                      : 'bg-surface-card border border-transparent hover:border-chonk-slate'
+                      ? 'bg-ember/20 border border-ember'
+                      : 'bg-kiln-700 border border-transparent hover:border-kiln-600'
                     }
                   `}
                 >
@@ -116,10 +116,10 @@ export function RechunkModal({
                     className="mt-1"
                   />
                   <div>
-                    <div className="text-sm font-medium text-chonk-white">
+                    <div className="text-sm font-medium text-kiln-100">
                       {c.name}
                     </div>
-                    <div className="text-xs text-chonk-gray">{c.description}</div>
+                    <div className="text-xs text-kiln-500">{c.description}</div>
                   </div>
                 </label>
               ))}
@@ -129,87 +129,87 @@ export function RechunkModal({
           {/* Token settings */}
           <div className="grid grid-cols-2 gap-4">
             <div>
-              <label className="block text-xs text-chonk-gray mb-2">
+              <label className="block text-xs text-kiln-500 mb-2">
                 Target Tokens
               </label>
               <input
                 type="number"
-                className="input-pixel"
+                className="input-field"
                 value={targetTokens}
                 onChange={(e) => setTargetTokens(parseInt(e.target.value) || 400)}
                 min={50}
                 max={2000}
               />
-              <p className="text-[10px] text-chonk-slate mt-1">
+              <p className="text-[10px] text-kiln-600 mt-1">
                 Ideal chunk size (200-500 recommended)
               </p>
             </div>
             <div>
-              <label className="block text-xs text-chonk-gray mb-2">
+              <label className="block text-xs text-kiln-500 mb-2">
                 Max Tokens
               </label>
               <input
                 type="number"
-                className="input-pixel"
+                className="input-field"
                 value={maxTokens}
                 onChange={(e) => setMaxTokens(parseInt(e.target.value) || 600)}
                 min={100}
                 max={4000}
               />
-              <p className="text-[10px] text-chonk-slate mt-1">
+              <p className="text-[10px] text-kiln-600 mt-1">
                 Maximum chunk size
               </p>
             </div>
             <div>
-              <label className="block text-xs text-chonk-gray mb-2">
+              <label className="block text-xs text-kiln-500 mb-2">
                 Min Tokens
               </label>
               <input
                 type="number"
-                className="input-pixel"
+                className="input-field"
                 value={minTokens}
                 onChange={(e) => setMinTokens(parseInt(e.target.value) || 100)}
                 min={10}
                 max={500}
               />
-              <p className="text-[10px] text-chonk-slate mt-1">
+              <p className="text-[10px] text-kiln-600 mt-1">
                 Merge chunks smaller than this
               </p>
             </div>
             <div>
-              <label className="block text-xs text-chonk-gray mb-2">
+              <label className="block text-xs text-kiln-500 mb-2">
                 Overlap Tokens
               </label>
               <input
                 type="number"
-                className="input-pixel"
+                className="input-field"
                 value={overlapTokens}
                 onChange={(e) => setOverlapTokens(parseInt(e.target.value) || 50)}
                 min={0}
                 max={200}
               />
-              <p className="text-[10px] text-chonk-slate mt-1">
+              <p className="text-[10px] text-kiln-600 mt-1">
                 Content shared between chunks
               </p>
             </div>
           </div>
 
           {/* Warning about locked chunks */}
-          <div className="p-3 rounded bg-surface-card border border-chonk-slate">
-            <p className="text-xs text-chonk-gray">
-              <span className="text-accent-warning">Note:</span> Locked chunks
+          <div className="p-3 rounded bg-kiln-700 border border-kiln-600">
+            <p className="text-xs text-kiln-500">
+              <span className="text-warning">Note:</span> Locked chunks
               will be preserved and re-added after rechunking.
             </p>
           </div>
         </div>
 
         {/* Footer */}
-        <div className="flex items-center justify-end gap-3 px-4 py-3 border-t border-chonk-slate">
-          <button className="btn-pixel" onClick={onClose} disabled={isSubmitting}>
+        <div className="flex items-center justify-end gap-3 px-4 py-3 border-t border-kiln-600">
+          <button className="btn-secondary" onClick={onClose} disabled={isSubmitting}>
             Cancel
           </button>
           <button
-            className="btn-pixel-primary flex items-center gap-2"
+            className="btn-primary flex items-center gap-2"
             onClick={handleRechunk}
             disabled={isSubmitting}
           >

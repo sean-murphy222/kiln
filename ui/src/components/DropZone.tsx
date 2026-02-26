@@ -111,21 +111,21 @@ export function DropZone({ children }: DropZoneProps) {
 
       {/* Drag overlay */}
       {isDragging && (
-        <div className="absolute inset-0 z-50 bg-surface-bg/90 flex items-center justify-center">
-          <div className="card-pixel p-8 text-center animate-pulse-pixel">
-            <Upload size={48} className="mx-auto mb-4 text-accent-primary" />
-            <p className="text-lg text-chonk-white mb-2">Drop files to upload</p>
-            <p className="text-sm text-chonk-gray">PDF, DOCX, MD, TXT</p>
+        <div className="absolute inset-0 z-50 bg-kiln-900/90 flex items-center justify-center">
+          <div className="card p-8 text-center animate-pulse-pixel">
+            <Upload size={48} className="mx-auto mb-4 text-ember" />
+            <p className="text-lg text-kiln-100 mb-2">Drop files to upload</p>
+            <p className="text-sm text-kiln-500">PDF, DOCX, MD, TXT</p>
           </div>
         </div>
       )}
 
       {/* Upload progress overlay */}
       {isUploading && (
-        <div className="absolute inset-0 z-50 bg-surface-bg/90 flex items-center justify-center">
-          <div className="card-pixel p-8 text-center">
-            <div className="w-12 h-12 mx-auto mb-4 border-4 border-accent-primary border-t-transparent rounded-full animate-spin" />
-            <p className="text-chonk-white">{uploadProgress || 'Processing...'}</p>
+        <div className="absolute inset-0 z-50 bg-kiln-900/90 flex items-center justify-center">
+          <div className="card p-8 text-center">
+            <div className="w-12 h-12 mx-auto mb-4 border-4 border-ember border-t-transparent rounded-full animate-spin" />
+            <p className="text-kiln-100">{uploadProgress || 'Processing...'}</p>
           </div>
         </div>
       )}

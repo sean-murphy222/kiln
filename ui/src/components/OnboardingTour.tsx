@@ -81,16 +81,16 @@ export function OnboardingTour({ onComplete, onSkip }: OnboardingTourProps) {
 
   return (
     <div className="fixed inset-0 z-50 bg-black/80 flex items-center justify-center p-4">
-      <div className="bg-surface-panel border-4 border-accent-primary rounded-lg shadow-2xl max-w-2xl w-full">
+      <div className="bg-kiln-800 border-4 border-ember rounded-lg shadow-2xl max-w-2xl w-full">
         {/* Header */}
-        <div className="border-b-2 border-black p-4 flex items-center justify-between bg-gradient-to-r from-accent-primary/20 to-transparent">
+        <div className="border-b-2 border-black p-4 flex items-center justify-between bg-gradient-to-r from-ember/20 to-transparent">
           <div className="flex items-center gap-3">
             <span className="text-3xl">{step.icon}</span>
-            <h2 className="text-pixel text-xl text-chonk-light">{step.title}</h2>
+            <h2 className="text-pixel text-xl text-kiln-300">{step.title}</h2>
           </div>
           <button
             onClick={onSkip}
-            className="text-chonk-gray hover:text-chonk-light transition-colors"
+            className="text-kiln-500 hover:text-kiln-300 transition-colors"
             title="Skip tour"
           >
             <X size={24} />
@@ -99,7 +99,7 @@ export function OnboardingTour({ onComplete, onSkip }: OnboardingTourProps) {
 
         {/* Content */}
         <div className="p-8">
-          <p className="text-lg text-chonk-light leading-relaxed mb-6">
+          <p className="text-lg text-kiln-300 leading-relaxed mb-6">
             {step.description}
           </p>
 
@@ -111,10 +111,10 @@ export function OnboardingTour({ onComplete, onSkip }: OnboardingTourProps) {
                 onClick={() => setCurrentStep(index)}
                 className={`w-3 h-3 rounded-full transition-all ${
                   index === currentStep
-                    ? 'bg-accent-primary w-8'
+                    ? 'bg-ember w-8'
                     : index < currentStep
                     ? 'bg-green-400'
-                    : 'bg-chonk-gray'
+                    : 'bg-kiln-500'
                 }`}
                 title={`Step ${index + 1}`}
               />
@@ -122,13 +122,13 @@ export function OnboardingTour({ onComplete, onSkip }: OnboardingTourProps) {
           </div>
 
           {/* Step counter */}
-          <div className="text-center text-sm text-chonk-gray mb-6">
+          <div className="text-center text-sm text-kiln-500 mb-6">
             Step {currentStep + 1} of {TOUR_STEPS.length}
           </div>
         </div>
 
         {/* Footer */}
-        <div className="border-t-2 border-black p-4 flex items-center justify-between bg-surface-bg">
+        <div className="border-t-2 border-black p-4 flex items-center justify-between bg-kiln-900">
           <button
             onClick={handlePrevious}
             disabled={currentStep === 0}
@@ -142,7 +142,7 @@ export function OnboardingTour({ onComplete, onSkip }: OnboardingTourProps) {
           <div className="flex items-center gap-3">
             <button
               onClick={onSkip}
-              className="text-sm text-chonk-gray hover:text-chonk-light transition-colors"
+              className="text-sm text-kiln-500 hover:text-kiln-300 transition-colors"
             >
               Skip Tour
             </button>

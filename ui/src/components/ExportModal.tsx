@@ -67,17 +67,17 @@ export function ExportModal({ documentId, documentName, onClose }: ExportModalPr
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60">
-      <div className="card-pixel w-full max-w-md animate-slide-up">
+      <div className="card w-full max-w-md animate-slide-up">
         {/* Header */}
-        <div className="flex items-center justify-between px-4 py-3 border-b border-chonk-slate">
+        <div className="flex items-center justify-between px-4 py-3 border-b border-kiln-600">
           <div className="flex items-center gap-2">
-            <Download size={18} className="text-accent-primary" />
-            <h2 className="text-sm font-medium text-chonk-white">
+            <Download size={18} className="text-ember" />
+            <h2 className="text-sm font-medium text-kiln-100">
               Export Chunks
             </h2>
           </div>
           <button
-            className="p-1 text-chonk-gray hover:text-chonk-white"
+            className="p-1 text-kiln-500 hover:text-kiln-100"
             onClick={onClose}
           >
             <X size={18} />
@@ -86,11 +86,11 @@ export function ExportModal({ documentId, documentName, onClose }: ExportModalPr
 
         {/* Content */}
         <div className="p-4 space-y-4">
-          <p className="text-sm text-chonk-gray">
+          <p className="text-sm text-kiln-500">
             {documentId ? (
               <>
                 Export chunks from{' '}
-                <span className="text-chonk-white">{documentName}</span>
+                <span className="text-kiln-100">{documentName}</span>
               </>
             ) : (
               'Export all chunks from the project'
@@ -107,8 +107,8 @@ export function ExportModal({ documentId, documentName, onClose }: ExportModalPr
                   className={`
                     flex items-center gap-3 p-3 rounded cursor-pointer transition-colors
                     ${format === f.id
-                      ? 'bg-accent-primary/20 border border-accent-primary'
-                      : 'bg-surface-card border border-transparent hover:border-chonk-slate'
+                      ? 'bg-ember/20 border border-ember'
+                      : 'bg-kiln-700 border border-transparent hover:border-kiln-600'
                     }
                   `}
                 >
@@ -122,25 +122,25 @@ export function ExportModal({ documentId, documentName, onClose }: ExportModalPr
                   />
                   <Icon
                     size={20}
-                    className={format === f.id ? 'text-accent-primary' : 'text-chonk-gray'}
+                    className={format === f.id ? 'text-ember' : 'text-kiln-500'}
                   />
                   <div className="flex-1">
-                    <div className="text-sm font-medium text-chonk-white">
+                    <div className="text-sm font-medium text-kiln-100">
                       {f.name}
                     </div>
-                    <div className="text-xs text-chonk-gray">{f.description}</div>
+                    <div className="text-xs text-kiln-500">{f.description}</div>
                   </div>
-                  <span className="text-xs text-chonk-slate">{f.extension}</span>
+                  <span className="text-xs text-kiln-600">{f.extension}</span>
                 </label>
               );
             })}
           </div>
 
           {/* Export info */}
-          <div className="p-3 rounded bg-surface-card">
-            <div className="text-xs text-chonk-gray">
+          <div className="p-3 rounded bg-kiln-700">
+            <div className="text-xs text-kiln-500">
               <p className="mb-1">Export includes:</p>
-              <ul className="list-disc list-inside space-y-0.5 text-chonk-light">
+              <ul className="list-disc list-inside space-y-0.5 text-kiln-300">
                 <li>Chunk content and metadata</li>
                 <li>Quality scores</li>
                 <li>User tags and notes</li>
@@ -151,12 +151,12 @@ export function ExportModal({ documentId, documentName, onClose }: ExportModalPr
         </div>
 
         {/* Footer */}
-        <div className="flex items-center justify-end gap-3 px-4 py-3 border-t border-chonk-slate">
-          <button className="btn-pixel" onClick={onClose} disabled={isExporting}>
+        <div className="flex items-center justify-end gap-3 px-4 py-3 border-t border-kiln-600">
+          <button className="btn-secondary" onClick={onClose} disabled={isExporting}>
             Cancel
           </button>
           <button
-            className="btn-pixel-primary flex items-center gap-2"
+            className="btn-primary flex items-center gap-2"
             onClick={handleExport}
             disabled={isExporting}
           >
