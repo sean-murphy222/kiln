@@ -1,55 +1,91 @@
-import { Hammer, BookOpen, Target, FileCheck, Users } from 'lucide-react';
-import { ToolHeader } from '@/components/shell/ToolHeader';
+import {
+  Hammer,
+  BookOpen,
+  Target,
+  FileCheck,
+  AlertTriangle,
+} from "lucide-react";
+import { cn } from "@/lib/cn";
+import { useForgeStore } from "@/store/useForgeStore";
+import type { ForgeView } from "@/store/useForgeStore";
+import { ToolHeader } from "@/components/shell/ToolHeader";
+import { DisciplineList } from "./DisciplineList";
+import { DiscoveryWizard } from "./DiscoveryWizard";
+import { CompetencyTree } from "./CompetencyTree";
+import { ExampleList } from "./ExampleList";
+import { ConsistencyReport } from "./ConsistencyReport";
+
+const VIEW_TABS: { id: ForgeView; label: string; icon: typeof BookOpen }[] = [
+  { id: "discovery", label: "Discovery", icon: BookOpen },
+  { id: "competencies", label: "Competencies", icon: Target },
+  { id: "examples", label: "Examples", icon: FileCheck },
+  { id: "consistency", label: "Consistency", icon: AlertTriangle },
+];
+
+const VIEW_COMPONENTS: Record<ForgeView, React.ComponentType> = {
+  discovery: DiscoveryWizard,
+  competencies: CompetencyTree,
+  examples: ExampleList,
+  consistency: ConsistencyReport,
+};
 
 export function ForgeLayout() {
+  const { activeView, setActiveView, selectedDisciplineId, disciplines } =
+    useForgeStore();
+  const selectedDiscipline = disciplines.find(
+    (d) => d.id === selectedDisciplineId,
+  );
+  const ActiveComponent = VIEW_COMPONENTS[activeView];
+
   return (
     <div className="flex flex-col h-full">
       <ToolHeader
         icon={Hammer}
         title="Forge"
         color="#D4915C"
+        breadcrumb={
+          selectedDiscipline
+            ? [
+                selectedDiscipline.name,
+                VIEW_TABS.find((t) => t.id === activeView)?.label ?? "",
+              ]
+            : undefined
+        }
       />
 
-      <div className="flex-1 flex items-center justify-center">
-        <div className="text-center max-w-md animate-fade-in">
-          <div
-            className="w-16 h-16 rounded-2xl mx-auto mb-6 flex items-center justify-center"
-            style={{ background: 'rgba(212, 145, 92, 0.08)' }}
-          >
-            <Hammer size={28} className="text-forge-heat" strokeWidth={1.5} />
-          </div>
+      <div className="flex-1 flex overflow-hidden">
+        {/* Left sidebar: Discipline list */}
+        <DisciplineList />
 
-          <h2 className="font-display text-xl font-semibold text-kiln-200 mb-2">
-            Curriculum Builder
-          </h2>
-          <p className="text-sm text-kiln-400 mb-8 leading-relaxed">
-            Guide domain experts through creating human-validated training data.
-            Discipline-level methodology with multi-contributor support.
-          </p>
+        {/* Right: Tab bar + active view */}
+        <div className="flex-1 flex flex-col min-w-0">
+          {/* Tab bar */}
+          {selectedDisciplineId && (
+            <div className="flex items-center gap-0.5 px-4 py-1.5 border-b border-kiln-600 bg-kiln-800/30">
+              {VIEW_TABS.map((tab) => {
+                const isActive = activeView === tab.id;
+                const TabIcon = tab.icon;
+                return (
+                  <button
+                    key={tab.id}
+                    onClick={() => setActiveView(tab.id)}
+                    className={cn(
+                      "flex items-center gap-1.5 px-3 py-1.5 rounded-kiln text-xs font-medium transition-all duration-150",
+                      isActive
+                        ? "bg-forge-heat-faint text-forge-heat"
+                        : "text-kiln-400 hover:text-kiln-200 hover:bg-kiln-700/50",
+                    )}
+                  >
+                    <TabIcon size={13} />
+                    {tab.label}
+                  </button>
+                );
+              })}
+            </div>
+          )}
 
-          <div className="grid grid-cols-2 gap-3 text-left">
-            {[
-              { icon: BookOpen, label: 'Discovery Interview', desc: 'Map discipline structure' },
-              { icon: Target, label: 'Competency Mapping', desc: 'Define skill coverage' },
-              { icon: FileCheck, label: 'Example Elicitation', desc: 'Gather training pairs' },
-              { icon: Users, label: 'Multi-Contributor', desc: 'Consistency checking' },
-            ].map(({ icon: Icon, label, desc }) => (
-              <div
-                key={label}
-                className="card p-3 flex items-start gap-3"
-              >
-                <Icon size={16} className="text-forge-heat mt-0.5 flex-shrink-0" strokeWidth={1.5} />
-                <div>
-                  <div className="text-xs font-medium text-kiln-200">{label}</div>
-                  <div className="text-2xs text-kiln-500">{desc}</div>
-                </div>
-              </div>
-            ))}
-          </div>
-
-          <p className="text-2xs text-kiln-600 mt-8">
-            Backend API required — Sprint 13
-          </p>
+          {/* Active view */}
+          <ActiveComponent />
         </div>
       </div>
     </div>
