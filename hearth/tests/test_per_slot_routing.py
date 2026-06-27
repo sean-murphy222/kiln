@@ -172,6 +172,24 @@ def test_real_query_does_not_bleed_into_mock_slot() -> None:
     assert engine.query(QueryRequest(query="q", slot_id="mock")).answer == "MOCK"
 
 
+def test_real_load_without_model_path_reuses_shared(monkeypatch: pytest.MonkeyPatch) -> None:
+    """A slot with no distinct model_path/lora_path is READY without loading its
+    own backend, so queries reuse the server's default model (no double VRAM)."""
+    monkeypatch.setenv("KILN_INFERENCE_BACKEND", "transformers")
+
+    def _must_not_load(**kwargs):
+        raise AssertionError("build_inference should not be called for a slot with no model_path")
+
+    monkeypatch.setattr("foundry.src.inference_factory.build_inference", _must_not_load)
+    mgr = ModelManager()
+    mgr.register_slot("s1", "A", "llama")  # no model_path / lora_path
+
+    slot = mgr.load_model("s1")
+
+    assert slot.status == ModelStatus.READY
+    assert mgr.get_backend("s1") is None
+
+
 def test_concurrent_queries_do_not_cross_contaminate(monkeypatch: pytest.MonkeyPatch) -> None:
     """Under concurrency, each slot's query is answered by its own model.
 
