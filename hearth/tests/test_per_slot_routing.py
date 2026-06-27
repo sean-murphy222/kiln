@@ -8,6 +8,8 @@ real loader (build_inference) is mocked so these run without a GPU.
 
 from __future__ import annotations
 
+from concurrent.futures import ThreadPoolExecutor
+
 import pytest
 
 from foundry.src import backend_config as bc
@@ -168,6 +170,32 @@ def test_real_query_does_not_bleed_into_mock_slot() -> None:
     assert engine.query(QueryRequest(query="q", slot_id="real")).answer == "REAL-ANSWER"
     # The mock slot must fall back to the default model, not the real one.
     assert engine.query(QueryRequest(query="q", slot_id="mock")).answer == "MOCK"
+
+
+def test_concurrent_queries_do_not_cross_contaminate(monkeypatch: pytest.MonkeyPatch) -> None:
+    """Under concurrency, each slot's query is answered by its own model.
+
+    Regression for the shared-pipeline race: without the lock, a mock-slot query
+    running while a real-slot query holds the swapped model could be answered by
+    the real model. The lock serializes the swap+generate so this can't happen.
+    """
+    mgr = ModelManager()
+    mgr.register_slot("real", "R", "llama")
+    mgr.register_slot("mock", "M", "llama")
+    mgr.load_model("real")
+    mgr.load_model("mock")
+    mgr._backends["real"] = FakeBackend(answer="REAL")  # mixed: real cached for one slot
+    engine = HearthEngine(model_manager=mgr, rag_pipeline=_pipeline())
+
+    def ask(slot_id: str) -> str:
+        return engine.query(QueryRequest(query="q", slot_id=slot_id)).answer
+
+    slots = ["real", "mock"] * 25
+    with ThreadPoolExecutor(max_workers=8) as pool:
+        answers = list(pool.map(ask, slots))
+
+    paired = list(zip(slots, answers, strict=True))
+    assert all(ans == ("REAL" if slot == "real" else "MOCK") for slot, ans in paired)
 
 
 @pytest.mark.gpu
