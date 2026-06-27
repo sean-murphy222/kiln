@@ -202,43 +202,23 @@ def _mount_hearth() -> None:
 
 
 def _create_default_rag_pipeline() -> Any:
-    """Create a default RAGPipeline for the Hearth engine.
+    """Create the default RAGPipeline for the Hearth engine.
 
     Uses the configured inference backend (MockInference by default; a real
-    transformers backend when KILN_INFERENCE_BACKEND=transformers) and a no-op
-    retrieval adapter so the server starts without requiring model weights.
+    transformers backend when KILN_INFERENCE_BACKEND=transformers) and the real
+    Quarry retrieval adapter, which reads the live in-memory chunk index the
+    Quarry upload flow populates (empty until a document is indexed, so the
+    server still starts cleanly with no documents).
 
     Returns:
         A RAGPipeline configured from environment settings.
     """
     from foundry.src.inference_factory import build_inference
     from foundry.src.rag_integration import RAGPipeline
-
-    class _StubRetrieval:
-        """Retrieval adapter that returns no results.
-
-        Satisfies the ``RetrievalAdapter`` protocol. Used as a
-        placeholder until Quarry documents are indexed.
-        """
-
-        def retrieve(
-            self,
-            query: str,
-            filters: dict[str, Any] | None = None,
-        ) -> list[dict[str, Any]]:
-            """Return an empty result set.
-
-            Args:
-                query: The search query (unused).
-                filters: Optional metadata filters (unused).
-
-            Returns:
-                Empty list.
-            """
-            return []
+    from kiln_retrieval import RealQuarryRetrievalAdapter
 
     model = build_inference(default_response="I don't know.")
-    retrieval = _StubRetrieval()
+    retrieval = RealQuarryRetrievalAdapter()
     return RAGPipeline(model=model, retrieval=retrieval)
 
 
