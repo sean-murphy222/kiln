@@ -89,6 +89,19 @@ _state: dict[str, Any] = {
 }
 
 
+def get_active_tester() -> RetrievalTester | None:
+    """Return the live in-memory retrieval index, or None if not initialized.
+
+    Exposes the same ``RetrievalTester`` the upload/index endpoints populate so
+    other tools in the unified server (notably Hearth's RAG retrieval) can search
+    the current chunk corpus without reaching into private module state.
+
+    Returns:
+        The active RetrievalTester, or None if no project has been indexed yet.
+    """
+    return _state.get("tester")
+
+
 # ============================================================================
 # Pydantic Models for API
 # ============================================================================
