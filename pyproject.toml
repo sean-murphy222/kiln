@@ -53,6 +53,7 @@ dependencies = [
 dev = [
     "pytest>=7.4.0",
     "pytest-asyncio>=0.23.0",
+    "pytest-xdist>=3.0",
     "black>=24.0.0",
     "ruff>=0.1.0",
     "mypy>=1.8.0",
@@ -125,6 +126,9 @@ warn_unused_ignores = true
 
 [tool.pytest.ini_options]
 asyncio_mode = "auto"
+# Run tests in parallel across CPU cores so the full suite finishes well within
+# the end-of-turn quality-gate budget. Pass `-n0` to disable (e.g. GPU tests).
+addopts = "-n auto"
 markers = [
     "gpu: requires a real model + GPU; skipped unless KILN_RUN_GPU_TESTS=1",
 ]

@@ -147,3 +147,7 @@ playwright-report/
 # Local runtime state / vendored orchestrator tooling
 .orchestrator/
 .claude/orchestrator/
+
+# Scratch UI screenshots / captures
+test-*.png
+ui-*.png

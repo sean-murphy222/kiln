@@ -7,6 +7,24 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added - Real Model Execution (Foundry/Hearth)
+- Real `transformers` + `peft` inference backend behind the existing
+  `ModelInference` seam, selected via `KILN_INFERENCE_BACKEND=transformers`
+  (mock remains the default). bf16 by default; optional 4-bit via `KILN_LOAD_4BIT`.
+- Real `peft` + `trl` LoRA training backend behind a new `TrainingBackend`
+  Protocol, selected via `FOUNDRY_TRAINING_BACKEND=real` (dry-run remains the
+  default). Writes a loadable PEFT adapter; per-family LoRA target modules.
+- Hearth per-slot real-model routing with single-resident VRAM eviction (opt-in).
+- `EmbeddingSimilarityScorer` (cached all-MiniLM-L6-v2) for robust evaluation.
+- `[inference]`, `[training]`, and `[quant]` dependency extras; a `gpu` pytest
+  marker (those tests skipped unless `KILN_RUN_GPU_TESTS=1`).
+- Validated on an RTX 5080 (Blackwell): real Qwen2.5-0.5B inference and a real
+  LoRA fine-tune producing a loadable, reloadable adapter.
+
+### Changed
+- Migrated deprecated `[tool.ruff]` config to `[tool.ruff.lint]` and resolved
+  source lint findings.
+
 ### MVP Roadmap
 - Phase 1 (Sprints 1-3): Quarry Completion
 - Phase 2 (Sprints 4-7): Forge Core Framework
