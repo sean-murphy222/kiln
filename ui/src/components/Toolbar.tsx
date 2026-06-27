@@ -37,7 +37,10 @@ export function Toolbar() {
 
   // Handle file upload
   const handleUpload = useCallback(async () => {
-    if (!window.electronAPI) {
+    // Use the web file input when not in Electron, OR when the Electron preload
+    // bridge lacks readFile (e.g. a renderer hot-reloaded against a stale
+    // preload). The <input type=file> path works in both browser and Electron.
+    if (!window.electronAPI?.readFile) {
       // Web fallback - use file input
       const input = document.createElement("input");
       input.type = "file";
