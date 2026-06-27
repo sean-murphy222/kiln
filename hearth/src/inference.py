@@ -27,6 +27,7 @@ Example::
 
 from __future__ import annotations
 
+import threading
 import time
 import uuid
 from dataclasses import dataclass
@@ -705,6 +706,9 @@ class HearthEngine:
         self._pipeline = rag_pipeline
         # The pipeline's default model, restored when a slot has no real backend.
         self._default_model = getattr(rag_pipeline, "_model", None)
+        # Serializes the shared-pipeline model swap + generation + history write
+        # so concurrent slot queries (threadpool workers) don't race.
+        self._lock = threading.Lock()
         self._conversations: dict[str, Conversation] = {}
         self._feedback: dict[str, list[FeedbackSignal]] = {}
 
@@ -721,27 +725,31 @@ class HearthEngine:
             InferenceError: If the slot is not found or not ready.
         """
         self._validate_slot_ready(request.slot_id)
-        # Route generation to the slot's real model when one is loaded; restore
-        # the default model otherwise, so a real model never bleeds into a
-        # subsequent mock/unloaded-slot query.
-        backend = self._manager.get_backend(request.slot_id)
-        self._pipeline._model = backend if backend is not None else self._default_model
-        start = time.monotonic()
-        rag_response = self._pipeline.query(request.query)
-        latency_ms = (time.monotonic() - start) * 1000
+        # Hold the lock across the shared-pipeline model swap, generation, and
+        # history write so concurrent queries cannot interleave (which would let
+        # one slot's model answer another slot's query).
+        with self._lock:
+            # Route generation to the slot's real model when one is loaded;
+            # restore the default otherwise, so a real model never bleeds into a
+            # subsequent mock/unloaded-slot query.
+            backend = self._manager.get_backend(request.slot_id)
+            self._pipeline._model = backend if backend is not None else self._default_model
+            start = time.monotonic()
+            rag_response = self._pipeline.query(request.query)
+            latency_ms = (time.monotonic() - start) * 1000
 
-        citations = self._build_citations_for_request(rag_response, request)
-        conversation_id = self._ensure_conversation(request)
-        self._record_turn(conversation_id, request, rag_response, citations)
+            citations = self._build_citations_for_request(rag_response, request)
+            conversation_id = self._ensure_conversation(request)
+            self._record_turn(conversation_id, request, rag_response, citations)
 
-        return QueryResponse(
-            answer=rag_response.answer,
-            citations=citations,
-            conversation_id=conversation_id,
-            model_used=rag_response.model_name,
-            latency_ms=latency_ms,
-            chunk_count=len(rag_response.context_used),
-        )
+            return QueryResponse(
+                answer=rag_response.answer,
+                citations=citations,
+                conversation_id=conversation_id,
+                model_used=rag_response.model_name,
+                latency_ms=latency_ms,
+                chunk_count=len(rag_response.context_used),
+            )
 
     def multi_discipline_query(
         self,

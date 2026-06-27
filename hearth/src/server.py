@@ -19,6 +19,7 @@ import logging
 from typing import Any
 
 from fastapi import APIRouter, HTTPException
+from fastapi.concurrency import run_in_threadpool
 from pydantic import BaseModel, Field
 
 from hearth.src.feedback import (
@@ -287,7 +288,7 @@ async def load_model(model_id: str) -> dict[str, Any]:
     """
     try:
         engine = get_engine()
-        slot = engine._manager.load_model(model_id)
+        slot = await run_in_threadpool(engine._manager.load_model, model_id)
         return slot.to_dict()
     except InferenceError as exc:
         raise HTTPException(status_code=404, detail=str(exc)) from exc
@@ -370,7 +371,7 @@ async def query(request: QueryRequestBody) -> dict[str, Any]:
             max_context_chunks=request.max_context_chunks,
             include_citations=request.include_citations,
         )
-        response = engine.query(qr)
+        response = await run_in_threadpool(engine.query, qr)
         return response.to_dict()
     except InferenceError as exc:
         raise HTTPException(status_code=422, detail=str(exc)) from exc
@@ -395,7 +396,8 @@ async def multi_discipline_query(
     """
     try:
         engine = get_engine()
-        responses = engine.multi_discipline_query(
+        responses = await run_in_threadpool(
+            engine.multi_discipline_query,
             query=request.query,
             slot_ids=request.slot_ids,
         )

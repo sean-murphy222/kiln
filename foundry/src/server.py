@@ -18,6 +18,7 @@ from pathlib import Path
 from typing import Any
 
 from fastapi import APIRouter, HTTPException
+from fastapi.concurrency import run_in_threadpool
 from pydantic import BaseModel, Field
 
 from foundry.src import backend_config
@@ -593,21 +594,22 @@ async def run_evaluation(request: EvaluationRunRequest) -> dict[str, Any]:
     """
     try:
         runner = EvaluationRunner()
-        test_set_path = Path(request.test_set_path)
-        test_cases = runner.load_test_cases(test_set_path)
+        test_cases = runner.load_test_cases(Path(request.test_set_path))
 
-        model = _get_inference_model()
-        report = runner.run_evaluation(
-            model=model,
-            test_cases=test_cases,
-            competency_names=request.competency_names,
-            model_name=request.model_name,
-            discipline_id=request.discipline_id,
-        )
+        def _run() -> Any:
+            # Model load + generation are blocking/CPU-GPU-bound; keep them off
+            # the event loop so the server stays responsive under real models.
+            model = _get_inference_model()
+            return runner.run_evaluation(
+                model=model,
+                test_cases=test_cases,
+                competency_names=request.competency_names,
+                model_name=request.model_name,
+                discipline_id=request.discipline_id,
+            )
 
-        history = _get_evaluation_history()
-        history.save_report(report)
-
+        report = await run_in_threadpool(_run)
+        _get_evaluation_history().save_report(report)
         return report.to_dict()
     except EvaluationError as exc:
         raise HTTPException(status_code=400, detail=str(exc)) from exc
