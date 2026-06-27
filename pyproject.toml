@@ -78,6 +78,27 @@ all-extractors = [
     "docling>=2.0.0",
     "layoutparser>=0.3.4",
 ]
+# Foundry/Hearth: real model inference (transformers + peft). bf16 by default.
+inference = [
+    "transformers>=4.56",
+    "accelerate>=1.0",
+    "peft>=0.13",
+    "safetensors>=0.4",
+    "sentencepiece>=0.2",
+    "einops>=0.8",
+]
+# Foundry: real LoRA fine-tuning (peft + trl + datasets).
+training = [
+    "peft>=0.13",
+    "trl>=0.12,<0.20",
+    "datasets>=3.0",
+    "accelerate>=1.0",
+]
+# Optional 4-bit quantization. Opt-in via KILN_LOAD_4BIT=1.
+# May be unavailable on some platforms (e.g. Blackwell/sm_120 + Windows); bf16 is the default.
+quant = [
+    "bitsandbytes>=0.45",
+]
 
 [project.scripts]
 chonk = "chonk.cli:main"
@@ -104,5 +125,8 @@ warn_unused_ignores = true
 
 [tool.pytest.ini_options]
 asyncio_mode = "auto"
+markers = [
+    "gpu: requires a real model + GPU; skipped unless KILN_RUN_GPU_TESTS=1",
+]
 testpaths = ["quarry/tests", "forge/tests", "foundry/tests", "tests/integration", "shared/tests", "hearth/tests"]
 norecursedirs = ["scripts/archive-old-chonk", "scripts/archive*", "*.egg", ".eggs", "dist", "build", "docs", ".tox", ".git", "__pycache__"]

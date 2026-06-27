@@ -204,13 +204,14 @@ def _mount_hearth() -> None:
 def _create_default_rag_pipeline() -> Any:
     """Create a default RAGPipeline for the Hearth engine.
 
-    Uses MockInference and a no-op retrieval adapter so that the
-    server can start without real model weights.
+    Uses the configured inference backend (MockInference by default; a real
+    transformers backend when KILN_INFERENCE_BACKEND=transformers) and a no-op
+    retrieval adapter so the server starts without requiring model weights.
 
     Returns:
-        A RAGPipeline configured with stub components.
+        A RAGPipeline configured from environment settings.
     """
-    from foundry.src.evaluation import MockInference
+    from foundry.src.inference_factory import build_inference
     from foundry.src.rag_integration import RAGPipeline
 
     class _StubRetrieval:
@@ -236,7 +237,7 @@ def _create_default_rag_pipeline() -> Any:
             """
             return []
 
-    model = MockInference(default_response="I don't know.")
+    model = build_inference(default_response="I don't know.")
     retrieval = _StubRetrieval()
     return RAGPipeline(model=model, retrieval=retrieval)
 

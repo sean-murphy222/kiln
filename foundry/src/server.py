@@ -29,8 +29,8 @@ from foundry.src.evaluation import (
     EvaluationError,
     EvaluationHistory,
     EvaluationRunner,
-    MockInference,
 )
+from foundry.src.inference_factory import build_inference
 from foundry.src.merging import (
     AdapterInfo,
     MergeConfig,
@@ -556,7 +556,9 @@ async def list_training_runs(
 async def run_evaluation(request: EvaluationRunRequest) -> dict[str, Any]:
     """Run a competency-based evaluation.
 
-    Uses MockInference in MVP mode. Loads test cases from a
+    Uses the configured inference backend (MockInference by default; a real
+    transformers backend when KILN_INFERENCE_BACKEND=transformers, optionally
+    with a LoRA adapter from KILN_ADAPTER_PATH). Loads test cases from a
     Forge-exported JSONL file and produces an SME-friendly report.
 
     Args:
@@ -570,7 +572,7 @@ async def run_evaluation(request: EvaluationRunRequest) -> dict[str, Any]:
         test_set_path = Path(request.test_set_path)
         test_cases = runner.load_test_cases(test_set_path)
 
-        model = MockInference(default_response="I don't know.")
+        model = build_inference(default_response="I don't know.")
         report = runner.run_evaluation(
             model=model,
             test_cases=test_cases,
