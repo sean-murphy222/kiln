@@ -1,5 +1,6 @@
 const { app, BrowserWindow, ipcMain, dialog } = require("electron");
 const path = require("path");
+const fs = require("fs");
 const { spawn } = require("child_process");
 
 let mainWindow;
@@ -83,6 +84,23 @@ ipcMain.handle("dialog:openFile", async () => {
     ],
   });
   return result;
+});
+
+ipcMain.handle("file:read", async (_event, filePath) => {
+  const data = await fs.promises.readFile(filePath);
+  const ext = path.extname(filePath).toLowerCase();
+  const mimeByExt = {
+    ".pdf": "application/pdf",
+    ".docx":
+      "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+    ".md": "text/markdown",
+    ".txt": "text/plain",
+  };
+  return {
+    name: path.basename(filePath),
+    data: data.toString("base64"),
+    mimeType: mimeByExt[ext] || "application/octet-stream",
+  };
 });
 
 ipcMain.handle("dialog:openProject", async () => {

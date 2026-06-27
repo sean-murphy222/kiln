@@ -17,6 +17,9 @@ declare global {
   interface Window {
     electronAPI?: {
       openFile: () => Promise<{ canceled: boolean; filePaths: string[] }>;
+      readFile: (
+        filePath: string,
+      ) => Promise<{ name: string; data: string; mimeType: string }>;
       openProject: () => Promise<{ canceled: boolean; filePaths: string[] }>;
       saveFile: (
         defaultPath?: string,
