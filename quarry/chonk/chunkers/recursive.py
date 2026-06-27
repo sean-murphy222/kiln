@@ -7,11 +7,10 @@ progressively smaller separators to split text.
 
 from __future__ import annotations
 
-import re
 from typing import ClassVar
 
+from chonk.chunkers.base import BaseChunker, ChunkerRegistry
 from chonk.core.document import Block, BlockType, Chunk
-from chonk.chunkers.base import BaseChunker, ChunkerConfig, ChunkerRegistry
 
 
 @ChunkerRegistry.register

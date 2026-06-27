@@ -96,7 +96,7 @@ class MarkdownLoader(BaseLoader):
         for line in frontmatter_text.split("\n"):
             if ":" in line:
                 key, value = line.split(":", 1)
-                result[key.strip()] = value.strip().strip('"\'')
+                result[key.strip()] = value.strip().strip("\"'")
 
         return result
 
@@ -155,9 +155,7 @@ class MarkdownLoader(BaseLoader):
 
         return None, 0
 
-    def _process_heading(
-        self, tokens: list[Token], index: int
-    ) -> tuple[Block | None, int]:
+    def _process_heading(self, tokens: list[Token], index: int) -> tuple[Block | None, int]:
         """Process a heading token group."""
         open_token = tokens[index]
         level = int(open_token.tag[1])  # h1 -> 1, h2 -> 2, etc.
@@ -178,9 +176,7 @@ class MarkdownLoader(BaseLoader):
             2,
         )
 
-    def _process_paragraph(
-        self, tokens: list[Token], index: int
-    ) -> tuple[Block | None, int]:
+    def _process_paragraph(self, tokens: list[Token], index: int) -> tuple[Block | None, int]:
         """Process a paragraph token group."""
         # Get inline content
         inline_token = tokens[index + 1]
@@ -232,8 +228,6 @@ class MarkdownLoader(BaseLoader):
         self, tokens: list[Token], index: int, ordered: bool
     ) -> tuple[Block | None, int]:
         """Process a list into a single block."""
-        close_tag = "ordered_list_close" if ordered else "bullet_list_close"
-
         # Find the closing token
         depth = 1
         end_index = index + 1
@@ -266,9 +260,7 @@ class MarkdownLoader(BaseLoader):
             end_index - index - 1,
         )
 
-    def _process_table(
-        self, tokens: list[Token], index: int
-    ) -> tuple[Block | None, int]:
+    def _process_table(self, tokens: list[Token], index: int) -> tuple[Block | None, int]:
         """Process a table into a single block."""
         # Find the closing token
         end_index = index + 1
@@ -320,9 +312,7 @@ class MarkdownLoader(BaseLoader):
 
         return "\n".join(lines)
 
-    def _process_blockquote(
-        self, tokens: list[Token], index: int
-    ) -> tuple[Block | None, int]:
+    def _process_blockquote(self, tokens: list[Token], index: int) -> tuple[Block | None, int]:
         """Process a blockquote into a block."""
         # Find the closing token
         depth = 1

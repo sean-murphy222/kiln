@@ -288,12 +288,14 @@ class Chunk:
             system_metadata=data.get("system_metadata", {}),
             is_modified=data.get("is_modified", False),
             is_locked=data.get("is_locked", False),
-            created_at=datetime.fromisoformat(data["created_at"])
-            if data.get("created_at")
-            else datetime.now(),
-            modified_at=datetime.fromisoformat(data["modified_at"])
-            if data.get("modified_at")
-            else None,
+            created_at=(
+                datetime.fromisoformat(data["created_at"])
+                if data.get("created_at")
+                else datetime.now()
+            ),
+            modified_at=(
+                datetime.fromisoformat(data["modified_at"]) if data.get("modified_at") else None
+            ),
         )
 
 
@@ -333,12 +335,12 @@ class DocumentMetadata:
             author=data.get("author"),
             subject=data.get("subject"),
             keywords=data.get("keywords", []),
-            created_date=datetime.fromisoformat(data["created_date"])
-            if data.get("created_date")
-            else None,
-            modified_date=datetime.fromisoformat(data["modified_date"])
-            if data.get("modified_date")
-            else None,
+            created_date=(
+                datetime.fromisoformat(data["created_date"]) if data.get("created_date") else None
+            ),
+            modified_date=(
+                datetime.fromisoformat(data["modified_date"]) if data.get("modified_date") else None
+            ),
             page_count=data.get("page_count", 0),
             word_count=data.get("word_count", 0),
             file_size_bytes=data.get("file_size_bytes", 0),
@@ -406,9 +408,7 @@ class ChonkDocument:
             "chunker_used": self.chunker_used,
             "chunker_config": self.chunker_config,
             "loaded_at": self.loaded_at.isoformat(),
-            "last_chunked_at": self.last_chunked_at.isoformat()
-            if self.last_chunked_at
-            else None,
+            "last_chunked_at": self.last_chunked_at.isoformat() if self.last_chunked_at else None,
         }
 
     @classmethod
@@ -424,12 +424,16 @@ class ChonkDocument:
             parser_used=data.get("parser_used", ""),
             chunker_used=data.get("chunker_used", ""),
             chunker_config=data.get("chunker_config", {}),
-            loaded_at=datetime.fromisoformat(data["loaded_at"])
-            if data.get("loaded_at")
-            else datetime.now(),
-            last_chunked_at=datetime.fromisoformat(data["last_chunked_at"])
-            if data.get("last_chunked_at")
-            else None,
+            loaded_at=(
+                datetime.fromisoformat(data["loaded_at"])
+                if data.get("loaded_at")
+                else datetime.now()
+            ),
+            last_chunked_at=(
+                datetime.fromisoformat(data["last_chunked_at"])
+                if data.get("last_chunked_at")
+                else None
+            ),
         )
 
 
@@ -466,9 +470,11 @@ class TestQuery:
             expected_chunk_ids=data.get("expected_chunk_ids", []),
             excluded_chunk_ids=data.get("excluded_chunk_ids", []),
             notes=data.get("notes"),
-            created_at=datetime.fromisoformat(data["created_at"])
-            if data.get("created_at")
-            else datetime.now(),
+            created_at=(
+                datetime.fromisoformat(data["created_at"])
+                if data.get("created_at")
+                else datetime.now()
+            ),
         )
 
 
@@ -501,12 +507,14 @@ class TestSuite:
             id=data["id"],
             name=data["name"],
             queries=[TestQuery.from_dict(q) for q in data.get("queries", [])],
-            created_at=datetime.fromisoformat(data["created_at"])
-            if data.get("created_at")
-            else datetime.now(),
-            modified_at=datetime.fromisoformat(data["modified_at"])
-            if data.get("modified_at")
-            else None,
+            created_at=(
+                datetime.fromisoformat(data["created_at"])
+                if data.get("created_at")
+                else datetime.now()
+            ),
+            modified_at=(
+                datetime.fromisoformat(data["modified_at"]) if data.get("modified_at") else None
+            ),
         )
 
 
@@ -536,9 +544,9 @@ class ProjectSettings:
             default_chunk_size=data.get("default_chunk_size", 400),
             default_overlap=data.get("default_overlap", 50),
             embedding_model=data.get("embedding_model", "all-MiniLM-L6-v2"),
-            output_directory=Path(data["output_directory"])
-            if data.get("output_directory")
-            else None,
+            output_directory=(
+                Path(data["output_directory"]) if data.get("output_directory") else None
+            ),
         )
 
 
@@ -603,12 +611,14 @@ class ChonkProject:
             test_suites=[TestSuite.from_dict(t) for t in data.get("test_suites", [])],
             settings=ProjectSettings.from_dict(data.get("settings", {})),
             project_path=Path(data["project_path"]) if data.get("project_path") else None,
-            created_at=datetime.fromisoformat(data["created_at"])
-            if data.get("created_at")
-            else datetime.now(),
-            modified_at=datetime.fromisoformat(data["modified_at"])
-            if data.get("modified_at")
-            else None,
+            created_at=(
+                datetime.fromisoformat(data["created_at"])
+                if data.get("created_at")
+                else datetime.now()
+            ),
+            modified_at=(
+                datetime.fromisoformat(data["modified_at"]) if data.get("modified_at") else None
+            ),
         )
 
     def save(self, path: Path | None = None) -> Path:
@@ -635,7 +645,7 @@ class ChonkProject:
         """Load a project from a .chonk file."""
         import json
 
-        with open(path, "r", encoding="utf-8") as f:
+        with open(path, encoding="utf-8") as f:
             data = json.load(f)
 
         project = cls.from_dict(data)

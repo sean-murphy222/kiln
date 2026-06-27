@@ -7,6 +7,7 @@ Better tables, formulas, and reading order detection.
 
 from __future__ import annotations
 
+import importlib.util
 from pathlib import Path
 from typing import Any
 
@@ -17,10 +18,10 @@ from chonk.core.document import (
     DocumentMetadata,
 )
 from chonk.extraction.strategy import (
-    ExtractionResult,
-    ExtractionTier,
     _GPU_INCOMPATIBLE,
     _GPU_UPGRADE_MESSAGE,
+    ExtractionResult,
+    ExtractionTier,
 )
 
 
@@ -61,11 +62,7 @@ class DoclingExtractor:
 
     def _check_available(self) -> bool:
         """Check if Docling can be imported."""
-        try:
-            from docling.document_converter import DocumentConverter
-            return True
-        except ImportError:
-            return False
+        return importlib.util.find_spec("docling") is not None
 
     def extract(self, path: Path) -> ExtractionResult:
         """
@@ -108,6 +105,7 @@ class DoclingExtractor:
             self._warnings.append(f"Docling conversion error: {e}")
             # Fall back to fast extraction
             from chonk.extraction.fast_extractor import FastExtractor
+
             return FastExtractor().extract(path)
 
         # Convert Docling output to CHONK blocks
@@ -150,9 +148,7 @@ class DoclingExtractor:
 
         return blocks
 
-    def _convert_item_to_block(
-        self, item: Any, level: int, block_id: int
-    ) -> Block | None:
+    def _convert_item_to_block(self, item: Any, level: int, block_id: int) -> Block | None:
         """Convert a single Docling item to a CHONK block."""
         try:
             # Get item type and content
@@ -240,24 +236,28 @@ class DoclingExtractor:
             if heading_match:
                 # Save current block
                 if current_block:
-                    blocks.append(Block(
-                        id=f"docling_blk_{block_id}",
-                        type=current_type,
-                        content="\n".join(current_block).strip(),
-                        page=1,
-                    ))
+                    blocks.append(
+                        Block(
+                            id=f"docling_blk_{block_id}",
+                            type=current_type,
+                            content="\n".join(current_block).strip(),
+                            page=1,
+                        )
+                    )
                     block_id += 1
                     current_block = []
 
                 # Create heading block
                 level = len(heading_match.group(1))
-                blocks.append(Block(
-                    id=f"docling_blk_{block_id}",
-                    type=BlockType.HEADING,
-                    content=heading_match.group(2),
-                    page=1,
-                    heading_level=level,
-                ))
+                blocks.append(
+                    Block(
+                        id=f"docling_blk_{block_id}",
+                        type=BlockType.HEADING,
+                        content=heading_match.group(2),
+                        page=1,
+                        heading_level=level,
+                    )
+                )
                 block_id += 1
                 current_type = BlockType.TEXT
                 continue
@@ -266,24 +266,28 @@ class DoclingExtractor:
             if line.startswith("```"):
                 if current_type == BlockType.CODE:
                     # End code block
-                    blocks.append(Block(
-                        id=f"docling_blk_{block_id}",
-                        type=BlockType.CODE,
-                        content="\n".join(current_block).strip(),
-                        page=1,
-                    ))
+                    blocks.append(
+                        Block(
+                            id=f"docling_blk_{block_id}",
+                            type=BlockType.CODE,
+                            content="\n".join(current_block).strip(),
+                            page=1,
+                        )
+                    )
                     block_id += 1
                     current_block = []
                     current_type = BlockType.TEXT
                 else:
                     # Start code block
                     if current_block:
-                        blocks.append(Block(
-                            id=f"docling_blk_{block_id}",
-                            type=current_type,
-                            content="\n".join(current_block).strip(),
-                            page=1,
-                        ))
+                        blocks.append(
+                            Block(
+                                id=f"docling_blk_{block_id}",
+                                type=current_type,
+                                content="\n".join(current_block).strip(),
+                                page=1,
+                            )
+                        )
                         block_id += 1
                         current_block = []
                     current_type = BlockType.CODE
@@ -293,12 +297,14 @@ class DoclingExtractor:
             if line.startswith("|") and "|" in line[1:]:
                 if current_type != BlockType.TABLE:
                     if current_block:
-                        blocks.append(Block(
-                            id=f"docling_blk_{block_id}",
-                            type=current_type,
-                            content="\n".join(current_block).strip(),
-                            page=1,
-                        ))
+                        blocks.append(
+                            Block(
+                                id=f"docling_blk_{block_id}",
+                                type=current_type,
+                                content="\n".join(current_block).strip(),
+                                page=1,
+                            )
+                        )
                         block_id += 1
                         current_block = []
                     current_type = BlockType.TABLE
@@ -308,12 +314,14 @@ class DoclingExtractor:
             # Empty line - potentially end current block
             if not line.strip():
                 if current_type == BlockType.TABLE:
-                    blocks.append(Block(
-                        id=f"docling_blk_{block_id}",
-                        type=BlockType.TABLE,
-                        content="\n".join(current_block).strip(),
-                        page=1,
-                    ))
+                    blocks.append(
+                        Block(
+                            id=f"docling_blk_{block_id}",
+                            type=BlockType.TABLE,
+                            content="\n".join(current_block).strip(),
+                            page=1,
+                        )
+                    )
                     block_id += 1
                     current_block = []
                     current_type = BlockType.TEXT
@@ -324,12 +332,14 @@ class DoclingExtractor:
             # Regular text
             if current_type == BlockType.TABLE:
                 # End table if we get non-table content
-                blocks.append(Block(
-                    id=f"docling_blk_{block_id}",
-                    type=BlockType.TABLE,
-                    content="\n".join(current_block).strip(),
-                    page=1,
-                ))
+                blocks.append(
+                    Block(
+                        id=f"docling_blk_{block_id}",
+                        type=BlockType.TABLE,
+                        content="\n".join(current_block).strip(),
+                        page=1,
+                    )
+                )
                 block_id += 1
                 current_block = []
                 current_type = BlockType.TEXT
@@ -340,12 +350,14 @@ class DoclingExtractor:
         if current_block:
             content = "\n".join(current_block).strip()
             if content:
-                blocks.append(Block(
-                    id=f"docling_blk_{block_id}",
-                    type=current_type,
-                    content=content,
-                    page=1,
-                ))
+                blocks.append(
+                    Block(
+                        id=f"docling_blk_{block_id}",
+                        type=current_type,
+                        content=content,
+                        page=1,
+                    )
+                )
 
         return blocks
 
@@ -387,6 +399,7 @@ class DoclingExtractor:
         """Get installed Docling version."""
         try:
             import docling
+
             return getattr(docling, "__version__", "unknown")
         except Exception:
             return "unknown"

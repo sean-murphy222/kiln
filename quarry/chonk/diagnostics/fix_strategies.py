@@ -169,7 +169,10 @@ class MergeAdjacentFix(FixStrategy):
             return FixAction(
                 action_type="merge",
                 chunk_ids=[prev_chunk.id, chunk.id],
-                description=f"Merge '{chunk.id}' with previous chunk to resolve {problem.problem_type.value}",
+                description=(
+                    f"Merge '{chunk.id}' with previous chunk to resolve "
+                    f"{problem.problem_type.value}"
+                ),
                 confidence=confidence,
                 metadata={"direction": "prev", "problem_id": problem.id},
             )
@@ -178,7 +181,10 @@ class MergeAdjacentFix(FixStrategy):
             return FixAction(
                 action_type="merge",
                 chunk_ids=[chunk.id, next_chunk.id],
-                description=f"Merge '{chunk.id}' with next chunk to resolve {problem.problem_type.value}",
+                description=(
+                    f"Merge '{chunk.id}' with next chunk to resolve "
+                    f"{problem.problem_type.value}"
+                ),
                 confidence=confidence,
                 metadata={"direction": "next", "problem_id": problem.id},
             )
@@ -217,7 +223,7 @@ class SplitLargeChunkFix(FixStrategy):
             return None
 
         # Strategy 1: Split at paragraph boundaries
-        paragraphs = chunk.content.split('\n\n')
+        paragraphs = chunk.content.split("\n\n")
 
         if len(paragraphs) >= 3:  # Need at least 3 paragraphs to split meaningfully
             # Find best split point (aim for ~40-60% through content)
@@ -244,7 +250,7 @@ class SplitLargeChunkFix(FixStrategy):
             )
 
         # Strategy 2: Split at heading patterns (if present)
-        heading_pattern = re.compile(r'^#+\s+|^\d+\.\d+\s+|^[A-Z][A-Z\s]+:?$', re.MULTILINE)
+        heading_pattern = re.compile(r"^#+\s+|^\d+\.\d+\s+|^[A-Z][A-Z\s]+:?$", re.MULTILINE)
         matches = list(heading_pattern.finditer(chunk.content))
 
         if len(matches) >= 2:  # Multiple headings found
@@ -312,7 +318,7 @@ class MergeReferencedChunksFix(FixStrategy):
                 return FixAction(
                     action_type="merge",
                     chunk_ids=[chunk.id, next_chunk.id],
-                    description=f"Merge chunk with next to resolve forward reference",
+                    description="Merge chunk with next to resolve forward reference",
                     confidence=0.6,  # Medium confidence - reference might be further away
                     metadata={"reference_type": "forward", "problem_id": problem.id},
                 )
@@ -324,7 +330,7 @@ class MergeReferencedChunksFix(FixStrategy):
                 return FixAction(
                     action_type="merge",
                     chunk_ids=[prev_chunk.id, chunk.id],
-                    description=f"Merge chunk with previous to resolve backward reference",
+                    description="Merge chunk with previous to resolve backward reference",
                     confidence=0.6,
                     metadata={"reference_type": "backward", "problem_id": problem.id},
                 )

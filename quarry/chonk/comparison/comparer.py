@@ -11,8 +11,8 @@ from dataclasses import dataclass, field
 from typing import Any
 
 from chonk.chunkers.base import BaseChunker
-from chonk.core.document import Block, Chunk
 from chonk.comparison.metrics import ChunkingMetrics
+from chonk.core.document import Block, Chunk
 
 
 @dataclass
@@ -83,9 +83,7 @@ class ComparisonResult:
         recommendations = []
 
         # Main recommendation
-        recommendations.append(
-            f"✅ RECOMMENDED: {best.strategy_name.upper()} strategy"
-        )
+        recommendations.append(f"✅ RECOMMENDED: {best.strategy_name.upper()} strategy")
 
         # Why it's best
         m = best.metrics
@@ -110,12 +108,11 @@ class ComparisonResult:
         other_strategies = [s for s in self.strategies if s != best]
         if other_strategies:
             worst = min(other_strategies, key=lambda s: s.metrics.avg_quality_score)
-            quality_diff = (
-                best.metrics.avg_quality_score - worst.metrics.avg_quality_score
-            )
+            quality_diff = best.metrics.avg_quality_score - worst.metrics.avg_quality_score
             if quality_diff > 0.1:
                 recommendations.append(
-                    f"   {best.strategy_name} is {quality_diff:.1%} better quality than {worst.strategy_name}"
+                    f"   {best.strategy_name} is {quality_diff:.1%} better quality "
+                    f"than {worst.strategy_name}"
                 )
 
         return "\n".join(recommendations)
@@ -131,9 +128,7 @@ class ComparisonResult:
                 }
                 for result in self.strategies
             ],
-            "best_strategy": self.best_strategy.strategy_name
-            if self.best_strategy
-            else None,
+            "best_strategy": self.best_strategy.strategy_name if self.best_strategy else None,
             "recommendation": self.get_recommendation(),
         }
 
@@ -147,9 +142,7 @@ class StrategyComparer:
     """
 
     @staticmethod
-    def compare(
-        blocks: list[Block], chunkers: list[tuple[str, BaseChunker]]
-    ) -> ComparisonResult:
+    def compare(blocks: list[Block], chunkers: list[tuple[str, BaseChunker]]) -> ComparisonResult:
         """
         Compare multiple chunking strategies.
 

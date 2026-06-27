@@ -152,9 +152,7 @@ class Embedder:
 
             return OpenAI(api_key=self._openai_api_key)
         except ImportError:
-            raise ImportError(
-                "OpenAI package not installed. Install with: pip install openai"
-            )
+            raise ImportError("OpenAI package not installed. Install with: pip install openai")
 
     def embed(self, text: str) -> np.ndarray:
         """
@@ -220,8 +218,4 @@ class Embedder:
     @classmethod
     def bundled_models(cls) -> list[str]:
         """Get list of models that are bundled with CHONK."""
-        return [
-            name
-            for name, info in cls.MODEL_INFO.items()
-            if info.is_bundled
-        ]
+        return [name for name, info in cls.MODEL_INFO.items() if info.is_bundled]

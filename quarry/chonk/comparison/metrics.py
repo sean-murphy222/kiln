@@ -82,9 +82,7 @@ class ChunkingMetrics:
             min_tokens=min(token_counts),
             max_tokens=max(token_counts),
             median_tokens=median_tokens,
-            avg_quality_score=sum(quality_scores) / len(quality_scores)
-            if quality_scores
-            else 0,
+            avg_quality_score=sum(quality_scores) / len(quality_scores) if quality_scores else 0,
             chunks_with_context=chunks_with_hierarchy,
             hierarchy_preservation=hierarchy_preservation,
             chunks_under_100_tokens=under_100,

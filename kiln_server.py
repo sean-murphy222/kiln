@@ -109,7 +109,8 @@ def _mount_forge() -> None:
     in the project ``data/forge/`` directory.
     """
     try:
-        from forge.src.server import init_forge_storage, router as forge_router
+        from forge.src.server import init_forge_storage
+        from forge.src.server import router as forge_router
 
         data_dir = Path("data/forge")
         data_dir.mkdir(parents=True, exist_ok=True)
@@ -166,7 +167,8 @@ def _mount_hearth() -> None:
             HearthEngine,
             ModelManager,
         )
-        from hearth.src.server import configure, router as hearth_router
+        from hearth.src.server import configure
+        from hearth.src.server import router as hearth_router
 
         # Create default instances for MVP
         model_manager = ModelManager()

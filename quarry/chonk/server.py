@@ -24,10 +24,9 @@ from pydantic import BaseModel
 from chonk.chunkers import ChunkerConfig, ChunkerRegistry
 from chonk.comparison import StrategyComparer
 from chonk.core.document import (
-    Chunk,
-    ChunkMetadata,
     ChonkDocument,
     ChonkProject,
+    Chunk,
     TestQuery,
     TestSuite,
 )
@@ -270,11 +269,12 @@ async def upload_document(
             result = _extract_with_strategy(tmp_path, tier_str, auto_upgrade)
 
             # Create document from extraction result
-            from chonk.core.document import ChonkDocument, DocumentMetadata
+            from chonk.core.document import ChonkDocument
+
             document = ChonkDocument(
                 id=ChonkDocument.generate_id(),
                 source_path=Path(file.filename or "document"),
-                source_type=suffix.lower().lstrip('.'),
+                source_type=suffix.lower().lstrip("."),
                 blocks=result.blocks,
                 chunks=[],  # Will be populated by chunker
                 metadata=result.metadata,
@@ -325,11 +325,8 @@ async def upload_document(
         tmp_path.unlink(missing_ok=True)
 
 
-def _extract_with_strategy(
-    path: Path, tier_str: str, auto_upgrade: bool
-) -> Any:
+def _extract_with_strategy(path: Path, tier_str: str, auto_upgrade: bool) -> Any:
     """Extract document using the configured extraction strategy."""
-    from chonk.extraction.strategy import ExtractionResult
 
     # Map tier string to ExtractionTier
     tier_map = {
@@ -386,9 +383,7 @@ async def delete_document(document_id: str) -> dict[str, Any]:
 
 
 @router.post("/api/documents/{document_id}/rechunk")
-async def rechunk_document(
-    document_id: str, config: ChunkConfigRequest
-) -> dict[str, Any]:
+async def rechunk_document(document_id: str, config: ChunkConfigRequest) -> dict[str, Any]:
     """Re-chunk a document with new settings."""
     project = _get_project()
     document = project.get_document(document_id)
@@ -481,9 +476,7 @@ async def merge_chunks(request: MergeRequest) -> dict[str, Any]:
     merged_chunk.quality = analyzer.analyze_chunk(merged_chunk, source_doc)
 
     # Replace chunks in document
-    source_doc.chunks = [
-        c for c in source_doc.chunks if c.id not in request.chunk_ids
-    ]
+    source_doc.chunks = [c for c in source_doc.chunks if c.id not in request.chunk_ids]
     # Insert at position of first merged chunk
     source_doc.chunks.append(merged_chunk)
 
@@ -522,9 +515,7 @@ async def split_chunk(request: SplitRequest) -> dict[str, Any]:
     content_b = content[request.split_position :].strip()
 
     if not content_a or not content_b:
-        raise HTTPException(
-            status_code=400, detail="Split would create empty chunk"
-        )
+        raise HTTPException(status_code=400, detail="Split would create empty chunk")
 
     from chonk.utils.tokens import count_tokens
 
@@ -561,12 +552,8 @@ async def split_chunk(request: SplitRequest) -> dict[str, Any]:
     chunk_b.quality = analyzer.analyze_chunk(chunk_b, source_doc)
 
     # Replace original chunk
-    idx = next(
-        i for i, c in enumerate(source_doc.chunks) if c.id == source_chunk.id
-    )
-    source_doc.chunks = (
-        source_doc.chunks[:idx] + [chunk_a, chunk_b] + source_doc.chunks[idx + 1 :]
-    )
+    idx = next(i for i, c in enumerate(source_doc.chunks) if c.id == source_chunk.id)
+    source_doc.chunks = source_doc.chunks[:idx] + [chunk_a, chunk_b] + source_doc.chunks[idx + 1 :]
 
     # Re-index
     tester: RetrievalTester = _state["tester"]
@@ -669,9 +656,7 @@ async def create_test_suite(name: str) -> dict[str, Any]:
 
 
 @router.post("/api/test-suites/{suite_id}/queries")
-async def add_test_query(
-    suite_id: str, request: TestQueryRequest
-) -> dict[str, Any]:
+async def add_test_query(suite_id: str, request: TestQueryRequest) -> dict[str, Any]:
     """Add a query to a test suite."""
     project = _get_project()
 
@@ -748,14 +733,10 @@ async def export_chunks(request: ExportRequest) -> dict[str, Any]:
             if document is None:
                 raise HTTPException(status_code=404, detail="Document not found")
 
-            path = ExporterRegistry.export_document(
-                document, output_path, request.format
-            )
+            path = ExporterRegistry.export_document(document, output_path, request.format)
         else:
             # Export entire project
-            path = ExporterRegistry.export_project(
-                project, output_path, request.format
-            )
+            path = ExporterRegistry.export_project(project, output_path, request.format)
 
         return {
             "path": str(path),
@@ -1154,21 +1135,25 @@ async def test_query(request: StrategyTestRequest) -> dict[str, Any]:
         # Format results
         formatted_results = []
         for result in results:
-            formatted_results.append({
-                "chunk_id": result.chunk_id,
-                "score": result.score,
-                "content_preview": result.content_preview[:200],
-                "hierarchy_path": result.hierarchy_path,
-                "token_count": result.token_count,
-            })
+            formatted_results.append(
+                {
+                    "chunk_id": result.chunk_id,
+                    "score": result.score,
+                    "content_preview": result.content_preview[:200],
+                    "hierarchy_path": result.hierarchy_path,
+                    "token_count": result.token_count,
+                }
+            )
 
-        strategy_results.append({
-            "strategy_name": strategy_name,
-            "query": request.query,
-            "results": formatted_results,
-            "top_score": results[0].score if results else 0.0,
-            "retrieved_count": len(results),
-        })
+        strategy_results.append(
+            {
+                "strategy_name": strategy_name,
+                "query": request.query,
+                "results": formatted_results,
+                "top_score": results[0].score if results else 0.0,
+                "retrieved_count": len(results),
+            }
+        )
 
     return {
         "query": request.query,
@@ -1320,12 +1305,14 @@ async def generate_questions(request: GenerateQuestionsRequest) -> dict[str, Any
     for q in questions:
         if q.test_type not in by_type:
             by_type[q.test_type] = []
-        by_type[q.test_type].append({
-            "question": q.question,
-            "expected_chunks": q.expected_chunk_ids,
-            "source_chunk": q.source_chunk_id,
-            "metadata": q.metadata,
-        })
+        by_type[q.test_type].append(
+            {
+                "question": q.question,
+                "expected_chunks": q.expected_chunk_ids,
+                "source_chunk": q.source_chunk_id,
+                "metadata": q.metadata,
+            }
+        )
 
     return {
         "document_id": request.document_id,
@@ -1492,7 +1479,11 @@ async def apply_fixes(request: ApplyFixesRequest) -> dict[str, Any]:
         },
         "improvement": {
             "problems_fixed": len(problems_before) - len(problems_after),
-            "reduction_rate": (len(problems_before) - len(problems_after)) / len(problems_before) if len(problems_before) > 0 else 0,
+            "reduction_rate": (
+                (len(problems_before) - len(problems_after)) / len(problems_before)
+                if len(problems_before) > 0
+                else 0
+            ),
         },
     }
 

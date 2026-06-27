@@ -24,7 +24,7 @@ from typing import Any, ClassVar
 import pdfplumber
 from pdfplumber.page import Page
 
-from chonk.analysis.pdf_structure import PDFStructureExtractor, PDFAnalysisResult
+from chonk.analysis.pdf_structure import PDFAnalysisResult, PDFStructureExtractor
 from chonk.core.document import Block, BlockType, BoundingBox, DocumentMetadata
 from chonk.loaders.base import BaseLoader, LoaderError, LoaderRegistry
 
@@ -69,9 +69,7 @@ class PDFLoader(BaseLoader):
 
             # Log TOC info
             if self._pdf_analysis.has_toc:
-                self._add_info(
-                    f"Found TOC with {len(self._pdf_analysis.toc_entries)} entries"
-                )
+                self._add_info(f"Found TOC with {len(self._pdf_analysis.toc_entries)} entries")
 
             # Extract content using pdfplumber
             with pdfplumber.open(path) as pdf:
@@ -86,9 +84,7 @@ class PDFLoader(BaseLoader):
 
                 # Store structure info in metadata for chunker
                 metadata.custom["has_toc"] = self._pdf_analysis.has_toc
-                metadata.custom["toc_entry_count"] = len(
-                    self._pdf_analysis.toc_entries
-                )
+                metadata.custom["toc_entry_count"] = len(self._pdf_analysis.toc_entries)
                 metadata.custom["is_tagged_pdf"] = self._pdf_analysis.is_tagged
 
                 return blocks, metadata
@@ -162,7 +158,7 @@ class PDFLoader(BaseLoader):
 
         for fmt in formats:
             try:
-                return datetime.strptime(date_str[:len(fmt.replace("%", ""))], fmt)
+                return datetime.strptime(date_str[: len(fmt.replace("%", ""))], fmt)
             except ValueError:
                 continue
 
@@ -323,7 +319,9 @@ class PDFLoader(BaseLoader):
             line_type = self._classify_line(line)
 
             # Check if this line starts a new block
-            if self._should_start_new_block(current_block_lines, line, line_type, current_block_type):
+            if self._should_start_new_block(
+                current_block_lines, line, line_type, current_block_type
+            ):
                 # Save current block if it has content
                 if current_block_lines:
                     block = self._create_block_from_lines(
@@ -339,9 +337,7 @@ class PDFLoader(BaseLoader):
 
         # Save final block
         if current_block_lines:
-            block = self._create_block_from_lines(
-                current_block_lines, page_num, current_block_type
-            )
+            block = self._create_block_from_lines(current_block_lines, page_num, current_block_type)
             if block:
                 blocks.append(block)
 

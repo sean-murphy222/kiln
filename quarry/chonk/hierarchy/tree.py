@@ -164,8 +164,7 @@ class HierarchyNode:
             "content_block_ids": [b.id for b in self.content_blocks],
             "token_count": self.token_count,
             "page_range": self.page_range,
-            "block_count": len(self.content_blocks)
-            + (1 if self.heading_block else 0),
+            "block_count": len(self.content_blocks) + (1 if self.heading_block else 0),
             "hierarchy_path": self.hierarchy_path,
             "depth": self.depth,
             "is_leaf": self.is_leaf,
@@ -248,6 +247,7 @@ class HierarchyTree:
     @property
     def max_depth(self) -> int:
         """Get maximum depth of the tree."""
+
         def get_max_depth(node: HierarchyNode) -> int:
             if not node.children:
                 return node.depth
@@ -272,6 +272,7 @@ class HierarchyTree:
 
     def get_node_by_id(self, section_id: str) -> HierarchyNode | None:
         """Find a node by its section_id."""
+
         def search(node: HierarchyNode) -> HierarchyNode | None:
             if node.section_id == section_id:
                 return node
@@ -285,11 +286,7 @@ class HierarchyTree:
 
     def get_nodes_at_level(self, level: int) -> list[HierarchyNode]:
         """Get all nodes at a specific heading level."""
-        return [
-            node
-            for node in self.get_all_nodes()
-            if node.level == level
-        ]
+        return [node for node in self.get_all_nodes() if node.level == level]
 
     def get_statistics(self) -> dict[str, Any]:
         """Get tree statistics for analysis."""
@@ -306,9 +303,7 @@ class HierarchyTree:
             "nodes_with_children": len(nodes_with_children),
             "leaf_nodes": self.leaf_count,
             "max_depth": self.max_depth,
-            "avg_tokens_per_node": sum(token_counts) / len(token_counts)
-            if token_counts
-            else 0,
+            "avg_tokens_per_node": sum(token_counts) / len(token_counts) if token_counts else 0,
             "min_tokens": min(token_counts) if token_counts else 0,
             "max_tokens": max(token_counts) if token_counts else 0,
             "level_distribution": self._get_level_distribution(),
@@ -332,9 +327,7 @@ class HierarchyTree:
         }
 
     @classmethod
-    def from_dict(
-        cls, data: dict[str, Any], blocks_by_id: dict[str, Block]
-    ) -> HierarchyTree:
+    def from_dict(cls, data: dict[str, Any], blocks_by_id: dict[str, Block]) -> HierarchyTree:
         """Reconstruct tree from dictionary."""
         root = HierarchyNode.from_dict(data["root"], blocks_by_id)
 
@@ -346,6 +339,7 @@ class HierarchyTree:
 
     def print_tree(self, max_depth: int = 3, show_content: bool = False) -> None:
         """Print tree structure for debugging."""
+
         def print_node(node: HierarchyNode, indent: int = 0) -> None:
             if indent > max_depth:
                 return

@@ -2,8 +2,8 @@
 
 from chonk.chunkers.base import BaseChunker, ChunkerConfig, ChunkerRegistry
 from chonk.chunkers.fixed import FixedSizeChunker
-from chonk.chunkers.recursive import RecursiveChunker
 from chonk.chunkers.hierarchy import HierarchyChunker
+from chonk.chunkers.recursive import RecursiveChunker
 
 __all__ = [
     "BaseChunker",

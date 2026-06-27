@@ -116,9 +116,7 @@ class DocumentStructure:
         """Find the section containing a block."""
         return self._find_block_in_tree(self.root, block_id)
 
-    def _find_block_in_tree(
-        self, node: StructureNode, block_id: str
-    ) -> StructureNode | None:
+    def _find_block_in_tree(self, node: StructureNode, block_id: str) -> StructureNode | None:
         """Recursively search for block in tree."""
         if block_id in node.block_ids:
             return node
@@ -255,6 +253,7 @@ class StructureAnalyzer:
 
         # Numbered headings are more reliable
         import re
+
         if re.match(r"^\d+(\.\d+)*\.?\s", block.content):
             confidence += 0.2
 
@@ -264,9 +263,7 @@ class StructureAnalyzer:
 
         return min(confidence, 1.0)
 
-    def _reconcile_structures(
-        self, structure: DocumentStructure, blocks: list[Block]
-    ) -> None:
+    def _reconcile_structures(self, structure: DocumentStructure, blocks: list[Block]) -> None:
         """
         Reconcile multiple structure signals into unified tree.
 
@@ -340,9 +337,8 @@ class StructureAnalyzer:
 
                 # Try to find matching heading block
                 for block in page_blocks:
-                    if (
-                        block.type == BlockType.HEADING
-                        and self._titles_match(block.content, node.title)
+                    if block.type == BlockType.HEADING and self._titles_match(
+                        block.content, node.title
                     ):
                         node.block_ids.append(block.id)
                         break
@@ -357,9 +353,8 @@ class StructureAnalyzer:
             if node.page_start:
                 page_blocks = block_by_page.get(node.page_start, [])
                 for block in page_blocks:
-                    if (
-                        block.type == BlockType.HEADING
-                        and self._titles_match(block.content, node.title)
+                    if block.type == BlockType.HEADING and self._titles_match(
+                        block.content, node.title
                     ):
                         node.block_ids.append(block.id)
                         break
@@ -369,9 +364,11 @@ class StructureAnalyzer:
 
     def _titles_match(self, block_title: str, toc_title: str) -> bool:
         """Check if a block title matches a TOC entry."""
+
         # Normalize and compare
         def normalize(s: str) -> str:
             import re
+
             s = s.lower().strip()
             s = re.sub(r"^\d+(\.\d+)*\.?\s*", "", s)  # Remove numbering
             s = re.sub(r"\s+", " ", s)
@@ -399,9 +396,7 @@ class StructureAnalyzer:
         structure.node_to_blocks = {}
         self._collect_block_mapping(structure.root, structure.node_to_blocks)
 
-    def _collect_block_mapping(
-        self, node: StructureNode, mapping: dict[str, list[str]]
-    ) -> None:
+    def _collect_block_mapping(self, node: StructureNode, mapping: dict[str, list[str]]) -> None:
         """Recursively collect block mappings."""
         mapping[node.id] = node.block_ids
         for child in node.children:

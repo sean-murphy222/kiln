@@ -11,7 +11,7 @@ import csv
 from pathlib import Path
 from typing import Any, ClassVar
 
-from chonk.core.document import Chunk, ChonkDocument, ChonkProject
+from chonk.core.document import ChonkDocument, ChonkProject, Chunk
 from chonk.exporters.base import BaseExporter, ExporterRegistry
 
 

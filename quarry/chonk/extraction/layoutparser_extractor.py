@@ -7,6 +7,7 @@ Best for academic papers, multi-column documents, and scanned PDFs.
 
 from __future__ import annotations
 
+import importlib.util
 from pathlib import Path
 from typing import Any
 
@@ -17,7 +18,6 @@ from chonk.core.document import (
     DocumentMetadata,
 )
 from chonk.extraction.strategy import ExtractionResult, ExtractionTier
-
 
 # Mapping from LayoutParser labels to CHONK BlockTypes
 LAYOUTPARSER_TYPE_MAP = {
@@ -93,11 +93,7 @@ class LayoutParserExtractor:
 
     def _check_available(self) -> bool:
         """Check if LayoutParser can be imported."""
-        try:
-            import layoutparser as lp
-            return True
-        except ImportError:
-            return False
+        return importlib.util.find_spec("layoutparser") is not None
 
     def _load_model(self) -> Any:
         """Load the LayoutParser model (lazy loading)."""
@@ -105,18 +101,14 @@ class LayoutParserExtractor:
             return self._model
 
         if not self._layoutparser_available:
-            raise RuntimeError(
-                "LayoutParser is not installed. Install with: pip install chonk[ai]"
-            )
+            raise RuntimeError("LayoutParser is not installed. Install with: pip install chonk[ai]")
 
         try:
             import layoutparser as lp
 
             model_config = self.MODELS.get(self._model_name)
             if not model_config:
-                self._warnings.append(
-                    f"Unknown model '{self._model_name}', using 'publaynet'"
-                )
+                self._warnings.append(f"Unknown model '{self._model_name}', using 'publaynet'")
                 model_config = self.MODELS["publaynet"]
 
             # Load Detectron2 model
@@ -150,9 +142,7 @@ class LayoutParserExtractor:
         self._warnings = []
 
         if not self._layoutparser_available:
-            raise RuntimeError(
-                "LayoutParser is not installed. Install with: pip install chonk[ai]"
-            )
+            raise RuntimeError("LayoutParser is not installed. Install with: pip install chonk[ai]")
 
         try:
             import layoutparser as lp
@@ -163,12 +153,14 @@ class LayoutParserExtractor:
             # Fall back to enhanced or fast
             try:
                 from chonk.extraction.docling_extractor import DoclingExtractor
+
                 extractor = DoclingExtractor()
                 if extractor.is_available():
                     return extractor.extract(path)
             except Exception:
                 pass
             from chonk.extraction.fast_extractor import FastExtractor
+
             return FastExtractor().extract(path)
 
         # Load model
@@ -177,6 +169,7 @@ class LayoutParserExtractor:
         except Exception as e:
             self._warnings.append(f"Model loading failed: {e}")
             from chonk.extraction.fast_extractor import FastExtractor
+
             return FastExtractor().extract(path)
 
         # Convert PDF to images
@@ -185,6 +178,7 @@ class LayoutParserExtractor:
         except Exception as e:
             self._warnings.append(f"PDF to image conversion failed: {e}")
             from chonk.extraction.fast_extractor import FastExtractor
+
             return FastExtractor().extract(path)
 
         # Process each page
@@ -197,12 +191,9 @@ class LayoutParserExtractor:
                 layout = model.detect(image)
 
                 # Sort by reading order (top to bottom, left to right)
-                layout = lp.Layout([
-                    b for b in sorted(
-                        layout,
-                        key=lambda x: (x.block.y_1, x.block.x_1)
-                    )
-                ])
+                layout = lp.Layout(
+                    [b for b in sorted(layout, key=lambda x: (x.block.y_1, x.block.x_1))]
+                )
 
                 # Extract text from each detected region
                 for element in layout:
@@ -256,7 +247,7 @@ class LayoutParserExtractor:
             from PIL import Image
 
             img_array = np.array(image)
-            cropped = img_array[int(y1):int(y2), int(x1):int(x2)]
+            cropped = img_array[int(y1) : int(y2), int(x1) : int(x2)]
             cropped_img = Image.fromarray(cropped)
 
             # Extract text using OCR
@@ -264,8 +255,7 @@ class LayoutParserExtractor:
             if block_type != BlockType.IMAGE:
                 try:
                     content = pytesseract.image_to_string(
-                        cropped_img,
-                        config="--psm 6"  # Assume uniform block of text
+                        cropped_img, config="--psm 6"  # Assume uniform block of text
                     ).strip()
                 except Exception as e:
                     self._warnings.append(f"OCR error on block {block_id}: {e}")
@@ -322,9 +312,7 @@ class LayoutParserExtractor:
         """Extract metadata from processed document."""
         # Count words from all text blocks
         word_count = sum(
-            len(b.content.split())
-            for b in blocks
-            if b.type in (BlockType.TEXT, BlockType.HEADING)
+            len(b.content.split()) for b in blocks if b.type in (BlockType.TEXT, BlockType.HEADING)
         )
 
         return DocumentMetadata(

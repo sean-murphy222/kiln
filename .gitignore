@@ -94,6 +94,7 @@ secrets.*
 .claude/session-log.jsonl
 .claude/worktrees/
 .claude/settings.local.json
+.claude/secrets.txt
 
 # OS
 Thumbs.db
@@ -142,3 +143,7 @@ playwright-report/
 *.db
 *.sqlite
 *.sqlite3
+
+# Local runtime state / vendored orchestrator tooling
+.orchestrator/
+.claude/orchestrator/

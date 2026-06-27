@@ -6,12 +6,12 @@ before chunking. This stage reconciles multiple signals (TOC, tags,
 visual heuristics) into a unified document structure.
 """
 
+from chonk.analysis.pdf_structure import PDFStructureExtractor
 from chonk.analysis.structure import (
     DocumentStructure,
-    StructureNode,
     StructureAnalyzer,
+    StructureNode,
 )
-from chonk.analysis.pdf_structure import PDFStructureExtractor
 
 __all__ = [
     "DocumentStructure",
