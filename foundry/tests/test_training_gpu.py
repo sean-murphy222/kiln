@@ -44,8 +44,8 @@ def tiny_curriculum(tmp_path: Path) -> Path:
 @pytest.fixture
 def real_config(tiny_curriculum: Path, tmp_path: Path) -> TrainingConfig:
     return TrainingConfig(
-        base_model=bc.DEFAULT_VALIDATION_MODEL,
-        base_model_family="qwen",
+        base_model=bc.get_validation_model(),
+        base_model_family=bc.model_family_for(bc.get_validation_model()),
         curriculum_path=tiny_curriculum,
         output_dir=tmp_path / "run",
         epochs=1,

@@ -157,16 +157,20 @@ If this prints `True`, GPU training is available.
 
 ### Supported Base Models
 
-Foundry supports four base model families. Default models are pre-configured.
+Kiln uses **American models only.** The real inference backend resolves a base
+model automatically: the gated **Llama-3.2-3B-Instruct** when a Hugging Face
+token is available, otherwise the ungated, MIT-licensed **Phi-3.5-mini-instruct**.
+Override with `KILN_BASE_MODEL`.
 
-| Family | Default Model | Typical VRAM |
+| Role | Model | Typical VRAM (bf16) |
 |---|---|---|
-| Phi | microsoft/phi-3-mini-4k-instruct | 8 GB |
-| LLaMA | meta-llama/Llama-3-8B-Instruct | 16 GB |
-| Mistral | mistralai/Mistral-7B-Instruct-v0.3 | 16 GB |
-| Qwen | Qwen/Qwen2-7B-Instruct | 16 GB |
+| Default (with HF token) | meta-llama/Llama-3.2-3B-Instruct | ~8 GB |
+| Ungated fallback (no token) | microsoft/Phi-3.5-mini-instruct | ~8 GB |
+| Larger option | meta-llama/Llama-3.1-8B-Instruct | ~16–22 GB |
 
-For laptops with limited VRAM (8 GB or less), use quantized Phi models. For workstations with 24+ GB VRAM, LLaMA or Mistral models provide better quality.
+For laptops with limited VRAM, prefer the 3B-class models; 7–8B bf16 models need
+~16–24 GB. (The `BaseModelFamily` enum still lists other families for explicit
+configuration, but the shipped defaults are American.)
 
 ### Troubleshooting GPU Issues
 
@@ -217,7 +221,8 @@ python -c "import torch; print(torch.cuda.is_available(), torch.cuda.get_device_
 
 ```bash
 export KILN_INFERENCE_BACKEND=transformers
-export KILN_BASE_MODEL=Qwen/Qwen2.5-0.5B-Instruct
+# Optional — omit to auto-pick Llama-3.2-3B (with an HF token) or Phi-3.5-mini:
+export KILN_BASE_MODEL=meta-llama/Llama-3.2-3B-Instruct
 python kiln_server.py
 ```
 

@@ -37,14 +37,8 @@ class TestDefaults:
     def test_max_new_tokens_defaults_512(self) -> None:
         assert bc.get_max_new_tokens() == 512
 
-    def test_base_model_defaults_none(self) -> None:
-        assert bc.get_base_model() is None
-
     def test_adapter_path_defaults_none(self) -> None:
         assert bc.get_adapter_path() is None
-
-    def test_validation_model_default(self) -> None:
-        assert bc.get_validation_model() == "Qwen/Qwen2.5-0.5B-Instruct"
 
     def test_run_gpu_tests_defaults_false(self) -> None:
         assert bc.run_gpu_tests() is False
@@ -66,12 +60,15 @@ class TestOverrides:
         assert bc.get_training_backend() == "real"
 
     def test_base_model_override(self, monkeypatch: pytest.MonkeyPatch) -> None:
-        monkeypatch.setenv("KILN_BASE_MODEL", "Qwen/Qwen2.5-0.5B-Instruct")
-        assert bc.get_base_model() == "Qwen/Qwen2.5-0.5B-Instruct"
+        monkeypatch.setenv("KILN_BASE_MODEL", "meta-llama/Llama-3.2-3B-Instruct")
+        assert bc.get_base_model() == "meta-llama/Llama-3.2-3B-Instruct"
 
-    def test_blank_value_treated_as_unset(self, monkeypatch: pytest.MonkeyPatch) -> None:
+    def test_blank_base_model_falls_through_to_default(
+        self, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
+        monkeypatch.setattr(bc, "has_hf_token", lambda: False)
         monkeypatch.setenv("KILN_BASE_MODEL", "   ")
-        assert bc.get_base_model() is None
+        assert bc.get_base_model() == bc.FALLBACK_BASE_MODEL
 
     def test_adapter_path_override(self, monkeypatch: pytest.MonkeyPatch) -> None:
         monkeypatch.setenv("KILN_ADAPTER_PATH", "/models/adapter")
@@ -96,6 +93,50 @@ class TestOverrides:
     def test_validation_model_override(self, monkeypatch: pytest.MonkeyPatch) -> None:
         monkeypatch.setenv("KILN_VALIDATION_MODEL", "sshleifer/tiny-gpt2")
         assert bc.get_validation_model() == "sshleifer/tiny-gpt2"
+
+
+class TestModelResolution:
+    """American-model defaults with automatic Llama->Phi fallback by token."""
+
+    @pytest.fixture(autouse=True)
+    def _clear_model_env(self, monkeypatch: pytest.MonkeyPatch) -> None:
+        monkeypatch.delenv("KILN_BASE_MODEL", raising=False)
+        monkeypatch.delenv("KILN_VALIDATION_MODEL", raising=False)
+
+    def test_base_model_default_llama_with_token(self, monkeypatch: pytest.MonkeyPatch) -> None:
+        monkeypatch.setattr(bc, "has_hf_token", lambda: True)
+        assert bc.get_base_model() == bc.DEFAULT_BASE_MODEL
+        assert "llama" in bc.DEFAULT_BASE_MODEL.lower()
+
+    def test_base_model_fallback_phi_without_token(self, monkeypatch: pytest.MonkeyPatch) -> None:
+        monkeypatch.setattr(bc, "has_hf_token", lambda: False)
+        assert bc.get_base_model() == bc.FALLBACK_BASE_MODEL
+        assert "phi" in bc.FALLBACK_BASE_MODEL.lower()
+
+    def test_validation_model_with_token(self, monkeypatch: pytest.MonkeyPatch) -> None:
+        monkeypatch.setattr(bc, "has_hf_token", lambda: True)
+        assert bc.get_validation_model() == bc.DEFAULT_VALIDATION_MODEL
+
+    def test_validation_model_fallback_without_token(
+        self, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
+        monkeypatch.setattr(bc, "has_hf_token", lambda: False)
+        assert bc.get_validation_model() == bc.FALLBACK_VALIDATION_MODEL
+
+    def test_no_chinese_models_in_defaults(self) -> None:
+        for model_id in (
+            bc.DEFAULT_BASE_MODEL,
+            bc.FALLBACK_BASE_MODEL,
+            bc.DEFAULT_VALIDATION_MODEL,
+            bc.FALLBACK_VALIDATION_MODEL,
+        ):
+            assert "qwen" not in model_id.lower()
+
+    def test_model_family_for(self) -> None:
+        assert bc.model_family_for("meta-llama/Llama-3.2-3B-Instruct") == "llama"
+        assert bc.model_family_for("microsoft/Phi-3.5-mini-instruct") == "phi"
+        assert bc.model_family_for("mistralai/Mistral-7B-Instruct-v0.3") == "mistral"
+        assert bc.model_family_for("some/unknown-model") == "llama"
 
 
 @pytest.mark.parametrize(

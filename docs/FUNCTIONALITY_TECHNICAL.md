@@ -258,7 +258,9 @@ flowchart TB
 - `diagnostics.py` — training trend/convergence/overfit analysis.
 
 **Status:** inference and training are **real and GPU-validated** (RTX 5080: real
-Qwen2.5-0.5B inference and a real LoRA fine-tune → reloadable adapter). Stubs:
+small-model inference and a real LoRA fine-tune → reloadable adapter). Default
+models are American only — Llama-3.2-3B with a Hugging Face token, else the
+ungated Phi-3.5-mini. Stubs:
 merging no-op; `run_evaluation` builds the model per request (now memoized) and
 runs synchronously inside the async loop; real `val_loss` not yet wired.
 

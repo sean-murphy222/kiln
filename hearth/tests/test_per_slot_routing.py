@@ -53,7 +53,7 @@ def _enable_real(monkeypatch: pytest.MonkeyPatch, backends: list[FakeBackend]) -
 
 def test_mock_load_does_not_create_backend() -> None:
     mgr = ModelManager()
-    mgr.register_slot("s1", "Maint", "qwen")
+    mgr.register_slot("s1", "Maint", "llama")
     slot = mgr.load_model("s1")
     assert slot.status == ModelStatus.READY
     assert mgr.get_backend("s1") is None
@@ -66,7 +66,7 @@ def test_real_load_caches_backend(monkeypatch: pytest.MonkeyPatch) -> None:
     fake = FakeBackend()
     _enable_real(monkeypatch, [fake])
     mgr = ModelManager()
-    mgr.register_slot("s1", "Maint", "qwen", model_path="base/x")
+    mgr.register_slot("s1", "Maint", "llama", model_path="base/x")
     slot = mgr.load_model("s1")
     assert slot.status == ModelStatus.READY
     assert mgr.get_backend("s1") is fake
@@ -76,8 +76,8 @@ def test_single_resident_eviction(monkeypatch: pytest.MonkeyPatch) -> None:
     fake1, fake2 = FakeBackend(), FakeBackend()
     _enable_real(monkeypatch, [fake1, fake2])
     mgr = ModelManager()
-    mgr.register_slot("s1", "A", "qwen", model_path="base/x")
-    mgr.register_slot("s2", "B", "qwen", model_path="base/x")
+    mgr.register_slot("s1", "A", "llama", model_path="base/x")
+    mgr.register_slot("s2", "B", "llama", model_path="base/x")
 
     mgr.load_model("s1")
     assert mgr.get_backend("s1") is fake1
@@ -93,7 +93,7 @@ def test_unload_frees_backend(monkeypatch: pytest.MonkeyPatch) -> None:
     fake = FakeBackend()
     _enable_real(monkeypatch, [fake])
     mgr = ModelManager()
-    mgr.register_slot("s1", "A", "qwen", model_path="base/x")
+    mgr.register_slot("s1", "A", "llama", model_path="base/x")
     mgr.load_model("s1")
     mgr.unload_model("s1")
     assert fake.closed is True
@@ -109,7 +109,7 @@ def test_load_failure_sets_error_status(monkeypatch: pytest.MonkeyPatch) -> None
 
     monkeypatch.setattr("foundry.src.inference_factory.build_inference", boom)
     mgr = ModelManager()
-    mgr.register_slot("s1", "A", "qwen", model_path="base/x")
+    mgr.register_slot("s1", "A", "llama", model_path="base/x")
     with pytest.raises(InferenceError):
         mgr.load_model("s1")
     assert mgr.get_slot("s1").status == ModelStatus.ERROR
@@ -137,7 +137,7 @@ def test_query_routes_to_real_backend(monkeypatch: pytest.MonkeyPatch) -> None:
     fake = FakeBackend(answer="REAL-ANSWER")
     _enable_real(monkeypatch, [fake])
     mgr = ModelManager()
-    mgr.register_slot("s1", "A", "qwen", model_path="base/x")
+    mgr.register_slot("s1", "A", "llama", model_path="base/x")
     mgr.load_model("s1")
     engine = HearthEngine(model_manager=mgr, rag_pipeline=_pipeline())
     resp = engine.query(QueryRequest(query="How do I remove the filter?", slot_id="s1"))
@@ -146,7 +146,7 @@ def test_query_routes_to_real_backend(monkeypatch: pytest.MonkeyPatch) -> None:
 
 def test_query_uses_mock_when_no_real_backend() -> None:
     mgr = ModelManager()
-    mgr.register_slot("s1", "A", "qwen")
+    mgr.register_slot("s1", "A", "llama")
     mgr.load_model("s1")  # mock path -> no backend cached
     engine = HearthEngine(model_manager=mgr, rag_pipeline=_pipeline())
     resp = engine.query(QueryRequest(query="How?", slot_id="s1"))
@@ -157,8 +157,8 @@ def test_real_query_does_not_bleed_into_mock_slot() -> None:
     """A real-backed query must not leave the real model on the pipeline for a
     later slot that has no real backend (regression for the routing bleed)."""
     mgr = ModelManager()
-    mgr.register_slot("real", "R", "qwen")
-    mgr.register_slot("mock", "M", "qwen")
+    mgr.register_slot("real", "R", "llama")
+    mgr.register_slot("mock", "M", "llama")
     mgr.load_model("real")
     mgr.load_model("mock")
     # Simulate a mixed deployment: a real backend cached for 'real' only.
@@ -174,10 +174,10 @@ def test_real_query_does_not_bleed_into_mock_slot() -> None:
 def test_real_multi_slot_eviction_and_query(monkeypatch: pytest.MonkeyPatch) -> None:
     """Two real slots load with single-resident eviction and both answer."""
     monkeypatch.setenv("KILN_INFERENCE_BACKEND", "transformers")
-    model_id = bc.DEFAULT_VALIDATION_MODEL
+    model_id = bc.get_validation_model()
     mgr = ModelManager()
-    mgr.register_slot("s1", "A", "qwen", model_path=model_id)
-    mgr.register_slot("s2", "B", "qwen", model_path=model_id)
+    mgr.register_slot("s1", "A", "llama", model_path=model_id)
+    mgr.register_slot("s2", "B", "llama", model_path=model_id)
     engine = HearthEngine(model_manager=mgr, rag_pipeline=_pipeline())
 
     mgr.load_model("s1")

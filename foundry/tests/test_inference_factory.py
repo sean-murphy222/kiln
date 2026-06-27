@@ -45,14 +45,14 @@ def test_explicit_mock_backend() -> None:
 
 def test_transformers_lazy_wiring(monkeypatch: pytest.MonkeyPatch) -> None:
     monkeypatch.setattr(inference_backends, "TransformersInference", _StubBackend)
-    model = build_inference(base_model="Qwen/Qwen2.5-0.5B-Instruct", backend="transformers")
+    model = build_inference(base_model="meta-llama/Llama-3.2-3B-Instruct", backend="transformers")
     assert isinstance(model, _StubBackend)
-    assert model.kwargs["base_model"] == "Qwen/Qwen2.5-0.5B-Instruct"
+    assert model.kwargs["base_model"] == "meta-llama/Llama-3.2-3B-Instruct"
 
 
 def test_transformers_reads_env(monkeypatch: pytest.MonkeyPatch) -> None:
     monkeypatch.setenv("KILN_INFERENCE_BACKEND", "transformers")
-    monkeypatch.setenv("KILN_BASE_MODEL", "Qwen/Qwen2.5-0.5B-Instruct")
+    monkeypatch.setenv("KILN_BASE_MODEL", "meta-llama/Llama-3.2-3B-Instruct")
     monkeypatch.setenv("KILN_ADAPTER_PATH", "/adapters/maint")
     monkeypatch.setattr(inference_backends, "TransformersInference", _StubBackend)
     model = build_inference()
@@ -60,9 +60,12 @@ def test_transformers_reads_env(monkeypatch: pytest.MonkeyPatch) -> None:
     assert model.kwargs["adapter_path"] == "/adapters/maint"
 
 
-def test_transformers_requires_base_model() -> None:
-    with pytest.raises(InferenceConfigError):
-        build_inference(backend="transformers")
+def test_transformers_defaults_to_american_model(monkeypatch: pytest.MonkeyPatch) -> None:
+    monkeypatch.setattr(bc, "has_hf_token", lambda: False)
+    monkeypatch.setattr(inference_backends, "TransformersInference", _StubBackend)
+    model = build_inference(backend="transformers")
+    assert isinstance(model, _StubBackend)
+    assert model.kwargs["base_model"] == bc.FALLBACK_BASE_MODEL
 
 
 def test_unknown_backend_raises() -> None:
