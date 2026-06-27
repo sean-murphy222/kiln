@@ -11,12 +11,11 @@
 
 ## Guiding constraints
 
-- **American models only.** Llama-3.2-3B-Instruct is the target base. All Qwen
-  defaults (currently `Qwen2.5-0.5B-Instruct` in `backend_config.py` + GPU tests)
-  are replaced. *Note:* Llama models are **gated** on Hugging Face (one-time
-  license acceptance + access token). Ungated American fallback if we want to
-  avoid gating: `microsoft/Phi-3.5-mini-instruct` (MIT) or `allenai/OLMo-2-*`
-  (Apache). **Decision needed — see end.**
+- **American models only — DECIDED:** support both, **default
+  `Llama-3.2-3B-Instruct`** (gated — needs Meta license acceptance + `HF_TOKEN`),
+  with **automatic fallback to `microsoft/Phi-3.5-mini-instruct`** (MIT, ungated)
+  when no token is present. All Qwen defaults (currently `Qwen2.5-0.5B-Instruct`
+  in `backend_config.py` + GPU tests) are replaced.
 - **Front-end first.** Proof = upload a TM and get a grounded, cited answer
   **in the Hearth chat screen**. That requires wiring all four UI screens.
 - **Local-first preserved.** No cloud dependency introduced; everything runs on
@@ -41,7 +40,7 @@ flowchart TD
 
 | # | Task | Effort | Acceptance |
 |---|------|--------|------------|
-| 1.1 | Swap **all Qwen defaults → American** (`backend_config.get_validation_model`, GPU tests, docs). Add HF-gating handling (token via env, clear error if missing). | M | No Qwen ids remain; tests use an American model id |
+| 1.1 | Swap **all Qwen defaults → American**. Support both backends; **default Llama-3.2-3B, auto-fallback to `Phi-3.5-mini` (MIT, ungated) when no `HF_TOKEN`**. Update `backend_config`, GPU tests, docs. | M | No Qwen ids remain; Llama when token present, Phi fallback otherwise |
 | 1.2 | Download + validate **Llama-3.2-3B-Instruct** real inference on the 5080 (bf16). | S | Coherent generation, VRAM within budget |
 | 1.3 | **`RealQuarryRetrievalAdapter`** implementing Foundry's `RetrievalAdapter`, wrapping the live `RetrievalTester`; returns `text` + `chunk_id`/`page`/`document_title`/`section`. | M | Unit test: returns ranked chunks with citable metadata |
 | 1.4 | **Shared chunk index** Quarry↔Hearth — persist the index to disk + reload (chosen over in-process singleton so it survives restarts and works in containers later). | M-L | Upload in Quarry → Hearth reads the same corpus across processes |
@@ -104,11 +103,9 @@ days (UI is the largest), Phase 4 ~2–3 days**, then the test. Each task lands 
 a small PR with tests; the suite stays green throughout (mock/dry-run defaults
 preserved; real paths behind env flags + GPU-marked tests).
 
-## Decisions needed before I start
+## Decisions
 
-1. **Llama gating:** OK to use **gated Llama-3.2-3B** (you/we accept the Meta
-   license on HF + provide an access token), or prefer an **ungated American
-   model** (`Phi-3.5-mini`, MIT) to avoid the token step? *(Recommendation:
-   Llama-3.2-3B as requested, with Phi-3.5-mini as the no-token fallback.)*
-2. **Scope confirmation:** proceed with **all of Phases 1–5** as one program
-   (I'll execute phase by phase, PR per task), or trim/re-order anything?
+1. **Llama gating — DECIDED:** support both; **default Llama-3.2-3B** (with
+   `HF_TOKEN`), **auto-fallback to ungated Phi-3.5-mini** when no token present.
+2. **Scope — DECIDED:** all of Phases 1–5 as one program (Phase 6 optional).
+3. **Status:** awaiting user review of this plan before execution begins.
