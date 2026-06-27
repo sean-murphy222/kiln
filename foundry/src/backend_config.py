@@ -5,15 +5,21 @@ dry-run backends and the real transformers + peft backends. Every value is
 read from an environment variable, so flipping to a real backend is a pure
 configuration change with no code edits.
 
-The module imports nothing heavy (only the standard library), so it is safe to
-import anywhere — including the degraded-mode server mount where torch/peft may
-be absent. The defaults keep the mock inference / dry-run training path active,
-so the entire existing test suite passes untouched.
+The module imports nothing heavy at import time (only the standard library; the
+optional Hugging Face token check imports ``huggingface_hub`` lazily), so it is
+safe to import anywhere — including the degraded-mode server mount where
+torch/peft may be absent. The defaults keep the mock inference / dry-run training
+path active, so the entire existing test suite passes untouched.
+
+Model policy: American models only. The default base model is gated Llama-3.2-3B
+(needs a Hugging Face token); when no token is available it falls back
+automatically to the ungated, MIT-licensed Phi-3.5-mini.
 
 Environment variables:
     KILN_INFERENCE_BACKEND: ``mock`` (default) or ``transformers``.
     FOUNDRY_TRAINING_BACKEND: ``dryrun`` (default) or ``real``.
-    KILN_BASE_MODEL: HuggingFace model id for the real inference backend.
+    KILN_BASE_MODEL: HuggingFace base model id (default: Llama-3.2-3B with a
+        token, else Phi-3.5-mini).
     KILN_ADAPTER_PATH: Path to a trained LoRA adapter to attach at inference.
     KILN_LOAD_4BIT: ``1`` to enable 4-bit quantization (default off -> bf16).
     KILN_INFERENCE_DTYPE: Torch dtype name (default ``bfloat16``).
@@ -54,9 +60,23 @@ DEFAULT_INFERENCE_BACKEND = "mock"
 DEFAULT_TRAINING_BACKEND = "dryrun"
 DEFAULT_DTYPE = "bfloat16"
 DEFAULT_MAX_NEW_TOKENS = 512
-DEFAULT_VALIDATION_MODEL = "Qwen/Qwen2.5-0.5B-Instruct"
+
+# American models only. Llama is gated (needs a Hugging Face token); Phi-3.5-mini
+# is MIT-licensed and ungated, used as the automatic fallback when no token.
+DEFAULT_BASE_MODEL = "meta-llama/Llama-3.2-3B-Instruct"
+FALLBACK_BASE_MODEL = "microsoft/Phi-3.5-mini-instruct"
+DEFAULT_VALIDATION_MODEL = "meta-llama/Llama-3.2-1B-Instruct"
+FALLBACK_VALIDATION_MODEL = "microsoft/Phi-3.5-mini-instruct"
 
 _TRUTHY = {"1", "true", "yes", "on"}
+
+# Keyword -> family, checked in order against a lowercased model id.
+_FAMILY_KEYWORDS = (
+    ("phi", "phi"),
+    ("llama", "llama"),
+    ("mistral", "mistral"),
+    ("qwen", "qwen"),
+)
 
 
 def _get(name: str) -> str | None:
@@ -108,9 +128,55 @@ def get_training_backend() -> str:
     return (_get(FOUNDRY_TRAINING_BACKEND) or DEFAULT_TRAINING_BACKEND).lower()
 
 
-def get_base_model() -> str | None:
-    """Return the configured base model id, or ``None`` if unset."""
-    return _get(KILN_BASE_MODEL)
+def has_hf_token() -> bool:
+    """Return True if a Hugging Face access token is available.
+
+    Checks the cached CLI login and the standard env vars (via
+    ``huggingface_hub.get_token`` when importable, else env directly). Used to
+    decide whether the gated default (Llama) is reachable or the ungated
+    fallback (Phi) must be used.
+    """
+    try:
+        from huggingface_hub import get_token
+
+        if get_token():
+            return True
+    except Exception:  # pragma: no cover - huggingface_hub is present in this env
+        pass
+    return any(
+        os.environ.get(name)
+        for name in ("HF_TOKEN", "HUGGING_FACE_HUB_TOKEN", "HUGGINGFACEHUB_API_TOKEN")
+    )
+
+
+def get_base_model() -> str:
+    """Return the base model id for real inference (American models only).
+
+    Resolution order: ``KILN_BASE_MODEL`` if set; otherwise the gated default
+    Llama-3.2-3B when a Hugging Face token is available, else the ungated
+    Phi-3.5-mini fallback.
+    """
+    explicit = _get(KILN_BASE_MODEL)
+    if explicit:
+        return explicit
+    return DEFAULT_BASE_MODEL if has_hf_token() else FALLBACK_BASE_MODEL
+
+
+def model_family_for(model_id: str) -> str:
+    """Infer the LoRA model family from a model id.
+
+    Args:
+        model_id: HuggingFace model id.
+
+    Returns:
+        One of ``llama``/``phi``/``mistral``/``qwen``; defaults to ``llama`` for
+        an unrecognized American instruct model.
+    """
+    lowered = model_id.lower()
+    for keyword, family in _FAMILY_KEYWORDS:
+        if keyword in lowered:
+            return family
+    return "llama"
 
 
 def get_adapter_path() -> str | None:
@@ -145,8 +211,15 @@ def get_max_new_tokens() -> int:
 
 
 def get_validation_model() -> str:
-    """Return the small model id used for GPU validation tests."""
-    return _get(KILN_VALIDATION_MODEL) or DEFAULT_VALIDATION_MODEL
+    """Return the small model id used for GPU validation tests.
+
+    ``KILN_VALIDATION_MODEL`` if set; otherwise the gated default Llama-3.2-1B
+    when a Hugging Face token is available, else the ungated Phi-3.5-mini.
+    """
+    explicit = _get(KILN_VALIDATION_MODEL)
+    if explicit:
+        return explicit
+    return DEFAULT_VALIDATION_MODEL if has_hf_token() else FALLBACK_VALIDATION_MODEL
 
 
 def run_gpu_tests() -> bool:

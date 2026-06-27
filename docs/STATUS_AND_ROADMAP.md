@@ -161,8 +161,8 @@ plan, cloud always optional on top of a local-first core:
 2. **Shared-index design** — in-process `RetrievalTester` singleton (fastest) vs
    persist/reload index to disk (survives restarts; prerequisite for containers)?
 3. **Base model for the MVT** — 3B (fast, fits anything) vs 7–8B bf16 (better
-   answers, ~18–22 GB — tight on the 16 GB 5080)? Family preference (Qwen2.5,
-   Llama, Phi-3)?
+   answers, ~18–22 GB — tight on the 16 GB 5080)? *(Decided: American only —
+   Llama-3.2-3B default, Phi-3.5-mini ungated fallback.)*
 4. **Citation granularity** — is chunk+page enough, or do you need
    section/heading-path resolution?
 5. **UI scope for the first test** — wire the Hearth chat *screen*, or is a

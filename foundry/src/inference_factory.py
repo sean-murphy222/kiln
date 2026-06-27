@@ -52,8 +52,7 @@ def build_inference(
         A mock or real backend implementing the ModelInference Protocol.
 
     Raises:
-        InferenceConfigError: If ``transformers`` is selected without a base
-            model, or an unknown backend name is given.
+        InferenceConfigError: If an unknown backend name is given.
     """
     resolved = (backend or backend_config.get_inference_backend()).lower()
 
@@ -61,12 +60,9 @@ def build_inference(
         return MockInference(default_response=default_response)
 
     if resolved == "transformers":
+        # backend_config.get_base_model() always resolves to an American default
+        # (Llama-3.2-3B with a token, else Phi-3.5-mini) when none is given.
         model_id = base_model or backend_config.get_base_model()
-        if not model_id:
-            raise InferenceConfigError(
-                "Inference backend 'transformers' requires a base model: set "
-                "KILN_BASE_MODEL or pass base_model=."
-            )
         # Lazy import: only pull the heavy backend when actually selected.
         from foundry.src.inference_backends import TransformersInference
 

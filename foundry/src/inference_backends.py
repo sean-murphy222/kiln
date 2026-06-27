@@ -40,7 +40,7 @@ class TransformersInference:
 
     Example::
 
-        model = TransformersInference("Qwen/Qwen2.5-0.5B-Instruct")
+        model = TransformersInference("meta-llama/Llama-3.2-3B-Instruct")
         answer = model.generate("What is torque?")
     """
 

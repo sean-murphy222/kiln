@@ -19,7 +19,7 @@ def real_model():
     """Load the small validation model once per module, then free VRAM."""
     from foundry.src.inference_backends import TransformersInference
 
-    model = TransformersInference(bc.DEFAULT_VALIDATION_MODEL)
+    model = TransformersInference(bc.get_validation_model())
     yield model
     model.close()
 
@@ -52,12 +52,12 @@ def test_generate_respects_max_tokens(real_model) -> None:
 
 @pytest.mark.gpu
 def test_vram_within_budget(real_model) -> None:
-    """A 0.5B bf16 model should sit well under the 16 GB budget."""
+    """A 3B-class bf16 model should fit comfortably on a 16 GB card."""
     import torch
 
     real_model.generate("Hello.", max_tokens=8)
     allocated_gb = torch.cuda.memory_allocated() / (1024**3)
-    assert allocated_gb < 4.0, f"VRAM {allocated_gb:.2f} GB exceeds bf16 budget"
+    assert allocated_gb < 14.0, f"VRAM {allocated_gb:.2f} GB exceeds the 16 GB budget"
 
 
 @pytest.mark.gpu
@@ -66,7 +66,7 @@ def test_factory_builds_real_backend(monkeypatch: pytest.MonkeyPatch) -> None:
     from foundry.src.inference_factory import build_inference
 
     monkeypatch.setenv("KILN_INFERENCE_BACKEND", "transformers")
-    monkeypatch.setenv("KILN_BASE_MODEL", bc.DEFAULT_VALIDATION_MODEL)
+    monkeypatch.setenv("KILN_BASE_MODEL", bc.get_validation_model())
     model = build_inference()
     try:
         out = model.generate("Say hello in one word.", max_tokens=8)
