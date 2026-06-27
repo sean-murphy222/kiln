@@ -550,6 +550,18 @@ class ModelManager:
         """
         from foundry.src.inference_factory import build_inference
 
+        # A slot with no distinct base/adapter would just reload the server's
+        # default model, doubling VRAM. Reuse the shared pipeline model instead:
+        # mark READY without a per-slot backend so HearthEngine.query falls back
+        # to its default model. (Only slots that specify model_path/lora_path get
+        # their own resident backend.)
+        if not slot.model_path and not slot.lora_path:
+            self._evict_all(keep=None)
+            self._close_backend(slot.slot_id)
+            slot.status = ModelStatus.READY
+            slot.loaded_at = datetime.now()
+            return slot
+
         slot.status = ModelStatus.LOADING
         try:
             self._evict_all(keep=slot.slot_id)
