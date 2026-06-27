@@ -1,4 +1,4 @@
-import { useState, useCallback } from 'react';
+import { useState, useCallback } from "react";
 import {
   PanelLeft,
   TestTube,
@@ -6,11 +6,12 @@ import {
   Download,
   Upload,
   Settings,
-} from 'lucide-react';
-import { useStore } from '../store/useStore';
-import { projectAPI, documentAPI } from '../api/quarry';
-import { SettingsModal } from './SettingsModal';
-import { ExportModal } from './ExportModal';
+} from "lucide-react";
+import { useStore } from "../store/useStore";
+import { projectAPI, documentAPI } from "../api/quarry";
+import { fileFromElectronRead } from "../lib/electronUpload";
+import { SettingsModal } from "./SettingsModal";
+import { ExportModal } from "./ExportModal";
 
 export function Toolbar() {
   const {
@@ -30,15 +31,17 @@ export function Toolbar() {
   const [showExportModal, setShowExportModal] = useState(false);
 
   // Get selected document info for export
-  const selectedDocument = project?.documents.find((d) => d.id === selectedDocumentId);
+  const selectedDocument = project?.documents.find(
+    (d) => d.id === selectedDocumentId,
+  );
 
   // Handle file upload
   const handleUpload = useCallback(async () => {
     if (!window.electronAPI) {
       // Web fallback - use file input
-      const input = document.createElement('input');
-      input.type = 'file';
-      input.accept = '.pdf,.docx,.md,.txt';
+      const input = document.createElement("input");
+      input.type = "file";
+      input.accept = ".pdf,.docx,.md,.txt";
       input.onchange = async (e) => {
         const file = (e.target as HTMLInputElement).files?.[0];
         if (!file) return;
@@ -51,7 +54,9 @@ export function Toolbar() {
           setProject(updatedProject);
           selectDocument(result.document_id);
         } catch (err) {
-          setError(err instanceof Error ? err.message : 'Failed to upload document');
+          setError(
+            err instanceof Error ? err.message : "Failed to upload document",
+          );
         } finally {
           setLoading(false);
         }
@@ -60,12 +65,25 @@ export function Toolbar() {
       return;
     }
 
-    const result = await window.electronAPI.openFile();
-    if (result.canceled || !result.filePaths[0]) return;
+    const dialogResult = await window.electronAPI.openFile();
+    if (dialogResult.canceled || !dialogResult.filePaths[0]) return;
 
-    // For Electron, we need to read the file and upload it
-    // This is simplified - in production you'd use IPC
-    setError('File upload from Electron not fully implemented');
+    setLoading(true);
+    setError(null);
+    try {
+      const read = await window.electronAPI.readFile(dialogResult.filePaths[0]);
+      const file = fileFromElectronRead(read);
+      const result = await documentAPI.upload(file);
+      const updatedProject = await projectAPI.get();
+      setProject(updatedProject);
+      selectDocument(result.document_id);
+    } catch (err) {
+      setError(
+        err instanceof Error ? err.message : "Failed to upload document",
+      );
+    } finally {
+      setLoading(false);
+    }
   }, [setProject, setLoading, setError, selectDocument]);
 
   // Handle save
@@ -73,7 +91,9 @@ export function Toolbar() {
     if (!project) return;
 
     if (!project.project_path && window.electronAPI) {
-      const result = await window.electronAPI.saveProject(project.name + '.kiln');
+      const result = await window.electronAPI.saveProject(
+        project.name + ".kiln",
+      );
       if (result.canceled || !result.filePath) return;
 
       setLoading(true);
@@ -82,7 +102,7 @@ export function Toolbar() {
         const updatedProject = await projectAPI.get();
         setProject(updatedProject);
       } catch (err) {
-        setError(err instanceof Error ? err.message : 'Failed to save project');
+        setError(err instanceof Error ? err.message : "Failed to save project");
       } finally {
         setLoading(false);
       }
@@ -91,7 +111,7 @@ export function Toolbar() {
       try {
         await projectAPI.save();
       } catch (err) {
-        setError(err instanceof Error ? err.message : 'Failed to save project');
+        setError(err instanceof Error ? err.message : "Failed to save project");
       } finally {
         setLoading(false);
       }
@@ -108,7 +128,7 @@ export function Toolbar() {
       {/* Left side - toggles */}
       <button
         className={`p-2 rounded hover:bg-kiln-700 transition-colors ${
-          sidebarOpen ? 'text-ember' : 'text-kiln-500'
+          sidebarOpen ? "text-ember" : "text-kiln-500"
         }`}
         onClick={toggleSidebar}
         title="Toggle sidebar"
@@ -118,7 +138,7 @@ export function Toolbar() {
 
       {/* Project name */}
       <div className="text-pixel text-xs text-kiln-300 ml-2">
-        {project?.name ?? 'Kiln'}
+        {project?.name ?? "Kiln"}
       </div>
 
       {/* Spacer */}
@@ -155,7 +175,7 @@ export function Toolbar() {
       {/* Test panel toggle */}
       <button
         className={`p-2 rounded hover:bg-kiln-700 transition-colors ${
-          testPanelOpen ? 'text-ember' : 'text-kiln-500'
+          testPanelOpen ? "text-ember" : "text-kiln-500"
         }`}
         onClick={toggleTestPanel}
         title="Toggle test panel"
