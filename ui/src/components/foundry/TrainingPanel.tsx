@@ -1,40 +1,89 @@
-import { useState } from 'react';
-import { Play, Square, Clock, CheckCircle2, XCircle, AlertCircle, Cpu } from 'lucide-react';
-import { cn } from '@/lib/cn';
-import { useFoundryStore } from '@/store/useFoundryStore';
-import type { TrainingRun } from '@/store/useFoundryStore';
+import { useState, useEffect } from "react";
+import {
+  Play,
+  Square,
+  Clock,
+  CheckCircle2,
+  XCircle,
+  AlertCircle,
+  Cpu,
+} from "lucide-react";
+import { cn } from "@/lib/cn";
+import { useFoundryStore } from "@/store/useFoundryStore";
+import type { TrainingRun } from "@/store/useFoundryStore";
+import { trainingAPI } from "@/api/foundry";
+import { mapTrainingRun } from "@/lib/foundryMappers";
+import { showToast } from "@/components/common/Toast";
+
+/**
+ * The backend requires a curriculum path. The training form does not yet
+ * expose a curriculum/discipline selector, so a default is sent. See report
+ * notes — a curriculum picker is a follow-up gap.
+ */
+const DEFAULT_CURRICULUM_PATH = "curriculum.jsonl";
 
 const STATUS_CONFIG = {
-  pending: { label: 'Pending', icon: Clock, className: 'bg-kiln-600 text-kiln-300' },
-  running: { label: 'Running', icon: Play, className: 'bg-info/15 text-info' },
-  completed: { label: 'Completed', icon: CheckCircle2, className: 'bg-success/15 text-success' },
-  failed: { label: 'Failed', icon: XCircle, className: 'bg-error/15 text-error' },
-  cancelled: { label: 'Cancelled', icon: AlertCircle, className: 'bg-warning/15 text-warning' },
+  pending: {
+    label: "Pending",
+    icon: Clock,
+    className: "bg-kiln-600 text-kiln-300",
+  },
+  running: { label: "Running", icon: Play, className: "bg-info/15 text-info" },
+  completed: {
+    label: "Completed",
+    icon: CheckCircle2,
+    className: "bg-success/15 text-success",
+  },
+  failed: {
+    label: "Failed",
+    icon: XCircle,
+    className: "bg-error/15 text-error",
+  },
+  cancelled: {
+    label: "Cancelled",
+    icon: AlertCircle,
+    className: "bg-warning/15 text-warning",
+  },
 } as const;
 
 function TrainingConfigForm() {
-  const { addTrainingRun } = useFoundryStore();
-  const [baseModel, setBaseModel] = useState('meta-llama/Llama-3.1-8B');
-  const [adapterName, setAdapterName] = useState('');
+  const { setTrainingRuns, setError } = useFoundryStore();
+  const [baseModel, setBaseModel] = useState("meta-llama/Llama-3.1-8B");
+  const [adapterName, setAdapterName] = useState("");
   const [loraRank, setLoraRank] = useState(16);
   const [epochs, setEpochs] = useState(3);
   const [learningRate, setLearningRate] = useState(0.0002);
+  const [isStarting, setIsStarting] = useState(false);
 
-  const handleStart = () => {
-    const run: TrainingRun = {
-      id: `run-${Date.now()}`,
-      name: adapterName || `Training ${new Date().toLocaleDateString()}`,
-      status: 'running',
-      progress: 0,
-      base_model: baseModel,
-      metrics: {},
-      created_at: new Date().toISOString(),
-      completed_at: null,
-      error: null,
-    };
-    addTrainingRun(run);
-    setAdapterName('');
+  const runConfigure = async (auto: boolean) => {
+    if (isStarting) return;
+    setIsStarting(true);
+    try {
+      const { run_id } = await trainingAPI.configure({
+        base_model: baseModel,
+        curriculum_path: DEFAULT_CURRICULUM_PATH,
+        adapter_name: adapterName || `adapter-${Date.now()}`,
+        lora_rank: loraRank,
+        epochs,
+        learning_rate: learningRate,
+        auto_configure: auto,
+      });
+      await trainingAPI.start(run_id);
+      const runs = await trainingAPI.listRuns();
+      setTrainingRuns(runs.map(mapTrainingRun));
+      setAdapterName("");
+      showToast("success", "Training run started");
+    } catch (err) {
+      const msg =
+        err instanceof Error ? err.message : "Failed to start training";
+      setError(msg);
+      showToast("error", msg);
+    } finally {
+      setIsStarting(false);
+    }
   };
+
+  const handleStart = () => runConfigure(false);
 
   return (
     <div className="card p-4 space-y-3">
@@ -45,7 +94,9 @@ function TrainingConfigForm() {
 
       <div className="grid grid-cols-2 gap-3">
         <div>
-          <label className="text-2xs text-kiln-400 mb-1 block">Base Model</label>
+          <label className="text-2xs text-kiln-400 mb-1 block">
+            Base Model
+          </label>
           <select
             value={baseModel}
             onChange={(e) => setBaseModel(e.target.value)}
@@ -57,7 +108,9 @@ function TrainingConfigForm() {
           </select>
         </div>
         <div>
-          <label className="text-2xs text-kiln-400 mb-1 block">Adapter Name</label>
+          <label className="text-2xs text-kiln-400 mb-1 block">
+            Adapter Name
+          </label>
           <input
             type="text"
             value={adapterName}
@@ -105,10 +158,20 @@ function TrainingConfigForm() {
       </div>
 
       <div className="flex justify-end gap-2 pt-1">
-        <button className="btn-secondary btn-sm">Auto-Configure</button>
-        <button onClick={handleStart} className="btn-primary btn-sm">
+        <button
+          onClick={() => runConfigure(true)}
+          disabled={isStarting}
+          className={cn("btn-secondary btn-sm", isStarting && "opacity-60")}
+        >
+          Auto-Configure
+        </button>
+        <button
+          onClick={handleStart}
+          disabled={isStarting}
+          className={cn("btn-primary btn-sm", isStarting && "opacity-60")}
+        >
           <Play size={12} />
-          Start Training
+          {isStarting ? "Starting..." : "Start Training"}
         </button>
       </div>
     </div>
@@ -130,14 +193,21 @@ function RunRow({ run, isSelected, onSelect }: RunRowProps) {
     <button
       onClick={onSelect}
       className={cn(
-        'w-full text-left px-4 py-3 flex items-center gap-3 border-b border-kiln-600/50 transition-colors',
-        isSelected ? 'bg-foundry-cast-faint' : 'hover:bg-kiln-700/30',
+        "w-full text-left px-4 py-3 flex items-center gap-3 border-b border-kiln-600/50 transition-colors",
+        isSelected ? "bg-foundry-cast-faint" : "hover:bg-kiln-700/30",
       )}
     >
       <div className="flex-1 min-w-0">
         <div className="flex items-center gap-2 mb-1">
-          <span className="text-sm font-medium text-kiln-200 truncate">{run.name}</span>
-          <span className={cn('inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-2xs font-medium', status.className)}>
+          <span className="text-sm font-medium text-kiln-200 truncate">
+            {run.name}
+          </span>
+          <span
+            className={cn(
+              "inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-2xs font-medium",
+              status.className,
+            )}
+          >
             <StatusIcon size={10} />
             {status.label}
           </span>
@@ -147,7 +217,7 @@ function RunRow({ run, isSelected, onSelect }: RunRowProps) {
         </div>
       </div>
 
-      {run.status === 'running' && (
+      {run.status === "running" && (
         <div className="flex items-center gap-2 shrink-0">
           <div className="w-20 h-1.5 bg-kiln-700 rounded-full">
             <div
@@ -155,11 +225,21 @@ function RunRow({ run, isSelected, onSelect }: RunRowProps) {
               style={{ width: `${run.progress}%` }}
             />
           </div>
-          <span className="text-2xs text-foundry-cast tabular-nums">{run.progress}%</span>
+          <span className="text-2xs text-foundry-cast tabular-nums">
+            {run.progress}%
+          </span>
           <button
-            onClick={(e) => {
+            onClick={async (e) => {
               e.stopPropagation();
-              updateTrainingRun(run.id, { status: 'cancelled' });
+              try {
+                const cancelled = await trainingAPI.cancel(run.id);
+                updateTrainingRun(run.id, mapTrainingRun(cancelled));
+              } catch (err) {
+                showToast(
+                  "error",
+                  err instanceof Error ? err.message : "Failed to cancel run",
+                );
+              }
             }}
             className="p-1 rounded hover:bg-kiln-600 text-kiln-500 hover:text-error transition-colors"
             title="Cancel"
@@ -173,7 +253,29 @@ function RunRow({ run, isSelected, onSelect }: RunRowProps) {
 }
 
 export function TrainingPanel() {
-  const { trainingRuns, selectedRunId, selectRun } = useFoundryStore();
+  const { trainingRuns, selectedRunId, selectRun, setTrainingRuns, setError } =
+    useFoundryStore();
+
+  // Load existing training runs on mount.
+  useEffect(() => {
+    let cancelled = false;
+    trainingAPI
+      .listRuns()
+      .then((runs) => {
+        if (!cancelled) setTrainingRuns(runs.map(mapTrainingRun));
+      })
+      .catch((err) => {
+        if (!cancelled) {
+          const msg =
+            err instanceof Error ? err.message : "Failed to load training runs";
+          setError(msg);
+          showToast("error", msg);
+        }
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [setTrainingRuns, setError]);
 
   return (
     <div className="flex-1 flex flex-col overflow-hidden">

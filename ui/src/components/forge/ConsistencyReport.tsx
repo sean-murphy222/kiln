@@ -11,6 +11,8 @@ import {
 import { cn } from "@/lib/cn";
 import { useForgeStore } from "@/store/useForgeStore";
 import type { ConsistencyIssue } from "@/store/useForgeStore";
+import { consistencyAPI } from "@/api/forge";
+import { showToast } from "@/components/common/Toast";
 
 const SEVERITY_CONFIG = {
   high: {
@@ -120,6 +122,7 @@ export function ConsistencyReport() {
     consistencyCheckedAt,
     selectedDisciplineId,
     setConsistencyIssues,
+    setError,
   } = useForgeStore();
   const [isRunning, setIsRunning] = useState(false);
 
@@ -129,55 +132,21 @@ export function ConsistencyReport() {
     low: consistencyIssues.filter((i) => i.severity === "low").length,
   };
 
-  const handleRunCheck = () => {
+  const handleRunCheck = async () => {
+    if (!selectedDisciplineId || isRunning) return;
     setIsRunning(true);
-    // Simulate consistency check (will be replaced by real API call)
-    setTimeout(() => {
-      const demoIssues: ConsistencyIssue[] = [
-        {
-          id: "issue-1",
-          type: "Duplicate Content",
-          severity: "high",
-          description:
-            "Two examples have nearly identical questions with different answers, creating contradictory training signals.",
-          affected_example_ids: ["ex-001", "ex-015"],
-          suggested_fix:
-            "Merge the examples or differentiate the questions to cover distinct aspects of the topic.",
-        },
-        {
-          id: "issue-2",
-          type: "Coverage Gap",
-          severity: "medium",
-          description:
-            'The "Fault Isolation" competency has only 2 examples against a target of 15. This will result in weak model performance.',
-          affected_example_ids: [],
-          suggested_fix:
-            "Add more examples covering common fault isolation scenarios, starting with the most frequent equipment failures.",
-        },
-        {
-          id: "issue-3",
-          type: "Style Inconsistency",
-          severity: "low",
-          description:
-            "Answer length varies significantly across examples. Some are 2 sentences while others are 2 paragraphs. Normalize for consistent training signal.",
-          affected_example_ids: ["ex-003", "ex-007", "ex-012", "ex-019"],
-          suggested_fix:
-            "Establish a target answer length (3-5 sentences) and adjust outliers to match.",
-        },
-        {
-          id: "issue-4",
-          type: "Missing Context",
-          severity: "medium",
-          description:
-            "Several examples reference specific equipment models without providing context about what type of equipment it is.",
-          affected_example_ids: ["ex-005", "ex-008"],
-          suggested_fix:
-            "Add context fields explaining the equipment type and its role in the maintenance workflow.",
-        },
-      ];
-      setConsistencyIssues(demoIssues, new Date().toISOString());
+    try {
+      const report = await consistencyAPI.check(selectedDisciplineId);
+      const issues: ConsistencyIssue[] = report.issues;
+      setConsistencyIssues(issues, report.checked_at);
+    } catch (err) {
+      const msg =
+        err instanceof Error ? err.message : "Consistency check failed";
+      setError(msg);
+      showToast("error", msg);
+    } finally {
       setIsRunning(false);
-    }, 2000);
+    }
   };
 
   if (!selectedDisciplineId) {
