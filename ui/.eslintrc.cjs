@@ -29,5 +29,15 @@ module.exports = {
       files: ['*.test.ts', '*.test.tsx', '**/test/**', '**/__tests__/**'],
       env: { node: true },
     },
+    {
+      // Electron main/preload are CommonJS Node modules; require() is correct.
+      files: ['electron/**/*.js', '*.cjs'],
+      env: { node: true },
+      parserOptions: { sourceType: 'commonjs' },
+      rules: {
+        '@typescript-eslint/no-var-requires': 'off',
+        '@typescript-eslint/no-require-imports': 'off',
+      },
+    },
   ],
 };
