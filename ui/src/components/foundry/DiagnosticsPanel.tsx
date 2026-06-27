@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import {
   Wrench,
   Activity,
@@ -15,6 +15,8 @@ import {
 import { cn } from "@/lib/cn";
 import { useFoundryStore } from "@/store/useFoundryStore";
 import type { DiagnosticReport } from "@/store/useFoundryStore";
+import { diagnosticsAPI, regressionAPI, mergingAPI } from "@/api/foundry";
+import { showToast } from "@/components/common/Toast";
 
 const SEVERITY_CONFIG = {
   high: {
@@ -49,42 +51,25 @@ const OVERFIT_CONFIG = {
 } as const;
 
 function DiagnosticsSection() {
-  const { diagnosticReport, trainingRuns, setDiagnosticReport } =
+  const { diagnosticReport, trainingRuns, setDiagnosticReport, setError } =
     useFoundryStore();
   const [isAnalyzing, setIsAnalyzing] = useState(false);
   const [selectedRunId, setSelectedRunId] = useState("");
 
-  const handleAnalyze = () => {
-    if (!selectedRunId) return;
+  const handleAnalyze = async () => {
+    if (!selectedRunId || isAnalyzing) return;
     setIsAnalyzing(true);
-    setTimeout(() => {
-      const report: DiagnosticReport = {
-        run_id: selectedRunId,
-        issues: [
-          {
-            type: "Learning Rate",
-            severity: "medium",
-            description:
-              "Loss oscillation detected in final 20% of training. Learning rate may be too high for fine-tuning phase.",
-            recommendation:
-              "Consider using learning rate scheduler with cosine decay, or reduce base learning rate by 50%.",
-          },
-          {
-            type: "Data Distribution",
-            severity: "low",
-            description:
-              'Training examples are unevenly distributed across competencies. "Parts Interpretation" has 3x fewer examples than average.',
-            recommendation:
-              "Balance training data by adding more examples for underrepresented competencies.",
-          },
-        ],
-        convergence_status: "converging",
-        overfit_risk: "low",
-        analyzed_at: new Date().toISOString(),
-      };
+    try {
+      const report: DiagnosticReport =
+        await diagnosticsAPI.analyze(selectedRunId);
       setDiagnosticReport(report);
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : "Diagnostics failed";
+      setError(msg);
+      showToast("error", msg);
+    } finally {
       setIsAnalyzing(false);
-    }, 2000);
+    }
   };
 
   const conv = diagnosticReport
@@ -209,7 +194,28 @@ function DiagnosticsSection() {
 }
 
 function VersionsSection() {
-  const { modelVersions } = useFoundryStore();
+  const { modelVersions, setModelVersions } = useFoundryStore();
+
+  // Load registered model versions on mount.
+  useEffect(() => {
+    let cancelled = false;
+    regressionAPI
+      .listVersions()
+      .then((versions) => {
+        if (!cancelled) setModelVersions(versions);
+      })
+      .catch((err) => {
+        if (!cancelled) {
+          showToast(
+            "error",
+            err instanceof Error ? err.message : "Failed to load versions",
+          );
+        }
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [setModelVersions]);
 
   return (
     <div className="space-y-3">
@@ -248,27 +254,53 @@ function VersionsSection() {
 }
 
 function MergingSection() {
-  const { mergeResults, modelVersions, addMergeResult } = useFoundryStore();
+  const {
+    mergeResults,
+    modelVersions,
+    addMergeResult,
+    setMergeResults,
+    setError,
+  } = useFoundryStore();
   const [method, setMethod] = useState<"linear" | "ties">("linear");
   const [selectedAdapters, setSelectedAdapters] = useState<string[]>([]);
   const [outputName, setOutputName] = useState("");
   const [isMerging, setIsMerging] = useState(false);
 
-  const handleMerge = () => {
-    if (selectedAdapters.length < 2 || !outputName) return;
-    setIsMerging(true);
-    setTimeout(() => {
-      addMergeResult({
-        id: `merge-${Date.now()}`,
-        output_path: `/models/merged/${outputName}`,
-        method,
-        adapters_merged: selectedAdapters,
-        created_at: new Date().toISOString(),
+  // Load existing merge results on mount.
+  useEffect(() => {
+    let cancelled = false;
+    mergingAPI
+      .listRegistry()
+      .then((results) => {
+        if (!cancelled) setMergeResults(results);
+      })
+      .catch(() => {
+        /* non-fatal: keep current merge history */
       });
-      setIsMerging(false);
+    return () => {
+      cancelled = true;
+    };
+  }, [setMergeResults]);
+
+  const handleMerge = async () => {
+    if (selectedAdapters.length < 2 || !outputName || isMerging) return;
+    setIsMerging(true);
+    try {
+      const result = await mergingAPI.merge({
+        adapters: selectedAdapters,
+        method,
+        output_name: outputName,
+      });
+      addMergeResult(result);
       setOutputName("");
       setSelectedAdapters([]);
-    }, 2000);
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : "Merge failed";
+      setError(msg);
+      showToast("error", msg);
+    } finally {
+      setIsMerging(false);
+    }
   };
 
   const toggleAdapter = (id: string) => {

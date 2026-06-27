@@ -1,4 +1,4 @@
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect, useCallback } from "react";
 import {
   FileCheck,
   Filter,
@@ -13,6 +13,9 @@ import {
 import { cn } from "@/lib/cn";
 import { useForgeStore } from "@/store/useForgeStore";
 import type { ForgeExample } from "@/store/useForgeStore";
+import { competencyAPI, exampleAPI } from "@/api/forge";
+import { mapCompetency, mapExample } from "@/lib/forgeMappers";
+import { showToast } from "@/components/common/Toast";
 
 const STATUS_CONFIG = {
   draft: {
@@ -174,9 +177,73 @@ function ExampleRow({
 }
 
 export function ExampleList() {
-  const { examples, competencies, selectedDisciplineId, updateExample } =
-    useForgeStore();
+  const {
+    examples,
+    competencies,
+    selectedDisciplineId,
+    updateExample,
+    setExamples,
+    setCompetencies,
+    setLoading,
+    setError,
+  } = useForgeStore();
   const [expandedId, setExpandedId] = useState<string | null>(null);
+
+  // Load competencies + their examples for the selected discipline.
+  useEffect(() => {
+    if (!selectedDisciplineId) return;
+    let cancelled = false;
+    setLoading(true);
+    (async () => {
+      try {
+        const comps = await competencyAPI.list(selectedDisciplineId);
+        if (cancelled) return;
+        setCompetencies(comps.map(mapCompetency));
+        const nameById = new Map(comps.map((c) => [c.id, c.name]));
+        const lists = await Promise.all(
+          comps.map((c) => exampleAPI.list(c.id)),
+        );
+        if (cancelled) return;
+        const all = lists
+          .flat()
+          .map((e) => mapExample(e, nameById.get(e.competency_id) ?? ""));
+        setExamples(all);
+      } catch (err) {
+        if (!cancelled) {
+          const msg =
+            err instanceof Error ? err.message : "Failed to load examples";
+          setError(msg);
+          showToast("error", msg);
+        }
+      } finally {
+        if (!cancelled) setLoading(false);
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [
+    selectedDisciplineId,
+    setCompetencies,
+    setExamples,
+    setLoading,
+    setError,
+  ]);
+
+  const handleSetStatus = useCallback(
+    async (id: string, status: ForgeExample["status"]) => {
+      try {
+        const updated = await exampleAPI.update(id, { status });
+        updateExample(id, { status: updated.status });
+      } catch (err) {
+        showToast(
+          "error",
+          err instanceof Error ? err.message : "Failed to update example",
+        );
+      }
+    },
+    [updateExample],
+  );
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState<ExampleStatus | "all">(
     "all",
@@ -343,13 +410,9 @@ export function ExampleList() {
               onToggle={() =>
                 setExpandedId(expandedId === example.id ? null : example.id)
               }
-              onApprove={() =>
-                updateExample(example.id, { status: "approved" })
-              }
-              onReject={() => updateExample(example.id, { status: "rejected" })}
-              onRevision={() =>
-                updateExample(example.id, { status: "needs_revision" })
-              }
+              onApprove={() => handleSetStatus(example.id, "approved")}
+              onReject={() => handleSetStatus(example.id, "rejected")}
+              onRevision={() => handleSetStatus(example.id, "needs_revision")}
             />
           ))
         )}

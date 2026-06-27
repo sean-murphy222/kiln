@@ -2,19 +2,39 @@
  * Forge API Client
  *
  * Communicates with the Forge backend (curriculum builder) via REST API.
+ *
+ * The Forge FastAPI router (forge/src/server.py) returns domain `to_dict()`
+ * shapes and wraps list results under named keys
+ * ({ "disciplines": [...] }, { "competencies": [...] }, { "examples": [...] }).
+ * Field names also differ from the UI's normalized shapes, e.g.:
+ *   - Competency: backend has `coverage_target` (no `level`/`example_count`)
+ *   - Example: backend has `ideal_answer` + `review_status` (UI uses
+ *     `answer` + `status`, and the backend's "pending" maps to UI "draft")
+ *   - ConsistencyIssue: backend has issue_type/message/example_id/severity
+ *     (info|warning|error), mapped to UI type/description/affected_example_ids/
+ *     severity (low|medium|high)
+ *
+ * Each method translates the real backend payload into the interfaces declared
+ * in this file, which are the contract the UI components rely on.
  */
 
 const API_BASE = "http://127.0.0.1:8420/api/forge";
 
+/**
+ * The backend requires `created_by` on discipline creation, but the UI has no
+ * contributor-selection step here yet. A stable default identifies UI-created
+ * records until a contributor picker is added (see report notes).
+ */
+const UI_AUTHOR = "kiln-ui";
+
 // ============================================================
-// Type definitions matching the Python backend
+// Type definitions (UI-normalized shapes)
 // ============================================================
 
 export interface Contributor {
   id: string;
   name: string;
-  role: string;
-  expertise_areas: string[];
+  email: string;
   created_at: string;
 }
 
@@ -23,7 +43,9 @@ export interface Discipline {
   name: string;
   description: string;
   status: "draft" | "active" | "archived";
-  contributor_ids: string[];
+  created_by: string;
+  vocabulary: string[];
+  document_types: string[];
   created_at: string;
   updated_at: string | null;
 }
@@ -46,23 +68,8 @@ export interface Example {
   question: string;
   answer: string;
   context: string | null;
-  reasoning_pattern: string | null;
   status: "draft" | "approved" | "rejected" | "needs_revision";
   contributor_id: string;
-  reviewer_id: string | null;
-  review_notes: string | null;
-  created_at: string;
-  updated_at: string | null;
-}
-
-export interface DiscoverySession {
-  id: string;
-  discipline_id: string;
-  phase: string;
-  current_question_index: number;
-  total_questions: number;
-  answers: Record<string, string>;
-  completed: boolean;
   created_at: string;
 }
 
@@ -85,23 +92,142 @@ export interface ConsistencyReport {
 
 export interface CoverageReport {
   discipline_id: string;
-  total_competencies: number;
-  covered_competencies: number;
-  coverage_pct: number;
+  total_examples: number;
+  total_test_examples: number;
+  competency_coverage: Array<{
+    competency_id: string;
+    competency_name: string;
+    example_count: number;
+    coverage_target: number;
+    met: boolean;
+  }>;
   gaps: Array<{
     competency_id: string;
-    name: string;
-    current: number;
-    target: number;
+    competency_name: string;
+    example_count: number;
+    coverage_target: number;
+    met: boolean;
   }>;
+  coverage_complete: boolean;
 }
 
 export interface CurriculumVersion {
-  id: string;
+  version_id: string;
   discipline_id: string;
-  version: string;
+  version_number: number;
   example_count: number;
+  status: string;
   created_at: string;
+}
+
+export interface DiscoveryQuestion {
+  question_id: string;
+  phase: string;
+  text: string;
+  hint: string;
+  response_type: string;
+  required: boolean;
+}
+
+export interface DiscoverySession {
+  session: Record<string, unknown>;
+  current_questions: DiscoveryQuestion[];
+}
+
+// ============================================================
+// Raw backend payload shapes (forge/src/models.py to_dict)
+// ============================================================
+
+interface RawCompetency {
+  id: string;
+  name: string;
+  description: string;
+  discipline_id: string;
+  parent_id: string | null;
+  coverage_target: number;
+  created_at: string;
+  updated_at: string;
+}
+
+interface RawExample {
+  id: string;
+  question: string;
+  ideal_answer: string;
+  competency_id: string;
+  contributor_id: string;
+  discipline_id: string;
+  variants: string[];
+  context: string;
+  review_status: "pending" | "approved" | "rejected" | "needs_revision";
+  created_at: string;
+}
+
+interface RawConsistencyIssue {
+  issue_type: string;
+  severity: "info" | "warning" | "error";
+  message: string;
+  example_id: string | null;
+  suggested_fix: string | null;
+  details: Record<string, unknown>;
+}
+
+// ============================================================
+// Transforms
+// ============================================================
+
+function toCompetency(raw: RawCompetency): Competency {
+  return {
+    id: raw.id,
+    discipline_id: raw.discipline_id,
+    name: raw.name,
+    description: raw.description,
+    // The backend has no competency "level"; default for display.
+    level: "foundational",
+    parent_id: raw.parent_id,
+    // Per-competency example counts come from the coverage report, not here.
+    example_count: 0,
+    target_count: raw.coverage_target,
+    created_at: raw.created_at,
+  };
+}
+
+function toExample(raw: RawExample): Example {
+  const status =
+    raw.review_status === "pending"
+      ? "draft"
+      : (raw.review_status as Example["status"]);
+  return {
+    id: raw.id,
+    competency_id: raw.competency_id,
+    question: raw.question,
+    answer: raw.ideal_answer,
+    context: raw.context || null,
+    status,
+    contributor_id: raw.contributor_id,
+    created_at: raw.created_at,
+  };
+}
+
+const SEVERITY_MAP: Record<string, ConsistencyIssue["severity"]> = {
+  error: "high",
+  warning: "medium",
+  info: "low",
+};
+
+function toConsistencyIssue(
+  raw: RawConsistencyIssue,
+  index: number,
+): ConsistencyIssue {
+  return {
+    id: raw.example_id
+      ? `${raw.issue_type}:${raw.example_id}`
+      : `issue-${index}`,
+    type: raw.issue_type,
+    severity: SEVERITY_MAP[raw.severity] ?? "low",
+    description: raw.message,
+    affected_example_ids: raw.example_id ? [raw.example_id] : [],
+    suggested_fix: raw.suggested_fix,
+  };
 }
 
 // ============================================================
@@ -158,14 +284,19 @@ export const forgeHealthAPI = {
 };
 
 export const contributorAPI = {
-  list: () => forgeFetch<Contributor[]>("/contributors"),
+  list: async (): Promise<Contributor[]> => {
+    const data = await forgeFetch<{ contributors: Contributor[] }>(
+      "/contributors",
+    );
+    return data.contributors ?? [];
+  },
 
   get: (id: string) => forgeFetch<Contributor>(`/contributors/${id}`),
 
-  create: (data: { name: string; role: string; expertise_areas: string[] }) =>
+  create: (data: { name: string; email?: string }) =>
     forgeFetch<Contributor>("/contributors", {
       method: "POST",
-      body: JSON.stringify(data),
+      body: JSON.stringify({ name: data.name, email: data.email ?? "" }),
     }),
 
   update: (id: string, data: Partial<Contributor>) =>
@@ -175,20 +306,29 @@ export const contributorAPI = {
     }),
 
   delete: (id: string) =>
-    forgeFetch<{ deleted: boolean }>(`/contributors/${id}`, {
+    forgeFetch<{ deleted: string }>(`/contributors/${id}`, {
       method: "DELETE",
     }),
 };
 
 export const disciplineAPI = {
-  list: () => forgeFetch<Discipline[]>("/disciplines"),
+  list: async (): Promise<Discipline[]> => {
+    const data = await forgeFetch<{ disciplines: Discipline[] }>(
+      "/disciplines",
+    );
+    return data.disciplines ?? [];
+  },
 
   get: (id: string) => forgeFetch<Discipline>(`/disciplines/${id}`),
 
   create: (data: { name: string; description: string }) =>
     forgeFetch<Discipline>("/disciplines", {
       method: "POST",
-      body: JSON.stringify(data),
+      body: JSON.stringify({
+        name: data.name,
+        description: data.description,
+        created_by: UI_AUTHOR,
+      }),
     }),
 
   update: (id: string, data: Partial<Discipline>) =>
@@ -199,90 +339,191 @@ export const disciplineAPI = {
 };
 
 export const competencyAPI = {
-  list: (disciplineId: string) =>
-    forgeFetch<Competency[]>(`/disciplines/${disciplineId}/competencies`),
+  list: async (disciplineId: string): Promise<Competency[]> => {
+    const data = await forgeFetch<{ competencies: RawCompetency[] }>(
+      `/disciplines/${disciplineId}/competencies`,
+    );
+    return (data.competencies ?? []).map(toCompetency);
+  },
 
-  get: (id: string) => forgeFetch<Competency>(`/competencies/${id}`),
+  get: async (id: string): Promise<Competency> => {
+    const raw = await forgeFetch<RawCompetency>(`/competencies/${id}`);
+    return toCompetency(raw);
+  },
 
-  create: (data: {
+  create: async (data: {
     discipline_id: string;
     name: string;
     description: string;
-    level: string;
+    level?: string;
     parent_id?: string | null;
     target_count?: number;
-  }) =>
-    forgeFetch<Competency>("/competencies", {
+  }): Promise<Competency> => {
+    const raw = await forgeFetch<RawCompetency>("/competencies", {
       method: "POST",
-      body: JSON.stringify(data),
-    }),
+      body: JSON.stringify({
+        discipline_id: data.discipline_id,
+        name: data.name,
+        description: data.description,
+        parent_id: data.parent_id ?? null,
+        coverage_target: data.target_count ?? 25,
+      }),
+    });
+    return toCompetency(raw);
+  },
 
-  update: (id: string, data: Partial<Competency>) =>
-    forgeFetch<Competency>(`/competencies/${id}`, {
+  update: async (
+    id: string,
+    data: Partial<{
+      name: string;
+      description: string;
+      target_count: number;
+      parent_id: string | null;
+    }>,
+  ): Promise<Competency> => {
+    const body: Record<string, unknown> = {};
+    if (data.name !== undefined) body.name = data.name;
+    if (data.description !== undefined) body.description = data.description;
+    if (data.target_count !== undefined)
+      body.coverage_target = data.target_count;
+    if (data.parent_id !== undefined) body.parent_id = data.parent_id;
+    const raw = await forgeFetch<RawCompetency>(`/competencies/${id}`, {
       method: "PUT",
-      body: JSON.stringify(data),
-    }),
+      body: JSON.stringify(body),
+    });
+    return toCompetency(raw);
+  },
 
   delete: (id: string) =>
-    forgeFetch<{ deleted: boolean }>(`/competencies/${id}`, {
+    forgeFetch<{ deleted: string }>(`/competencies/${id}`, {
       method: "DELETE",
     }),
 };
 
 export const exampleAPI = {
-  list: (competencyId: string) =>
-    forgeFetch<Example[]>(`/competencies/${competencyId}/examples`),
+  list: async (competencyId: string): Promise<Example[]> => {
+    const data = await forgeFetch<{ examples: RawExample[] }>(
+      `/competencies/${competencyId}/examples`,
+    );
+    return (data.examples ?? []).map(toExample);
+  },
 
-  get: (id: string) => forgeFetch<Example>(`/examples/${id}`),
+  get: async (id: string): Promise<Example> => {
+    const raw = await forgeFetch<RawExample>(`/examples/${id}`);
+    return toExample(raw);
+  },
 
-  create: (data: {
+  create: async (data: {
     competency_id: string;
+    discipline_id: string;
     question: string;
     answer: string;
     context?: string | null;
-    reasoning_pattern?: string | null;
     contributor_id: string;
-  }) =>
-    forgeFetch<Example>("/examples", {
+  }): Promise<Example> => {
+    const raw = await forgeFetch<RawExample>("/examples", {
       method: "POST",
-      body: JSON.stringify(data),
-    }),
+      body: JSON.stringify({
+        competency_id: data.competency_id,
+        discipline_id: data.discipline_id,
+        question: data.question,
+        ideal_answer: data.answer,
+        context: data.context ?? "",
+        contributor_id: data.contributor_id,
+      }),
+    });
+    return toExample(raw);
+  },
 
-  update: (id: string, data: Partial<Example>) =>
-    forgeFetch<Example>(`/examples/${id}`, {
+  update: async (
+    id: string,
+    data: Partial<{
+      question: string;
+      answer: string;
+      context: string | null;
+      status: Example["status"];
+    }>,
+  ): Promise<Example> => {
+    const body: Record<string, unknown> = {};
+    if (data.question !== undefined) body.question = data.question;
+    if (data.answer !== undefined) body.ideal_answer = data.answer;
+    if (data.context !== undefined) body.context = data.context;
+    if (data.status !== undefined) body.review_status = data.status;
+    const raw = await forgeFetch<RawExample>(`/examples/${id}`, {
       method: "PUT",
-      body: JSON.stringify(data),
-    }),
+      body: JSON.stringify(body),
+    });
+    return toExample(raw);
+  },
 
   delete: (id: string) =>
-    forgeFetch<{ deleted: boolean }>(`/examples/${id}`, { method: "DELETE" }),
+    forgeFetch<{ deleted: string }>(`/examples/${id}`, { method: "DELETE" }),
 };
 
 export const discoveryAPI = {
-  start: (disciplineId: string) =>
+  /** Note: not yet wired to a screen; DiscoveryWizard uses local state. */
+  start: (disciplineName: string, contributorId: string) =>
     forgeFetch<DiscoverySession>("/discovery/start", {
       method: "POST",
-      body: JSON.stringify({ discipline_id: disciplineId }),
+      body: JSON.stringify({
+        discipline_name: disciplineName,
+        contributor_id: contributorId,
+      }),
     }),
 
-  answer: (sessionId: string, answer: string) =>
+  answer: (
+    sessionId: string,
+    questionId: string,
+    answer: { raw_text?: string; items?: string[]; scale_value?: number },
+  ) =>
     forgeFetch<DiscoverySession>("/discovery/answer", {
       method: "POST",
-      body: JSON.stringify({ session_id: sessionId, answer }),
+      body: JSON.stringify({
+        session_id: sessionId,
+        question_id: questionId,
+        raw_text: answer.raw_text ?? "",
+        items: answer.items ?? [],
+        scale_value: answer.scale_value ?? null,
+      }),
     }),
 
   getProgress: (sessionId: string) =>
-    forgeFetch<DiscoverySession>(`/discovery/${sessionId}/progress`),
+    forgeFetch<{
+      session_id: string;
+      current_phase: string;
+      phases_complete: string[];
+      completion_percentage: number;
+      unanswered_required: number;
+      estimated_minutes_remaining: number;
+    }>(`/discovery/${sessionId}/progress`),
 };
 
 export const consistencyAPI = {
-  check: (disciplineId: string) =>
-    forgeFetch<ConsistencyReport>(`/consistency/check/${disciplineId}`, {
-      method: "POST",
-    }),
+  check: async (disciplineId: string): Promise<ConsistencyReport> => {
+    const data = await forgeFetch<{
+      discipline_id: string;
+      example_count: number;
+      has_errors: boolean;
+      has_warnings: boolean;
+      issues: RawConsistencyIssue[];
+      checked_at: string;
+    }>(`/consistency/check/${disciplineId}`, { method: "POST" });
+    const issues = (data.issues ?? []).map(toConsistencyIssue);
+    const by_severity = issues.reduce<Record<string, number>>((acc, i) => {
+      acc[i.severity] = (acc[i.severity] ?? 0) + 1;
+      return acc;
+    }, {});
+    return {
+      discipline_id: data.discipline_id,
+      total_issues: issues.length,
+      by_severity,
+      issues,
+      checked_at: data.checked_at,
+    };
+  },
 
-  getReport: (disciplineId: string) =>
-    forgeFetch<ConsistencyReport>(`/consistency/report/${disciplineId}`),
+  getReport: async (disciplineId: string): Promise<ConsistencyReport> =>
+    consistencyAPI.check(disciplineId),
 };
 
 export const coverageAPI = {
@@ -291,12 +532,12 @@ export const coverageAPI = {
 };
 
 export const curriculumAPI = {
-  export: (disciplineId: string, format: string = "jsonl") =>
-    forgeFetch<{ path: string; example_count: number; exported_at: string }>(
-      `/curriculum/export/${disciplineId}`,
-      {
-        method: "POST",
-        body: JSON.stringify({ format }),
-      },
-    ),
+  export: (disciplineId: string, includeTestSet: boolean = false) =>
+    forgeFetch<CurriculumVersion>(`/curriculum/export/${disciplineId}`, {
+      method: "POST",
+      body: JSON.stringify({
+        created_by: UI_AUTHOR,
+        include_test_set: includeTestSet,
+      }),
+    }),
 };

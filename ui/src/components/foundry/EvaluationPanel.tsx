@@ -6,6 +6,8 @@ import type {
   EvaluationResult,
   CompetencyScore,
 } from "@/store/useFoundryStore";
+import { evaluationAPI } from "@/api/foundry";
+import { showToast } from "@/components/common/Toast";
 
 const RATING_CONFIG = {
   strong: { label: "Strong", className: "bg-success/15 text-success" },
@@ -100,6 +102,7 @@ export function EvaluationPanel() {
     addEvaluation,
     selectedEvalId,
     selectEvaluation,
+    setError,
   } = useFoundryStore();
   const [isRunning, setIsRunning] = useState(false);
   const [selectedRunForEval, setSelectedRunForEval] = useState("");
@@ -107,63 +110,25 @@ export function EvaluationPanel() {
   const completedRuns = trainingRuns.filter((r) => r.status === "completed");
   const selectedEval = evaluations.find((e) => e.id === selectedEvalId);
 
-  const handleRunEval = () => {
-    if (!selectedRunForEval) return;
+  // Evaluation history has no backend list endpoint; evaluations are kept
+  // in-session only (see report notes).
+
+  const handleRunEval = async () => {
+    if (!selectedRunForEval || isRunning) return;
     setIsRunning(true);
-    setTimeout(() => {
-      const demoScores: CompetencyScore[] = [
-        {
-          competency_name: "Procedural Comprehension",
-          correct: 9,
-          total: 10,
-          score: 0.9,
-          rating: "strong",
-        },
-        {
-          competency_name: "Fault Isolation",
-          correct: 7,
-          total: 10,
-          score: 0.7,
-          rating: "adequate",
-        },
-        {
-          competency_name: "Parts Interpretation",
-          correct: 4,
-          total: 10,
-          score: 0.4,
-          rating: "weak",
-        },
-        {
-          competency_name: "Safety Compliance",
-          correct: 8,
-          total: 10,
-          score: 0.8,
-          rating: "strong",
-        },
-        {
-          competency_name: "Preventive Maintenance",
-          correct: 6,
-          total: 10,
-          score: 0.6,
-          rating: "adequate",
-        },
-      ];
-      const eval_: EvaluationResult = {
-        id: `eval-${Date.now()}`,
+    try {
+      const result: EvaluationResult = await evaluationAPI.run({
         training_run_id: selectedRunForEval,
-        model_name:
-          completedRuns.find((r) => r.id === selectedRunForEval)?.name ??
-          "Unknown",
-        overall_score: 0.68,
-        overall_correct: 34,
-        overall_total: 50,
-        competency_scores: demoScores,
-        created_at: new Date().toISOString(),
-      };
-      addEvaluation(eval_);
-      selectEvaluation(eval_.id);
+      });
+      addEvaluation(result);
+      selectEvaluation(result.id);
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : "Evaluation failed";
+      setError(msg);
+      showToast("error", msg);
+    } finally {
       setIsRunning(false);
-    }, 2500);
+    }
   };
 
   return (

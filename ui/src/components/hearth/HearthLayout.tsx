@@ -1,4 +1,4 @@
-import { useState, useCallback } from "react";
+import { useState, useCallback, useEffect } from "react";
 import {
   Flame,
   PanelLeftClose,
@@ -8,11 +8,17 @@ import {
 } from "lucide-react";
 import { useHearthStore } from "@/store/useHearthStore";
 import type { Citation } from "@/store/useHearthStore";
+import { modelAPI, conversationAPI, queryAPI } from "@/api/hearth";
+import { mapConversation, mapMessage, mapModelSlot } from "@/lib/hearthMappers";
+import { showToast } from "@/components/common/Toast";
 import { ToolHeader } from "@/components/shell/ToolHeader";
 import { ConversationList } from "./ConversationList";
 import { ChatArea } from "./ChatArea";
 import { CitationPanel } from "./CitationPanel";
 import { ModelSwitcher } from "./ModelSwitcher";
+
+/** Local (not-yet-persisted) conversation ids use this prefix. */
+const LOCAL_PREFIX = "conv-";
 
 export function HearthLayout() {
   const {
@@ -24,7 +30,7 @@ export function HearthLayout() {
     isStreaming,
     setActiveConversation,
     setConversations,
-    addMessage,
+    setModelSlots,
     setActiveModel,
     toggleCitationPanel,
     setStreaming,
@@ -44,92 +50,180 @@ export function HearthLayout() {
     .find((m) => m.role === "assistant");
   const activeCitations = lastAssistantMsg?.citations ?? [];
 
-  const handleNewChat = useCallback(() => {
-    const newConv = {
-      id: `conv-${Date.now()}`,
-      title: "New conversation",
-      model_id: activeModelId ?? "",
-      messages: [],
-      created_at: new Date().toISOString(),
-      updated_at: new Date().toISOString(),
+  // Load models and conversations from the backend on mount
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      try {
+        const [slots, convos] = await Promise.all([
+          modelAPI.list(),
+          conversationAPI.list(),
+        ]);
+        if (cancelled) return;
+        const mappedSlots = slots.map(mapModelSlot);
+        setModelSlots(mappedSlots);
+        setConversations(convos.map(mapConversation));
+        const ready = mappedSlots.find((s) => s.status === "ready");
+        if (ready) setActiveModel(ready.id);
+        else if (mappedSlots[0]) setActiveModel(mappedSlots[0].id);
+      } catch (err) {
+        if (!cancelled) {
+          showToast(
+            "error",
+            err instanceof Error ? err.message : "Failed to load Hearth data",
+          );
+        }
+      }
+    })();
+    return () => {
+      cancelled = true;
     };
-    setConversations([newConv, ...conversations]);
-    setActiveConversation(newConv.id);
-  }, [conversations, activeModelId, setConversations, setActiveConversation]);
+  }, [setModelSlots, setConversations, setActiveModel]);
+
+  const refreshModels = useCallback(async () => {
+    try {
+      const slots = await modelAPI.list();
+      setModelSlots(slots.map(mapModelSlot));
+    } catch {
+      /* non-fatal: keep existing slots */
+    }
+  }, [setModelSlots]);
+
+  const handleNewChat = useCallback(() => {
+    // Conversations are created server-side on first query; just reset.
+    setActiveConversation(null);
+  }, [setActiveConversation]);
 
   const handleSend = useCallback(
-    (content: string) => {
-      let convId = activeConversationId;
-
-      if (!convId) {
-        // Auto-create conversation and use its id immediately
-        convId = `conv-${Date.now()}`;
-        const newConv = {
-          id: convId,
-          title: "New conversation",
-          model_id: activeModelId ?? "",
-          messages: [],
-          created_at: new Date().toISOString(),
-          updated_at: new Date().toISOString(),
-        };
-        setConversations([newConv, ...conversations]);
-        setActiveConversation(convId);
-      }
-
-      // Add user message
+    async (content: string) => {
+      const now = new Date().toISOString();
       const userMsg = {
         id: `msg-${Date.now()}`,
         role: "user" as const,
         content,
         citations: [],
-        timestamp: new Date().toISOString(),
+        timestamp: now,
       };
-      addMessage(convId, userMsg);
 
-      // Simulate assistant response (will be replaced by real API call)
+      // Only send a conversation_id the backend already knows about.
+      const realConvId =
+        activeConversationId && !activeConversationId.startsWith(LOCAL_PREFIX)
+          ? activeConversationId
+          : undefined;
+
+      // Optimistically show the user message.
+      let workingId = activeConversationId;
+      let workingConvos = conversations;
+      if (!workingId) {
+        workingId = `${LOCAL_PREFIX}${Date.now()}`;
+        workingConvos = [
+          {
+            id: workingId,
+            title: content.slice(0, 40) || "New conversation",
+            model_id: activeModelId ?? "",
+            messages: [userMsg],
+            created_at: now,
+            updated_at: now,
+          },
+          ...conversations,
+        ];
+        setActiveConversation(workingId);
+      } else {
+        workingConvos = conversations.map((c) =>
+          c.id === workingId
+            ? { ...c, messages: [...c.messages, userMsg], updated_at: now }
+            : c,
+        );
+      }
+      setConversations(workingConvos);
+
       setStreaming(true);
-      setTimeout(() => {
-        const assistantMsg = {
-          id: `msg-${Date.now() + 1}`,
-          role: "assistant" as const,
-          content:
-            "This is a placeholder response. The Hearth backend API is required for real inference. " +
-            "When connected, responses will include citations like [1] and [2] that reference your processed documents.",
-          citations: [
-            {
-              id: `cit-${Date.now()}`,
-              document_title: "TM-9-2320-280-10",
-              section: "2.3 Engine Maintenance",
-              page: 42,
-              relevance_score: 0.92,
-              snippet:
-                "Preventive maintenance checks should be performed at regular intervals as specified in the maintenance allocation chart.",
-            },
-            {
-              id: `cit-${Date.now() + 1}`,
-              document_title: "TM-9-2320-280-10",
-              section: "4.1 Troubleshooting",
-              page: 87,
-              relevance_score: 0.76,
-              snippet:
-                "If the engine fails to start after three attempts, check the fuel supply, battery connections, and starter motor relay.",
-            },
-          ],
-          timestamp: new Date().toISOString(),
-        };
-        addMessage(convId!, assistantMsg);
+      try {
+        const response = await queryAPI.send({
+          query: content,
+          conversation_id: realConvId,
+          model_id: activeModelId ?? undefined,
+          include_citations: true,
+        });
+        const assistantMsg = mapMessage(response.message);
+        const finalId = response.conversation_id || workingId;
+        setConversations(
+          workingConvos.map((c) =>
+            c.id === workingId
+              ? {
+                  ...c,
+                  id: finalId,
+                  messages: [...c.messages, assistantMsg],
+                  updated_at: new Date().toISOString(),
+                }
+              : c,
+          ),
+        );
+        if (finalId !== workingId) setActiveConversation(finalId);
+      } catch (err) {
+        showToast("error", err instanceof Error ? err.message : "Query failed");
+      } finally {
         setStreaming(false);
-      }, 1500);
+      }
     },
     [
       activeConversationId,
       activeModelId,
       conversations,
-      addMessage,
       setConversations,
       setActiveConversation,
       setStreaming,
     ],
+  );
+
+  const handleSelectModel = useCallback(
+    async (modelId: string) => {
+      setActiveModel(modelId);
+      const slot = modelSlots.find((m) => m.id === modelId);
+      if (slot && slot.status === "unloaded") {
+        try {
+          await modelAPI.load(modelId);
+          await refreshModels();
+        } catch (err) {
+          showToast(
+            "error",
+            err instanceof Error ? err.message : "Failed to load model",
+          );
+        }
+      }
+    },
+    [modelSlots, setActiveModel, refreshModels],
+  );
+
+  const handleLoadModel = useCallback(
+    async (modelId: string) => {
+      try {
+        await modelAPI.load(modelId);
+        await refreshModels();
+        setActiveModel(modelId);
+      } catch (err) {
+        showToast(
+          "error",
+          err instanceof Error ? err.message : "Failed to load model",
+        );
+      }
+    },
+    [refreshModels, setActiveModel],
+  );
+
+  const handleUnloadModel = useCallback(
+    async (modelId: string) => {
+      try {
+        await modelAPI.unload(modelId);
+        await refreshModels();
+      } catch (err) {
+        showToast(
+          "error",
+          err instanceof Error ? err.message : "Failed to unload model",
+        );
+      }
+    },
+    [refreshModels],
   );
 
   const handleCitationClick = useCallback(
@@ -141,10 +235,20 @@ export function HearthLayout() {
   );
 
   const handleDeleteConversation = useCallback(
-    (id: string) => {
+    async (id: string) => {
       setConversations(conversations.filter((c) => c.id !== id));
-      if (activeConversationId === id) {
-        setActiveConversation(null);
+      if (activeConversationId === id) setActiveConversation(null);
+      if (!id.startsWith(LOCAL_PREFIX)) {
+        try {
+          await conversationAPI.delete(id);
+        } catch (err) {
+          showToast(
+            "error",
+            err instanceof Error
+              ? err.message
+              : "Failed to delete conversation",
+          );
+        }
       }
     },
     [
@@ -194,7 +298,9 @@ export function HearthLayout() {
         <ModelSwitcher
           models={modelSlots}
           activeModelId={activeModelId}
-          onSelect={setActiveModel}
+          onSelect={handleSelectModel}
+          onLoad={handleLoadModel}
+          onUnload={handleUnloadModel}
         />
       </ToolHeader>
 

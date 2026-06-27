@@ -1,8 +1,11 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Plus, Search, Archive, Zap, FileEdit } from "lucide-react";
 import { cn } from "@/lib/cn";
 import { useForgeStore } from "@/store/useForgeStore";
 import type { ForgeDiscipline } from "@/store/useForgeStore";
+import { disciplineAPI } from "@/api/forge";
+import { mapDiscipline } from "@/lib/forgeMappers";
+import { showToast } from "@/components/common/Toast";
 
 const STATUS_CONFIG = {
   draft: {
@@ -118,31 +121,70 @@ function DisciplineItem({
 }
 
 export function DisciplineList() {
-  const { disciplines, selectedDisciplineId, selectDiscipline, addDiscipline } =
-    useForgeStore();
+  const {
+    disciplines,
+    selectedDisciplineId,
+    selectDiscipline,
+    addDiscipline,
+    setDisciplines,
+    setLoading,
+    setError,
+  } = useForgeStore();
   const [search, setSearch] = useState("");
   const [showNewForm, setShowNewForm] = useState(false);
   const [newName, setNewName] = useState("");
+  const [creating, setCreating] = useState(false);
+
+  // Load disciplines from the backend on mount.
+  useEffect(() => {
+    let cancelled = false;
+    setLoading(true);
+    disciplineAPI
+      .list()
+      .then((items) => {
+        if (!cancelled) setDisciplines(items.map(mapDiscipline));
+      })
+      .catch((err) => {
+        if (!cancelled) {
+          const msg =
+            err instanceof Error ? err.message : "Failed to load disciplines";
+          setError(msg);
+          showToast("error", msg);
+        }
+      })
+      .finally(() => {
+        if (!cancelled) setLoading(false);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [setDisciplines, setLoading, setError]);
 
   const filtered = disciplines.filter((d) =>
     d.name.toLowerCase().includes(search.toLowerCase()),
   );
 
-  const handleCreate = () => {
-    if (!newName.trim()) return;
-    const newDisc: ForgeDiscipline = {
-      id: `disc-${Date.now()}`,
-      name: newName.trim(),
-      description: "",
-      status: "draft",
-      competency_count: 0,
-      example_count: 0,
-      coverage_pct: 0,
-    };
-    addDiscipline(newDisc);
-    selectDiscipline(newDisc.id);
-    setNewName("");
-    setShowNewForm(false);
+  const handleCreate = async () => {
+    if (!newName.trim() || creating) return;
+    setCreating(true);
+    try {
+      const created = await disciplineAPI.create({
+        name: newName.trim(),
+        description: "",
+      });
+      const mapped: ForgeDiscipline = mapDiscipline(created);
+      addDiscipline(mapped);
+      selectDiscipline(mapped.id);
+      setNewName("");
+      setShowNewForm(false);
+    } catch (err) {
+      const msg =
+        err instanceof Error ? err.message : "Failed to create discipline";
+      setError(msg);
+      showToast("error", msg);
+    } finally {
+      setCreating(false);
+    }
   };
 
   return (
@@ -177,9 +219,13 @@ export function DisciplineList() {
             <div className="flex gap-1.5">
               <button
                 onClick={handleCreate}
-                className="btn-primary btn-sm flex-1 text-2xs"
+                disabled={creating || !newName.trim()}
+                className={cn(
+                  "btn-primary btn-sm flex-1 text-2xs",
+                  (creating || !newName.trim()) && "opacity-60",
+                )}
               >
-                Create
+                {creating ? "Creating..." : "Create"}
               </button>
               <button
                 onClick={() => {

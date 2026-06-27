@@ -2,12 +2,22 @@
  * Hearth API Client
  *
  * Communicates with the Hearth backend (inference & chat) via REST API.
+ *
+ * The Hearth FastAPI router (hearth/src/server.py) returns domain `to_dict()`
+ * shapes that differ from the UI's normalized shapes:
+ *   - list endpoints wrap results ({ "models": [...] }, { "conversations": [...] })
+ *   - model slots use slot_id/display_name/base_model_family/lora_path
+ *   - POST /query takes { query, slot_id, ... } and returns
+ *     { answer, citations[], conversation_id, model_used, latency_ms, chunk_count }
+ *
+ * Each method below translates the real backend payload into the interfaces
+ * declared in this file, which are the contract the UI components rely on.
  */
 
 const API_BASE = "http://127.0.0.1:8420/api/hearth";
 
 // ============================================================
-// Type definitions
+// Type definitions (UI-normalized shapes)
 // ============================================================
 
 export interface ModelSlot {
@@ -20,7 +30,7 @@ export interface ModelSlot {
 }
 
 export interface Citation {
-  document_id: string;
+  document_id?: string;
   document_title: string;
   section: string;
   page: number;
@@ -49,6 +59,7 @@ export interface Conversation {
 export interface QueryRequest {
   query: string;
   conversation_id?: string;
+  /** The target model slot id (sent to the backend as `slot_id`). */
   model_id?: string;
   include_citations?: boolean;
   max_context_chunks?: number;
@@ -86,6 +97,7 @@ export interface DocumentDetail {
 export interface FeedbackSubmission {
   message_id: string;
   conversation_id: string;
+  query: string;
   signal_type: "positive" | "negative" | "flag_incorrect" | "flag_incomplete";
   comment?: string;
 }
@@ -113,6 +125,88 @@ export interface RoutingDecision {
   routed_to: "quarry" | "forge" | "foundry" | "none";
   reason: string;
   priority: "high" | "medium" | "low";
+}
+
+// ============================================================
+// Raw backend payload shapes (hearth/src/inference.py to_dict)
+// ============================================================
+
+interface RawModelSlot {
+  slot_id: string;
+  display_name: string;
+  base_model_family: string;
+  status: ModelSlot["status"];
+  model_path: string | null;
+  discipline_id: string | null;
+  lora_path: string | null;
+  loaded_at: string | null;
+}
+
+interface RawCitation {
+  document_title: string;
+  section: string;
+  page: number;
+  relevance_score: number;
+  snippet: string;
+}
+
+interface RawQueryResponse {
+  answer: string;
+  citations: RawCitation[];
+  conversation_id: string;
+  model_used: string | null;
+  latency_ms: number;
+  chunk_count: number;
+}
+
+interface RawConversationSummary {
+  conversation_id: string;
+  title: string;
+  created_at: string;
+  model_slot_id: string;
+  turn_count: number;
+}
+
+interface RawConversationTurn {
+  turn_id: string;
+  query: string;
+  response: string;
+  citations: RawCitation[];
+  timestamp: string;
+  model_slot_id: string;
+}
+
+interface RawConversation {
+  conversation_id: string;
+  title: string;
+  turns: RawConversationTurn[];
+  created_at: string;
+  model_slot_id: string;
+}
+
+// ============================================================
+// Transforms
+// ============================================================
+
+function toModelSlot(raw: RawModelSlot): ModelSlot {
+  return {
+    id: raw.slot_id,
+    name: raw.display_name,
+    base_model: raw.base_model_family,
+    adapter_path: raw.lora_path,
+    status: raw.status,
+    loaded_at: raw.loaded_at,
+  };
+}
+
+function toCitation(raw: RawCitation): Citation {
+  return {
+    document_title: raw.document_title,
+    section: raw.section,
+    page: raw.page,
+    relevance_score: raw.relevance_score,
+    snippet: raw.snippet,
+  };
 }
 
 // ============================================================
@@ -169,87 +263,234 @@ export const hearthHealthAPI = {
 };
 
 export const modelAPI = {
-  list: () => hearthFetch<ModelSlot[]>("/models"),
+  list: async (): Promise<ModelSlot[]> => {
+    const data = await hearthFetch<{ models: RawModelSlot[] }>("/models");
+    return (data.models ?? []).map(toModelSlot);
+  },
 
-  register: (data: {
+  register: async (data: {
     name: string;
     base_model: string;
     adapter_path?: string | null;
-  }) =>
-    hearthFetch<ModelSlot>("/models/register", {
+  }): Promise<ModelSlot> => {
+    const raw = await hearthFetch<RawModelSlot>("/models/register", {
       method: "POST",
-      body: JSON.stringify(data),
-    }),
+      body: JSON.stringify({
+        slot_id: data.name,
+        display_name: data.name,
+        base_model_family: data.base_model,
+        lora_path: data.adapter_path ?? null,
+      }),
+    });
+    return toModelSlot(raw);
+  },
 
-  load: (modelId: string) =>
-    hearthFetch<ModelSlot>(`/models/${modelId}/load`, { method: "POST" }),
+  load: async (modelId: string): Promise<ModelSlot> => {
+    const raw = await hearthFetch<RawModelSlot>(`/models/${modelId}/load`, {
+      method: "POST",
+    });
+    return toModelSlot(raw);
+  },
 
   unload: (modelId: string) =>
-    hearthFetch<ModelSlot>(`/models/${modelId}/unload`, { method: "POST" }),
+    hearthFetch<{ model_id: string; status: string }>(
+      `/models/${modelId}/unload`,
+      { method: "POST" },
+    ),
 
-  getStatus: (modelId: string) =>
-    hearthFetch<ModelSlot>(`/models/${modelId}/status`),
+  getStatus: async (modelId: string): Promise<ModelSlot> => {
+    const raw = await hearthFetch<RawModelSlot>(`/models/${modelId}/status`);
+    return toModelSlot(raw);
+  },
 };
 
 export const queryAPI = {
-  send: (request: QueryRequest) =>
-    hearthFetch<QueryResponse>("/query", {
+  send: async (request: QueryRequest): Promise<QueryResponse> => {
+    const raw = await hearthFetch<RawQueryResponse>("/query", {
       method: "POST",
-      body: JSON.stringify(request),
-    }),
+      body: JSON.stringify({
+        query: request.query,
+        slot_id: request.model_id,
+        conversation_id: request.conversation_id,
+        include_citations: request.include_citations ?? true,
+        max_context_chunks: request.max_context_chunks ?? 5,
+      }),
+    });
+    const message: Message = {
+      id: `msg-${Date.now()}`,
+      role: "assistant",
+      content: raw.answer,
+      citations: (raw.citations ?? []).map(toCitation),
+      timestamp: new Date().toISOString(),
+      model_id: raw.model_used ?? null,
+    };
+    return {
+      conversation_id: raw.conversation_id,
+      message,
+      processing_time_ms: raw.latency_ms,
+    };
+  },
 
-  multiDiscipline: (request: QueryRequest & { discipline_ids: string[] }) =>
-    hearthFetch<QueryResponse>("/query/multi-discipline", {
-      method: "POST",
-      body: JSON.stringify(request),
-    }),
+  multiDiscipline: async (
+    request: QueryRequest & { discipline_ids: string[] },
+  ): Promise<QueryResponse> => {
+    const data = await hearthFetch<{ responses: RawQueryResponse[] }>(
+      "/query/multi-discipline",
+      {
+        method: "POST",
+        body: JSON.stringify({
+          query: request.query,
+          slot_ids: request.discipline_ids,
+        }),
+      },
+    );
+    const raw = data.responses[0];
+    const message: Message = {
+      id: `msg-${Date.now()}`,
+      role: "assistant",
+      content: raw?.answer ?? "",
+      citations: (raw?.citations ?? []).map(toCitation),
+      timestamp: new Date().toISOString(),
+      model_id: raw?.model_used ?? null,
+    };
+    return {
+      conversation_id: raw?.conversation_id ?? "",
+      message,
+      processing_time_ms: raw?.latency_ms ?? 0,
+    };
+  },
 };
 
 export const conversationAPI = {
-  list: () => hearthFetch<Conversation[]>("/conversations"),
+  list: async (): Promise<Conversation[]> => {
+    const data = await hearthFetch<{
+      conversations: RawConversationSummary[];
+    }>("/conversations");
+    return (data.conversations ?? []).map((c) => ({
+      id: c.conversation_id,
+      title: c.title,
+      model_id: c.model_slot_id,
+      messages: [],
+      created_at: c.created_at,
+      updated_at: c.created_at,
+    }));
+  },
 
-  get: (id: string) => hearthFetch<Conversation>(`/conversations/${id}`),
+  get: async (id: string): Promise<Conversation> => {
+    const raw = await hearthFetch<RawConversation>(`/conversations/${id}`);
+    const messages: Message[] = [];
+    for (const turn of raw.turns ?? []) {
+      messages.push({
+        id: `${turn.turn_id}-q`,
+        role: "user",
+        content: turn.query,
+        citations: [],
+        timestamp: turn.timestamp,
+        model_id: turn.model_slot_id,
+      });
+      messages.push({
+        id: `${turn.turn_id}-a`,
+        role: "assistant",
+        content: turn.response,
+        citations: (turn.citations ?? []).map(toCitation),
+        timestamp: turn.timestamp,
+        model_id: turn.model_slot_id,
+      });
+    }
+    return {
+      id: raw.conversation_id,
+      title: raw.title,
+      model_id: raw.model_slot_id,
+      messages,
+      created_at: raw.created_at,
+      updated_at: raw.created_at,
+    };
+  },
 
   delete: (id: string) =>
-    hearthFetch<{ deleted: boolean }>(`/conversations/${id}`, {
+    hearthFetch<{ deleted: string }>(`/conversations/${id}`, {
       method: "DELETE",
     }),
 };
 
 export const documentBrowseAPI = {
-  list: () => hearthFetch<DocumentSummary[]>("/documents"),
-
-  get: (id: string) => hearthFetch<DocumentDetail>(`/documents/${id}`),
-
-  search: (query: string, topK: number = 5) =>
-    hearthFetch<{
-      query: string;
-      results: Array<{
+  list: async (): Promise<DocumentSummary[]> => {
+    const data = await hearthFetch<{
+      documents: Array<{
         document_id: string;
-        chunk_id: string;
-        score: number;
-        snippet: string;
-        hierarchy_path: string;
+        title: string;
+        document_type: string;
+        chunk_count: number;
+        page_count: number | null;
       }>;
+    }>("/documents");
+    return (data.documents ?? []).map((d) => ({
+      id: d.document_id,
+      title: d.title,
+      source_type: d.document_type,
+      chunk_count: d.chunk_count,
+      page_count: d.page_count ?? 0,
+    }));
+  },
+
+  get: async (id: string): Promise<DocumentDetail> => {
+    const raw = await hearthFetch<{
+      document_id: string;
+      title: string;
+      document_type: string;
+      chunks: DocumentDetail["chunks"];
+      metadata: Record<string, unknown>;
+    }>(`/documents/${id}`);
+    return {
+      id: raw.document_id,
+      title: raw.title,
+      source_path: "",
+      source_type: raw.document_type,
+      chunks: raw.chunks ?? [],
+      metadata: raw.metadata ?? {},
+    };
+  },
+
+  search: (query: string, limit: number = 5) =>
+    hearthFetch<{
+      results: Array<Record<string, unknown>>;
     }>("/documents/search", {
       method: "POST",
-      body: JSON.stringify({ query, top_k: topK }),
+      body: JSON.stringify({ query, limit }),
     }),
 };
 
 export const feedbackAPI = {
   submit: (feedback: FeedbackSubmission) =>
-    hearthFetch<{ id: string; routed: boolean }>("/feedback", {
+    hearthFetch<Record<string, unknown>>("/feedback", {
       method: "POST",
-      body: JSON.stringify(feedback),
+      body: JSON.stringify({
+        signal_type: feedback.signal_type,
+        conversation_id: feedback.conversation_id,
+        query: feedback.query,
+        user_comment: feedback.comment,
+      }),
     }),
 
-  getRouting: () => hearthFetch<RoutingDecision[]>("/feedback/routing"),
-
-  getDashboard: (periodDays: number = 30) =>
-    hearthFetch<FeedbackDashboard>(
-      `/feedback/dashboard?period_days=${periodDays}`,
+  getRouting: (signalId: string) =>
+    hearthFetch<RoutingDecision>(
+      `/feedback/routing?signal_id=${encodeURIComponent(signalId)}`,
     ),
 
-  getPatterns: () => hearthFetch<FeedbackPattern[]>("/feedback/patterns"),
+  getDashboard: (disciplineId: string, days: number = 30) =>
+    hearthFetch<FeedbackDashboard>(
+      `/feedback/dashboard?discipline_id=${encodeURIComponent(
+        disciplineId,
+      )}&days=${days}`,
+    ),
+
+  getPatterns: async (disciplineId?: string): Promise<FeedbackPattern[]> => {
+    const qs = disciplineId
+      ? `?discipline_id=${encodeURIComponent(disciplineId)}`
+      : "";
+    const data = await hearthFetch<{ patterns: FeedbackPattern[] }>(
+      `/feedback/patterns${qs}`,
+    );
+    return data.patterns ?? [];
+  },
 };

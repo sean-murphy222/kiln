@@ -1,4 +1,4 @@
-import { useState, useCallback } from "react";
+import { useState, useCallback, useEffect } from "react";
 import {
   ChevronRight,
   ChevronDown,
@@ -12,6 +12,9 @@ import {
 import { cn } from "@/lib/cn";
 import { useForgeStore } from "@/store/useForgeStore";
 import type { ForgeCompetency } from "@/store/useForgeStore";
+import { competencyAPI } from "@/api/forge";
+import { mapCompetency } from "@/lib/forgeMappers";
+import { showToast } from "@/components/common/Toast";
 
 const LEVEL_CONFIG = {
   foundational: { label: "Foundation", className: "bg-info/15 text-info" },
@@ -160,39 +163,65 @@ function TreeNode({
       : 0;
 
   const handleSaveEdit = useCallback(
-    (data: {
+    async (data: {
       name: string;
       description: string;
       level: CompetencyLevel;
       target_count: number;
     }) => {
-      updateCompetency(competency.id, data);
-      setEditing(false);
+      try {
+        const updated = await competencyAPI.update(competency.id, data);
+        updateCompetency(competency.id, mapCompetency(updated));
+        setEditing(false);
+      } catch (err) {
+        showToast(
+          "error",
+          err instanceof Error ? err.message : "Failed to update competency",
+        );
+      }
     },
     [competency.id, updateCompetency],
   );
 
   const handleAddChild = useCallback(
-    (data: {
+    async (data: {
       name: string;
       description: string;
       level: CompetencyLevel;
       target_count: number;
     }) => {
-      addCompetency({
-        id: `comp-${Date.now()}`,
-        discipline_id: selectedDisciplineId ?? "",
-        name: data.name,
-        description: data.description,
-        level: data.level,
-        parent_id: competency.id,
-        example_count: 0,
-        target_count: data.target_count,
-      });
-      setAddingChild(false);
+      try {
+        const created = await competencyAPI.create({
+          discipline_id: selectedDisciplineId ?? "",
+          name: data.name,
+          description: data.description,
+          level: data.level,
+          parent_id: competency.id,
+          target_count: data.target_count,
+        });
+        addCompetency(mapCompetency(created));
+        setAddingChild(false);
+      } catch (err) {
+        showToast(
+          "error",
+          err instanceof Error ? err.message : "Failed to add competency",
+        );
+      }
     },
     [competency.id, selectedDisciplineId, addCompetency],
   );
+
+  const handleDelete = useCallback(async () => {
+    try {
+      await competencyAPI.delete(competency.id);
+      removeCompetency(competency.id);
+    } catch (err) {
+      showToast(
+        "error",
+        err instanceof Error ? err.message : "Failed to delete competency",
+      );
+    }
+  }, [competency.id, removeCompetency]);
 
   if (editing) {
     return (
@@ -288,7 +317,7 @@ function TreeNode({
             <Pencil size={12} />
           </button>
           <button
-            onClick={() => removeCompetency(competency.id)}
+            onClick={handleDelete}
             className="p-1 rounded hover:bg-kiln-600 text-kiln-500 hover:text-error transition-colors"
             title="Delete"
           >
@@ -326,8 +355,36 @@ function TreeNode({
 }
 
 export function CompetencyTree() {
-  const { competencies, addCompetency, selectedDisciplineId } = useForgeStore();
+  const {
+    competencies,
+    addCompetency,
+    setCompetencies,
+    selectedDisciplineId,
+    setError,
+  } = useForgeStore();
   const [addingRoot, setAddingRoot] = useState(false);
+
+  // Load competencies for the selected discipline.
+  useEffect(() => {
+    if (!selectedDisciplineId) return;
+    let cancelled = false;
+    competencyAPI
+      .list(selectedDisciplineId)
+      .then((items) => {
+        if (!cancelled) setCompetencies(items.map(mapCompetency));
+      })
+      .catch((err) => {
+        if (!cancelled) {
+          const msg =
+            err instanceof Error ? err.message : "Failed to load competencies";
+          setError(msg);
+          showToast("error", msg);
+        }
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [selectedDisciplineId, setCompetencies, setError]);
 
   const disciplineCompetencies = competencies.filter(
     (c) => c.discipline_id === selectedDisciplineId,
@@ -346,23 +403,29 @@ export function CompetencyTree() {
     totalTarget > 0 ? Math.round((totalExamples / totalTarget) * 100) : 0;
 
   const handleAddRoot = useCallback(
-    (data: {
+    async (data: {
       name: string;
       description: string;
       level: CompetencyLevel;
       target_count: number;
     }) => {
-      addCompetency({
-        id: `comp-${Date.now()}`,
-        discipline_id: selectedDisciplineId ?? "",
-        name: data.name,
-        description: data.description,
-        level: data.level,
-        parent_id: null,
-        example_count: 0,
-        target_count: data.target_count,
-      });
-      setAddingRoot(false);
+      try {
+        const created = await competencyAPI.create({
+          discipline_id: selectedDisciplineId ?? "",
+          name: data.name,
+          description: data.description,
+          level: data.level,
+          parent_id: null,
+          target_count: data.target_count,
+        });
+        addCompetency(mapCompetency(created));
+        setAddingRoot(false);
+      } catch (err) {
+        showToast(
+          "error",
+          err instanceof Error ? err.message : "Failed to add competency",
+        );
+      }
     },
     [selectedDisciplineId, addCompetency],
   );
