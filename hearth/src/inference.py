@@ -552,6 +552,9 @@ class ModelManager:
         slot.status = ModelStatus.LOADING
         try:
             self._evict_all(keep=slot.slot_id)
+            # Free a prior backend for THIS slot before rebuilding (reload case),
+            # otherwise the old model stays resident -> double VRAM usage.
+            self._close_backend(slot.slot_id)
             base_model = slot.model_path or backend_config.get_base_model()
             self._backends[slot.slot_id] = build_inference(
                 base_model=base_model,
@@ -700,6 +703,8 @@ class HearthEngine:
         """
         self._manager = model_manager
         self._pipeline = rag_pipeline
+        # The pipeline's default model, restored when a slot has no real backend.
+        self._default_model = getattr(rag_pipeline, "_model", None)
         self._conversations: dict[str, Conversation] = {}
         self._feedback: dict[str, list[FeedbackSignal]] = {}
 
@@ -716,10 +721,11 @@ class HearthEngine:
             InferenceError: If the slot is not found or not ready.
         """
         self._validate_slot_ready(request.slot_id)
+        # Route generation to the slot's real model when one is loaded; restore
+        # the default model otherwise, so a real model never bleeds into a
+        # subsequent mock/unloaded-slot query.
         backend = self._manager.get_backend(request.slot_id)
-        if backend is not None:
-            # Route generation through the slot's loaded real model.
-            self._pipeline._model = backend
+        self._pipeline._model = backend if backend is not None else self._default_model
         start = time.monotonic()
         rag_response = self._pipeline.query(request.query)
         latency_ms = (time.monotonic() - start) * 1000

@@ -153,6 +153,23 @@ def test_query_uses_mock_when_no_real_backend() -> None:
     assert resp.answer == "MOCK"
 
 
+def test_real_query_does_not_bleed_into_mock_slot() -> None:
+    """A real-backed query must not leave the real model on the pipeline for a
+    later slot that has no real backend (regression for the routing bleed)."""
+    mgr = ModelManager()
+    mgr.register_slot("real", "R", "qwen")
+    mgr.register_slot("mock", "M", "qwen")
+    mgr.load_model("real")
+    mgr.load_model("mock")
+    # Simulate a mixed deployment: a real backend cached for 'real' only.
+    mgr._backends["real"] = FakeBackend(answer="REAL-ANSWER")
+    engine = HearthEngine(model_manager=mgr, rag_pipeline=_pipeline())
+
+    assert engine.query(QueryRequest(query="q", slot_id="real")).answer == "REAL-ANSWER"
+    # The mock slot must fall back to the default model, not the real one.
+    assert engine.query(QueryRequest(query="q", slot_id="mock")).answer == "MOCK"
+
+
 @pytest.mark.gpu
 def test_real_multi_slot_eviction_and_query(monkeypatch: pytest.MonkeyPatch) -> None:
     """Two real slots load with single-resident eviction and both answer."""

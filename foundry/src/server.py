@@ -20,6 +20,7 @@ from typing import Any
 from fastapi import APIRouter, HTTPException
 from pydantic import BaseModel, Field
 
+from foundry.src import backend_config
 from foundry.src.diagnostics import (
     DiagnosticsError,
     MetricSnapshot,
@@ -29,6 +30,7 @@ from foundry.src.evaluation import (
     EvaluationError,
     EvaluationHistory,
     EvaluationRunner,
+    ModelInference,
 )
 from foundry.src.inference_factory import build_inference
 from foundry.src.merging import (
@@ -73,6 +75,7 @@ _state: dict[str, Any] = {
     "regression_runner": None,
     "merge_registry": None,
     "data_dir": None,
+    "inference_model": None,
 }
 
 
@@ -112,6 +115,27 @@ def _get_evaluation_history() -> EvaluationHistory:
         history_dir = _get_data_dir() / "evaluation_history"
         _state["evaluation_history"] = EvaluationHistory(history_dir)
     return _state["evaluation_history"]
+
+
+def _get_inference_model() -> ModelInference:
+    """Return a shared inference model, rebuilt only when its config changes.
+
+    Caches the backend keyed by (backend, base_model, adapter_path) so the real
+    transformers backend is not reloaded into GPU memory on every request. The
+    mock default is cheap; this primarily prevents leaks/OOM on the real path.
+
+    Returns:
+        A cached ModelInference instance.
+    """
+    key = (
+        backend_config.get_inference_backend(),
+        backend_config.get_base_model(),
+        backend_config.get_adapter_path(),
+    )
+    cached = _state["inference_model"]
+    if cached is None or cached[0] != key:
+        _state["inference_model"] = (key, build_inference(default_response="I don't know."))
+    return _state["inference_model"][1]
 
 
 def _get_version_manager() -> VersionManager:
@@ -572,7 +596,7 @@ async def run_evaluation(request: EvaluationRunRequest) -> dict[str, Any]:
         test_set_path = Path(request.test_set_path)
         test_cases = runner.load_test_cases(test_set_path)
 
-        model = build_inference(default_response="I don't know.")
+        model = _get_inference_model()
         report = runner.run_evaluation(
             model=model,
             test_cases=test_cases,

@@ -146,8 +146,14 @@ class TransformersInference:
         self._model = None
         self._tokenizer = None
         try:
+            import gc
+
             import torch
 
+            # Collect first: PEFT/nn.Module graphs have reference cycles, so the
+            # tensors are not freed by refcount alone and empty_cache() would be
+            # a no-op until the cyclic collector runs.
+            gc.collect()
             if torch.cuda.is_available():
                 torch.cuda.empty_cache()
         except Exception:  # pragma: no cover - best-effort cleanup
