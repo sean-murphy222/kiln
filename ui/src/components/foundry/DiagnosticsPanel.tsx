@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState } from "react";
 import {
   Wrench,
   Activity,
@@ -11,35 +11,48 @@ import {
   RefreshCw,
   GitBranch,
   Merge,
-} from 'lucide-react';
-import { cn } from '@/lib/cn';
-import { useFoundryStore } from '@/store/useFoundryStore';
-import type { DiagnosticReport, DiagnosticIssue, ModelVersion, MergeResult } from '@/store/useFoundryStore';
+} from "lucide-react";
+import { cn } from "@/lib/cn";
+import { useFoundryStore } from "@/store/useFoundryStore";
+import type { DiagnosticReport } from "@/store/useFoundryStore";
 
 const SEVERITY_CONFIG = {
-  high: { label: 'High', icon: AlertCircle, className: 'bg-error/15 text-error' },
-  medium: { label: 'Medium', icon: AlertTriangle, className: 'bg-warning/15 text-warning' },
-  low: { label: 'Low', icon: Info, className: 'bg-info/15 text-info' },
+  high: {
+    label: "High",
+    icon: AlertCircle,
+    className: "bg-error/15 text-error",
+  },
+  medium: {
+    label: "Medium",
+    icon: AlertTriangle,
+    className: "bg-warning/15 text-warning",
+  },
+  low: { label: "Low", icon: Info, className: "bg-info/15 text-info" },
 } as const;
 
 const CONVERGENCE_CONFIG = {
-  converging: { label: 'Converging', icon: TrendingDown, className: 'text-success' },
-  diverging: { label: 'Diverging', icon: TrendingUp, className: 'text-error' },
-  plateau: { label: 'Plateau', icon: Minus, className: 'text-warning' },
-  unknown: { label: 'Unknown', icon: Activity, className: 'text-kiln-500' },
+  converging: {
+    label: "Converging",
+    icon: TrendingDown,
+    className: "text-success",
+  },
+  diverging: { label: "Diverging", icon: TrendingUp, className: "text-error" },
+  plateau: { label: "Plateau", icon: Minus, className: "text-warning" },
+  unknown: { label: "Unknown", icon: Activity, className: "text-kiln-500" },
 } as const;
 
 const OVERFIT_CONFIG = {
-  high: { label: 'High Risk', className: 'bg-error/15 text-error' },
-  medium: { label: 'Medium Risk', className: 'bg-warning/15 text-warning' },
-  low: { label: 'Low Risk', className: 'bg-info/15 text-info' },
-  none: { label: 'No Risk', className: 'bg-success/15 text-success' },
+  high: { label: "High Risk", className: "bg-error/15 text-error" },
+  medium: { label: "Medium Risk", className: "bg-warning/15 text-warning" },
+  low: { label: "Low Risk", className: "bg-info/15 text-info" },
+  none: { label: "No Risk", className: "bg-success/15 text-success" },
 } as const;
 
 function DiagnosticsSection() {
-  const { diagnosticReport, trainingRuns, setDiagnosticReport } = useFoundryStore();
+  const { diagnosticReport, trainingRuns, setDiagnosticReport } =
+    useFoundryStore();
   const [isAnalyzing, setIsAnalyzing] = useState(false);
-  const [selectedRunId, setSelectedRunId] = useState('');
+  const [selectedRunId, setSelectedRunId] = useState("");
 
   const handleAnalyze = () => {
     if (!selectedRunId) return;
@@ -49,20 +62,24 @@ function DiagnosticsSection() {
         run_id: selectedRunId,
         issues: [
           {
-            type: 'Learning Rate',
-            severity: 'medium',
-            description: 'Loss oscillation detected in final 20% of training. Learning rate may be too high for fine-tuning phase.',
-            recommendation: 'Consider using learning rate scheduler with cosine decay, or reduce base learning rate by 50%.',
+            type: "Learning Rate",
+            severity: "medium",
+            description:
+              "Loss oscillation detected in final 20% of training. Learning rate may be too high for fine-tuning phase.",
+            recommendation:
+              "Consider using learning rate scheduler with cosine decay, or reduce base learning rate by 50%.",
           },
           {
-            type: 'Data Distribution',
-            severity: 'low',
-            description: 'Training examples are unevenly distributed across competencies. "Parts Interpretation" has 3x fewer examples than average.',
-            recommendation: 'Balance training data by adding more examples for underrepresented competencies.',
+            type: "Data Distribution",
+            severity: "low",
+            description:
+              'Training examples are unevenly distributed across competencies. "Parts Interpretation" has 3x fewer examples than average.',
+            recommendation:
+              "Balance training data by adding more examples for underrepresented competencies.",
           },
         ],
-        convergence_status: 'converging',
-        overfit_risk: 'low',
+        convergence_status: "converging",
+        overfit_risk: "low",
         analyzed_at: new Date().toISOString(),
       };
       setDiagnosticReport(report);
@@ -70,8 +87,12 @@ function DiagnosticsSection() {
     }, 2000);
   };
 
-  const conv = diagnosticReport ? CONVERGENCE_CONFIG[diagnosticReport.convergence_status] : null;
-  const overfit = diagnosticReport ? OVERFIT_CONFIG[diagnosticReport.overfit_risk] : null;
+  const conv = diagnosticReport
+    ? CONVERGENCE_CONFIG[diagnosticReport.convergence_status]
+    : null;
+  const overfit = diagnosticReport
+    ? OVERFIT_CONFIG[diagnosticReport.overfit_risk]
+    : null;
   const ConvIcon = conv?.icon ?? Activity;
 
   return (
@@ -89,16 +110,24 @@ function DiagnosticsSection() {
           >
             <option value="">Select a training run...</option>
             {trainingRuns.map((r) => (
-              <option key={r.id} value={r.id}>{r.name}</option>
+              <option key={r.id} value={r.id}>
+                {r.name}
+              </option>
             ))}
           </select>
           <button
             onClick={handleAnalyze}
             disabled={!selectedRunId || isAnalyzing}
-            className={cn('btn-secondary btn-sm', (!selectedRunId || isAnalyzing) && 'opacity-50')}
+            className={cn(
+              "btn-secondary btn-sm",
+              (!selectedRunId || isAnalyzing) && "opacity-50",
+            )}
           >
-            <RefreshCw size={12} className={cn(isAnalyzing && 'animate-spin')} />
-            {isAnalyzing ? 'Analyzing...' : 'Analyze'}
+            <RefreshCw
+              size={12}
+              className={cn(isAnalyzing && "animate-spin")}
+            />
+            {isAnalyzing ? "Analyzing..." : "Analyze"}
           </button>
         </div>
       </div>
@@ -109,14 +138,24 @@ function DiagnosticsSection() {
           <div className="grid grid-cols-2 gap-3">
             <div className="card p-3">
               <div className="text-2xs text-kiln-500 mb-1">Convergence</div>
-              <div className={cn('flex items-center gap-1.5 text-sm font-medium', conv?.className)}>
+              <div
+                className={cn(
+                  "flex items-center gap-1.5 text-sm font-medium",
+                  conv?.className,
+                )}
+              >
                 <ConvIcon size={14} />
                 {conv?.label}
               </div>
             </div>
             <div className="card p-3">
               <div className="text-2xs text-kiln-500 mb-1">Overfit Risk</div>
-              <span className={cn('px-2 py-0.5 rounded text-xs font-medium', overfit?.className)}>
+              <span
+                className={cn(
+                  "px-2 py-0.5 rounded text-xs font-medium",
+                  overfit?.className,
+                )}
+              >
                 {overfit?.label}
               </span>
             </div>
@@ -130,16 +169,33 @@ function DiagnosticsSection() {
               return (
                 <div key={i} className="card p-4">
                   <div className="flex items-start gap-3">
-                    <SevIcon size={16} className={cn('mt-0.5 shrink-0', sev.className.split(' ')[1])} />
+                    <SevIcon
+                      size={16}
+                      className={cn(
+                        "mt-0.5 shrink-0",
+                        sev.className.split(" ")[1],
+                      )}
+                    />
                     <div>
                       <div className="flex items-center gap-2 mb-1">
-                        <span className="text-2xs font-medium text-kiln-400 uppercase">{issue.type}</span>
-                        <span className={cn('px-1.5 py-0.5 rounded text-2xs font-medium', sev.className)}>
+                        <span className="text-2xs font-medium text-kiln-400 uppercase">
+                          {issue.type}
+                        </span>
+                        <span
+                          className={cn(
+                            "px-1.5 py-0.5 rounded text-2xs font-medium",
+                            sev.className,
+                          )}
+                        >
                           {sev.label}
                         </span>
                       </div>
-                      <p className="text-sm text-kiln-200 mb-2">{issue.description}</p>
-                      <p className="text-sm text-foundry-cast">{issue.recommendation}</p>
+                      <p className="text-sm text-kiln-200 mb-2">
+                        {issue.description}
+                      </p>
+                      <p className="text-sm text-foundry-cast">
+                        {issue.recommendation}
+                      </p>
                     </div>
                   </div>
                 </div>
@@ -164,7 +220,8 @@ function VersionsSection() {
 
       {modelVersions.length === 0 ? (
         <div className="text-center py-8 text-2xs text-kiln-500">
-          No model versions registered. Complete a training run and register the resulting adapter.
+          No model versions registered. Complete a training run and register the
+          resulting adapter.
         </div>
       ) : (
         <div className="space-y-1">
@@ -192,9 +249,9 @@ function VersionsSection() {
 
 function MergingSection() {
   const { mergeResults, modelVersions, addMergeResult } = useFoundryStore();
-  const [method, setMethod] = useState<'linear' | 'ties'>('linear');
+  const [method, setMethod] = useState<"linear" | "ties">("linear");
   const [selectedAdapters, setSelectedAdapters] = useState<string[]>([]);
-  const [outputName, setOutputName] = useState('');
+  const [outputName, setOutputName] = useState("");
   const [isMerging, setIsMerging] = useState(false);
 
   const handleMerge = () => {
@@ -209,7 +266,7 @@ function MergingSection() {
         created_at: new Date().toISOString(),
       });
       setIsMerging(false);
-      setOutputName('');
+      setOutputName("");
       setSelectedAdapters([]);
     }, 2000);
   };
@@ -232,30 +289,36 @@ function MergingSection() {
           <div>
             <label className="text-2xs text-kiln-400 mb-1 block">Method</label>
             <div className="flex gap-2">
-              {(['linear', 'ties'] as const).map((m) => (
+              {(["linear", "ties"] as const).map((m) => (
                 <button
                   key={m}
                   onClick={() => setMethod(m)}
                   className={cn(
-                    'btn-sm text-2xs',
-                    method === m ? 'bg-foundry-cast-faint text-foundry-cast border border-foundry-cast/20' : 'btn-ghost',
+                    "btn-sm text-2xs",
+                    method === m
+                      ? "bg-foundry-cast-faint text-foundry-cast border border-foundry-cast/20"
+                      : "btn-ghost",
                   )}
                 >
-                  {m === 'linear' ? 'Linear' : 'TIES'}
+                  {m === "linear" ? "Linear" : "TIES"}
                 </button>
               ))}
             </div>
           </div>
 
           <div>
-            <label className="text-2xs text-kiln-400 mb-1 block">Select Adapters (2+)</label>
+            <label className="text-2xs text-kiln-400 mb-1 block">
+              Select Adapters (2+)
+            </label>
             <div className="space-y-1">
               {modelVersions.map((v) => (
                 <label
                   key={v.id}
                   className={cn(
-                    'flex items-center gap-2 px-2 py-1.5 rounded-kiln cursor-pointer transition-colors',
-                    selectedAdapters.includes(v.id) ? 'bg-foundry-cast-faint' : 'hover:bg-kiln-700/50',
+                    "flex items-center gap-2 px-2 py-1.5 rounded-kiln cursor-pointer transition-colors",
+                    selectedAdapters.includes(v.id)
+                      ? "bg-foundry-cast-faint"
+                      : "hover:bg-kiln-700/50",
                   )}
                 >
                   <input
@@ -276,7 +339,9 @@ function MergingSection() {
           </div>
 
           <div>
-            <label className="text-2xs text-kiln-400 mb-1 block">Output Name</label>
+            <label className="text-2xs text-kiln-400 mb-1 block">
+              Output Name
+            </label>
             <input
               type="text"
               value={outputName}
@@ -290,12 +355,13 @@ function MergingSection() {
             onClick={handleMerge}
             disabled={selectedAdapters.length < 2 || !outputName || isMerging}
             className={cn(
-              'btn-primary btn-sm w-full',
-              (selectedAdapters.length < 2 || !outputName || isMerging) && 'opacity-50',
+              "btn-primary btn-sm w-full",
+              (selectedAdapters.length < 2 || !outputName || isMerging) &&
+                "opacity-50",
             )}
           >
             <Merge size={12} />
-            {isMerging ? 'Merging...' : 'Run Merge'}
+            {isMerging ? "Merging..." : "Run Merge"}
           </button>
         </div>
       </div>
@@ -309,7 +375,8 @@ function MergingSection() {
             <div key={mr.id} className="card p-3 mb-1">
               <div className="text-sm text-kiln-200">{mr.output_path}</div>
               <div className="text-2xs text-kiln-500">
-                {mr.method} — {mr.adapters_merged.length} adapters — {new Date(mr.created_at).toLocaleDateString()}
+                {mr.method} — {mr.adapters_merged.length} adapters —{" "}
+                {new Date(mr.created_at).toLocaleDateString()}
               </div>
             </div>
           ))}

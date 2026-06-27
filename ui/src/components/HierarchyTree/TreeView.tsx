@@ -1,8 +1,8 @@
 /**
- * TreeView - The centerpiece of CHONK
+ * TreeView - The centerpiece of Quarry
  *
  * Visual document structure explorer showing hierarchy tree.
- * This is what makes CHONK different from other chunkers.
+ * This is what makes Kiln different from other chunkers.
  */
 
 import React, { useState } from 'react';

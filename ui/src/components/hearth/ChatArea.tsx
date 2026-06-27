@@ -1,16 +1,15 @@
-import { useRef, useEffect } from 'react';
-import { Flame, MessageSquare } from 'lucide-react';
-import { cn } from '@/lib/cn';
-import { MessageBubble } from './MessageBubble';
-import { ChatInput } from './ChatInput';
-import type { Message, Citation } from '@/store/useHearthStore';
+import { useRef, useEffect } from "react";
+import { Flame } from "lucide-react";
+import { MessageBubble } from "./MessageBubble";
+import { ChatInput } from "./ChatInput";
+import type { Message, Citation } from "@/store/useHearthStore";
 
 interface ChatAreaProps {
   messages: Message[];
   isStreaming: boolean;
   onSend: (message: string) => void;
   onCitationClick?: (citation: Citation) => void;
-  onFeedback?: (messageId: string, feedback: 'positive' | 'negative') => void;
+  onFeedback?: (messageId: string, feedback: "positive" | "negative") => void;
 }
 
 /** Ember breathing indicator — the hearth is thinking */
@@ -24,8 +23,8 @@ function TypingIndicator() {
             <div
               className="absolute inset-y-0 left-0 rounded-full"
               style={{
-                background: 'linear-gradient(90deg, #D4A058, #E8734A, #D4A058)',
-                animation: 'ember-breathe 2s ease-in-out infinite',
+                background: "linear-gradient(90deg, #D4A058, #E8734A, #D4A058)",
+                animation: "ember-breathe 2s ease-in-out infinite",
               }}
             />
           </div>
@@ -50,7 +49,7 @@ function EmptyChat() {
       <div className="text-center max-w-sm animate-fade-in">
         <div
           className="w-14 h-14 rounded-xl mx-auto mb-5 flex items-center justify-center"
-          style={{ background: 'rgba(212, 160, 88, 0.06)' }}
+          style={{ background: "rgba(212, 160, 88, 0.06)" }}
         >
           <Flame size={24} className="text-hearth-glow/60" strokeWidth={1.5} />
         </div>
@@ -58,8 +57,8 @@ function EmptyChat() {
           Start a conversation
         </h3>
         <p className="text-sm text-kiln-500 leading-relaxed">
-          Ask questions about your processed documents.
-          Responses include citations to source material.
+          Ask questions about your processed documents. Responses include
+          citations to source material.
         </p>
       </div>
     </div>
@@ -78,7 +77,7 @@ export function ChatArea({
 
   // Auto-scroll to bottom on new messages
   useEffect(() => {
-    bottomRef.current?.scrollIntoView({ behavior: 'smooth' });
+    bottomRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages.length, isStreaming]);
 
   return (
@@ -106,10 +105,7 @@ export function ChatArea({
       )}
 
       {/* Input area */}
-      <ChatInput
-        onSend={onSend}
-        disabled={isStreaming}
-      />
+      <ChatInput onSend={onSend} disabled={isStreaming} />
     </div>
   );
 }

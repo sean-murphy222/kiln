@@ -1,5 +1,5 @@
-import { useState } from 'react';
-import { FolderOpen, Plus, FileText } from 'lucide-react';
+import { useState } from "react";
+import { FolderOpen, Plus } from "lucide-react";
 
 interface WelcomeScreenProps {
   onNewProject: (name: string) => void;
@@ -12,7 +12,7 @@ export function WelcomeScreen({
   onOpenProject,
   isLoading,
 }: WelcomeScreenProps) {
-  const [projectName, setProjectName] = useState('');
+  const [projectName, setProjectName] = useState("");
   const [showNewProject, setShowNewProject] = useState(false);
 
   const handleCreate = () => {
@@ -25,11 +25,11 @@ export function WelcomeScreen({
     <div className="h-screen flex flex-col items-center justify-center bg-kiln-900">
       {/* Logo */}
       <div className="mb-8">
-        <h1 className="text-pixel text-4xl text-ember mb-2">
-          CHONK
+        <h1 className="font-display text-4xl font-bold text-ember mb-2">
+          Kiln
         </h1>
         <p className="text-kiln-300 text-sm text-center">
-          Visual Document Chunking Studio
+          Trustworthy Domain-Specific AI
         </p>
       </div>
 
@@ -56,7 +56,7 @@ export function WelcomeScreen({
               placeholder="My RAG Project"
               value={projectName}
               onChange={(e) => setProjectName(e.target.value)}
-              onKeyDown={(e) => e.key === 'Enter' && handleCreate()}
+              onKeyDown={(e) => e.key === "Enter" && handleCreate()}
               autoFocus
             />
             <div className="flex gap-2">
@@ -72,7 +72,7 @@ export function WelcomeScreen({
                 onClick={handleCreate}
                 disabled={isLoading || !projectName.trim()}
               >
-                {isLoading ? 'Creating...' : 'Create'}
+                {isLoading ? "Creating..." : "Create"}
               </button>
             </div>
           </div>
@@ -116,9 +116,7 @@ export function WelcomeScreen({
       </div>
 
       {/* Version */}
-      <div className="absolute bottom-4 text-xs text-kiln-600">
-        v0.1.0
-      </div>
+      <div className="absolute bottom-4 text-xs text-kiln-600">v0.1.0</div>
     </div>
   );
 }

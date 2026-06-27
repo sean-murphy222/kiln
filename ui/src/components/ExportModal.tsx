@@ -1,7 +1,7 @@
-import { useState } from 'react';
-import { X, Download, FileJson, FileSpreadsheet, FileText } from 'lucide-react';
-import { useStore } from '../store/useStore';
-import { exportAPI } from '../api/chonk';
+import { useState } from "react";
+import { X, Download, FileJson, FileSpreadsheet } from "lucide-react";
+import { useStore } from "../store/useStore";
+import { exportAPI } from "../api/quarry";
 
 interface ExportModalProps {
   documentId?: string;
@@ -9,46 +9,50 @@ interface ExportModalProps {
   onClose: () => void;
 }
 
-export function ExportModal({ documentId, documentName, onClose }: ExportModalProps) {
+export function ExportModal({
+  documentId,
+  documentName,
+  onClose,
+}: ExportModalProps) {
   const { setError } = useStore();
 
-  const [format, setFormat] = useState('jsonl');
+  const [format, setFormat] = useState("jsonl");
   const [isExporting, setIsExporting] = useState(false);
 
   const formats = [
     {
-      id: 'jsonl',
-      name: 'JSONL',
-      description: 'Newline-delimited JSON (LangChain, LlamaIndex compatible)',
+      id: "jsonl",
+      name: "JSONL",
+      description: "Newline-delimited JSON (LangChain, LlamaIndex compatible)",
       icon: FileJson,
-      extension: '.jsonl',
+      extension: ".jsonl",
     },
     {
-      id: 'json',
-      name: 'JSON',
-      description: 'Full JSON with metadata and structure',
+      id: "json",
+      name: "JSON",
+      description: "Full JSON with metadata and structure",
       icon: FileJson,
-      extension: '.json',
+      extension: ".json",
     },
     {
-      id: 'csv',
-      name: 'CSV',
-      description: 'Spreadsheet-friendly format',
+      id: "csv",
+      name: "CSV",
+      description: "Spreadsheet-friendly format",
       icon: FileSpreadsheet,
-      extension: '.csv',
+      extension: ".csv",
     },
   ];
 
   const handleExport = async () => {
     // Check for Electron API
     if (!window.electronAPI) {
-      setError('Export requires desktop app');
+      setError("Export requires desktop app");
       return;
     }
 
     const selectedFormat = formats.find((f) => f.id === format);
     const defaultName = documentName
-      ? `${documentName.replace(/\.[^/.]+$/, '')}_chunks${selectedFormat?.extension}`
+      ? `${documentName.replace(/\.[^/.]+$/, "")}_chunks${selectedFormat?.extension}`
       : `chunks${selectedFormat?.extension}`;
 
     const result = await window.electronAPI.saveFile(defaultName);
@@ -59,7 +63,7 @@ export function ExportModal({ documentId, documentName, onClose }: ExportModalPr
       await exportAPI.export(format, result.filePath, documentId);
       onClose();
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Export failed');
+      setError(err instanceof Error ? err.message : "Export failed");
     } finally {
       setIsExporting(false);
     }
@@ -72,9 +76,7 @@ export function ExportModal({ documentId, documentName, onClose }: ExportModalPr
         <div className="flex items-center justify-between px-4 py-3 border-b border-kiln-600">
           <div className="flex items-center gap-2">
             <Download size={18} className="text-ember" />
-            <h2 className="text-sm font-medium text-kiln-100">
-              Export Chunks
-            </h2>
+            <h2 className="text-sm font-medium text-kiln-100">Export Chunks</h2>
           </div>
           <button
             className="p-1 text-kiln-500 hover:text-kiln-100"
@@ -89,11 +91,11 @@ export function ExportModal({ documentId, documentName, onClose }: ExportModalPr
           <p className="text-sm text-kiln-500">
             {documentId ? (
               <>
-                Export chunks from{' '}
+                Export chunks from{" "}
                 <span className="text-kiln-100">{documentName}</span>
               </>
             ) : (
-              'Export all chunks from the project'
+              "Export all chunks from the project"
             )}
           </p>
 
@@ -106,9 +108,10 @@ export function ExportModal({ documentId, documentName, onClose }: ExportModalPr
                   key={f.id}
                   className={`
                     flex items-center gap-3 p-3 rounded cursor-pointer transition-colors
-                    ${format === f.id
-                      ? 'bg-ember/20 border border-ember'
-                      : 'bg-kiln-700 border border-transparent hover:border-kiln-600'
+                    ${
+                      format === f.id
+                        ? "bg-ember/20 border border-ember"
+                        : "bg-kiln-700 border border-transparent hover:border-kiln-600"
                     }
                   `}
                 >
@@ -122,7 +125,7 @@ export function ExportModal({ documentId, documentName, onClose }: ExportModalPr
                   />
                   <Icon
                     size={20}
-                    className={format === f.id ? 'text-ember' : 'text-kiln-500'}
+                    className={format === f.id ? "text-ember" : "text-kiln-500"}
                   />
                   <div className="flex-1">
                     <div className="text-sm font-medium text-kiln-100">
@@ -152,7 +155,11 @@ export function ExportModal({ documentId, documentName, onClose }: ExportModalPr
 
         {/* Footer */}
         <div className="flex items-center justify-end gap-3 px-4 py-3 border-t border-kiln-600">
-          <button className="btn-secondary" onClick={onClose} disabled={isExporting}>
+          <button
+            className="btn-secondary"
+            onClick={onClose}
+            disabled={isExporting}
+          >
             Cancel
           </button>
           <button
@@ -161,7 +168,7 @@ export function ExportModal({ documentId, documentName, onClose }: ExportModalPr
             disabled={isExporting}
           >
             <Download size={14} />
-            {isExporting ? 'Exporting...' : 'Export'}
+            {isExporting ? "Exporting..." : "Export"}
           </button>
         </div>
       </div>

@@ -1,13 +1,18 @@
-import { useState, useCallback } from 'react';
-import { Flame, PanelLeftClose, PanelLeft, PanelRightClose, PanelRight } from 'lucide-react';
-import { cn } from '@/lib/cn';
-import { useHearthStore } from '@/store/useHearthStore';
-import type { Citation } from '@/store/useHearthStore';
-import { ToolHeader } from '@/components/shell/ToolHeader';
-import { ConversationList } from './ConversationList';
-import { ChatArea } from './ChatArea';
-import { CitationPanel } from './CitationPanel';
-import { ModelSwitcher } from './ModelSwitcher';
+import { useState, useCallback } from "react";
+import {
+  Flame,
+  PanelLeftClose,
+  PanelLeft,
+  PanelRightClose,
+  PanelRight,
+} from "lucide-react";
+import { useHearthStore } from "@/store/useHearthStore";
+import type { Citation } from "@/store/useHearthStore";
+import { ToolHeader } from "@/components/shell/ToolHeader";
+import { ConversationList } from "./ConversationList";
+import { ChatArea } from "./ChatArea";
+import { CitationPanel } from "./CitationPanel";
+import { ModelSwitcher } from "./ModelSwitcher";
 
 export function HearthLayout() {
   const {
@@ -28,18 +33,22 @@ export function HearthLayout() {
   const [conversationListOpen, setConversationListOpen] = useState(true);
   const [activeCitationId, setActiveCitationId] = useState<string | null>(null);
 
-  const activeConversation = conversations.find((c) => c.id === activeConversationId);
+  const activeConversation = conversations.find(
+    (c) => c.id === activeConversationId,
+  );
   const activeMessages = activeConversation?.messages ?? [];
 
   // Citations from the last assistant message
-  const lastAssistantMsg = [...activeMessages].reverse().find((m) => m.role === 'assistant');
+  const lastAssistantMsg = [...activeMessages]
+    .reverse()
+    .find((m) => m.role === "assistant");
   const activeCitations = lastAssistantMsg?.citations ?? [];
 
   const handleNewChat = useCallback(() => {
     const newConv = {
       id: `conv-${Date.now()}`,
-      title: 'New conversation',
-      model_id: activeModelId ?? '',
+      title: "New conversation",
+      model_id: activeModelId ?? "",
       messages: [],
       created_at: new Date().toISOString(),
       updated_at: new Date().toISOString(),
@@ -50,64 +59,86 @@ export function HearthLayout() {
 
   const handleSend = useCallback(
     (content: string) => {
-      if (!activeConversationId) {
-        // Auto-create conversation
-        handleNewChat();
-        return;
+      let convId = activeConversationId;
+
+      if (!convId) {
+        // Auto-create conversation and use its id immediately
+        convId = `conv-${Date.now()}`;
+        const newConv = {
+          id: convId,
+          title: "New conversation",
+          model_id: activeModelId ?? "",
+          messages: [],
+          created_at: new Date().toISOString(),
+          updated_at: new Date().toISOString(),
+        };
+        setConversations([newConv, ...conversations]);
+        setActiveConversation(convId);
       }
 
       // Add user message
       const userMsg = {
         id: `msg-${Date.now()}`,
-        role: 'user' as const,
+        role: "user" as const,
         content,
         citations: [],
         timestamp: new Date().toISOString(),
       };
-      addMessage(activeConversationId, userMsg);
+      addMessage(convId, userMsg);
 
       // Simulate assistant response (will be replaced by real API call)
       setStreaming(true);
       setTimeout(() => {
         const assistantMsg = {
           id: `msg-${Date.now() + 1}`,
-          role: 'assistant' as const,
+          role: "assistant" as const,
           content:
-            'This is a placeholder response. The Hearth backend API is required for real inference. ' +
-            'When connected, responses will include citations like [1] and [2] that reference your processed documents.',
+            "This is a placeholder response. The Hearth backend API is required for real inference. " +
+            "When connected, responses will include citations like [1] and [2] that reference your processed documents.",
           citations: [
             {
               id: `cit-${Date.now()}`,
-              document_title: 'TM-9-2320-280-10',
-              section: '2.3 Engine Maintenance',
+              document_title: "TM-9-2320-280-10",
+              section: "2.3 Engine Maintenance",
               page: 42,
               relevance_score: 0.92,
               snippet:
-                'Preventive maintenance checks should be performed at regular intervals as specified in the maintenance allocation chart.',
+                "Preventive maintenance checks should be performed at regular intervals as specified in the maintenance allocation chart.",
             },
             {
               id: `cit-${Date.now() + 1}`,
-              document_title: 'TM-9-2320-280-10',
-              section: '4.1 Troubleshooting',
+              document_title: "TM-9-2320-280-10",
+              section: "4.1 Troubleshooting",
               page: 87,
               relevance_score: 0.76,
               snippet:
-                'If the engine fails to start after three attempts, check the fuel supply, battery connections, and starter motor relay.',
+                "If the engine fails to start after three attempts, check the fuel supply, battery connections, and starter motor relay.",
             },
           ],
           timestamp: new Date().toISOString(),
         };
-        addMessage(activeConversationId, assistantMsg);
+        addMessage(convId!, assistantMsg);
         setStreaming(false);
       }, 1500);
     },
-    [activeConversationId, addMessage, setStreaming, handleNewChat],
+    [
+      activeConversationId,
+      activeModelId,
+      conversations,
+      addMessage,
+      setConversations,
+      setActiveConversation,
+      setStreaming,
+    ],
   );
 
-  const handleCitationClick = useCallback((citation: Citation) => {
-    setActiveCitationId(citation.id);
-    if (!citationPanelOpen) toggleCitationPanel();
-  }, [citationPanelOpen, toggleCitationPanel]);
+  const handleCitationClick = useCallback(
+    (citation: Citation) => {
+      setActiveCitationId(citation.id);
+      if (!citationPanelOpen) toggleCitationPanel();
+    },
+    [citationPanelOpen, toggleCitationPanel],
+  );
 
   const handleDeleteConversation = useCallback(
     (id: string) => {
@@ -116,7 +147,12 @@ export function HearthLayout() {
         setActiveConversation(null);
       }
     },
-    [conversations, activeConversationId, setConversations, setActiveConversation],
+    [
+      conversations,
+      activeConversationId,
+      setConversations,
+      setActiveConversation,
+    ],
   );
 
   return (
@@ -132,16 +168,26 @@ export function HearthLayout() {
         <button
           onClick={() => setConversationListOpen(!conversationListOpen)}
           className="btn-ghost btn-icon btn-sm"
-          title={conversationListOpen ? 'Hide conversations' : 'Show conversations'}
+          title={
+            conversationListOpen ? "Hide conversations" : "Show conversations"
+          }
         >
-          {conversationListOpen ? <PanelLeftClose size={15} /> : <PanelLeft size={15} />}
+          {conversationListOpen ? (
+            <PanelLeftClose size={15} />
+          ) : (
+            <PanelLeft size={15} />
+          )}
         </button>
         <button
           onClick={toggleCitationPanel}
           className="btn-ghost btn-icon btn-sm"
-          title={citationPanelOpen ? 'Hide citations' : 'Show citations'}
+          title={citationPanelOpen ? "Hide citations" : "Show citations"}
         >
-          {citationPanelOpen ? <PanelRightClose size={15} /> : <PanelRight size={15} />}
+          {citationPanelOpen ? (
+            <PanelRightClose size={15} />
+          ) : (
+            <PanelRight size={15} />
+          )}
         </button>
 
         {/* Model selector */}

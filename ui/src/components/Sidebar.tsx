@@ -1,6 +1,6 @@
 import { FileText, Trash2, ChevronRight } from 'lucide-react';
 import { useStore } from '../store/useStore';
-import { documentAPI, projectAPI } from '../api/chonk';
+import { documentAPI, projectAPI } from '../api/quarry';
 
 export function Sidebar() {
   const {

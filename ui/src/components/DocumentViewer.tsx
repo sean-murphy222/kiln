@@ -1,7 +1,7 @@
-import { useState, useCallback } from 'react';
-import { FileText, ChevronLeft, ChevronRight, ZoomIn, ZoomOut } from 'lucide-react';
-import { useStore } from '../store/useStore';
-import type { Chunk, Block } from '../api/chonk';
+import { useState } from "react";
+import { FileText, ChevronLeft, ChevronRight } from "lucide-react";
+import { useStore } from "../store/useStore";
+import type { Chunk, Block } from "../api/quarry";
 
 export function DocumentViewer() {
   const {
@@ -12,7 +12,7 @@ export function DocumentViewer() {
     toggleChunkSelection,
   } = useStore();
 
-  const [viewMode, setViewMode] = useState<'chunks' | 'document'>('chunks');
+  const [viewMode, setViewMode] = useState<"chunks" | "document">("chunks");
   const [currentPage, setCurrentPage] = useState(1);
   const [hoveredChunkId, setHoveredChunkId] = useState<string | null>(null);
 
@@ -41,8 +41,10 @@ export function DocumentViewer() {
               {document.source_path.split(/[/\\]/).pop()}
             </h2>
             <p className="text-xs text-kiln-500 mt-0.5">
-              {document.metadata.page_count > 0 && `${document.metadata.page_count} pages · `}
-              {document.metadata.word_count.toLocaleString()} words · {document.chunks.length} chunks
+              {document.metadata.page_count > 0 &&
+                `${document.metadata.page_count} pages · `}
+              {document.metadata.word_count.toLocaleString()} words ·{" "}
+              {document.chunks.length} chunks
             </p>
           </div>
           <div className="flex items-center gap-2">
@@ -50,28 +52,26 @@ export function DocumentViewer() {
             <div className="flex rounded overflow-hidden border border-kiln-600">
               <button
                 className={`px-3 py-1 text-xs transition-colors ${
-                  viewMode === 'chunks'
-                    ? 'bg-ember text-kiln-100'
-                    : 'bg-kiln-800 text-kiln-500 hover:text-kiln-300'
+                  viewMode === "chunks"
+                    ? "bg-ember text-kiln-100"
+                    : "bg-kiln-800 text-kiln-500 hover:text-kiln-300"
                 }`}
-                onClick={() => setViewMode('chunks')}
+                onClick={() => setViewMode("chunks")}
               >
                 Chunks
               </button>
               <button
                 className={`px-3 py-1 text-xs transition-colors ${
-                  viewMode === 'document'
-                    ? 'bg-ember text-kiln-100'
-                    : 'bg-kiln-800 text-kiln-500 hover:text-kiln-300'
+                  viewMode === "document"
+                    ? "bg-ember text-kiln-100"
+                    : "bg-kiln-800 text-kiln-500 hover:text-kiln-300"
                 }`}
-                onClick={() => setViewMode('document')}
+                onClick={() => setViewMode("document")}
               >
                 Blocks
               </button>
             </div>
-            <span className="badge badge-info">
-              {document.chunker_used}
-            </span>
+            <span className="badge badge-info">{document.chunker_used}</span>
           </div>
         </div>
       </div>
@@ -102,30 +102,30 @@ export function DocumentViewer() {
       {/* Document content */}
       <div className="flex-1 overflow-y-auto p-4">
         <div className="max-w-3xl mx-auto space-y-4">
-          {viewMode === 'chunks' ? (
-            // Chunk view
-            document.chunks.map((chunk, index) => (
-              <ChunkCard
-                key={chunk.id}
-                chunk={chunk}
-                index={index}
-                isSelected={selectedChunkIds.includes(chunk.id)}
-                isHovered={hoveredChunkId === chunk.id}
-                onClick={() => selectChunk(chunk.id)}
-                onCtrlClick={() => toggleChunkSelection(chunk.id)}
-                onMouseEnter={() => setHoveredChunkId(chunk.id)}
-                onMouseLeave={() => setHoveredChunkId(null)}
-                blocks={document.blocks.filter((b) => chunk.block_ids.includes(b.id))}
-              />
-            ))
-          ) : (
-            // Block view - shows document structure
-            document.blocks
-              .filter((b) => pageCount <= 1 || b.page === currentPage)
-              .map((block, index) => (
-                <BlockCard key={block.id} block={block} index={index} />
+          {viewMode === "chunks"
+            ? // Chunk view
+              document.chunks.map((chunk, index) => (
+                <ChunkCard
+                  key={chunk.id}
+                  chunk={chunk}
+                  index={index}
+                  isSelected={selectedChunkIds.includes(chunk.id)}
+                  isHovered={hoveredChunkId === chunk.id}
+                  onClick={() => selectChunk(chunk.id)}
+                  onCtrlClick={() => toggleChunkSelection(chunk.id)}
+                  onMouseEnter={() => setHoveredChunkId(chunk.id)}
+                  onMouseLeave={() => setHoveredChunkId(null)}
+                  blocks={document.blocks.filter((b) =>
+                    chunk.block_ids.includes(b.id),
+                  )}
+                />
               ))
-          )}
+            : // Block view - shows document structure
+              document.blocks
+                .filter((b) => pageCount <= 1 || b.page === currentPage)
+                .map((block, index) => (
+                  <BlockCard key={block.id} block={block} index={index} />
+                ))}
         </div>
       </div>
     </div>
@@ -157,17 +157,17 @@ function ChunkCard({
 }: ChunkCardProps) {
   const qualityColor =
     chunk.quality.overall >= 0.85
-      ? 'border-success'
+      ? "border-success"
       : chunk.quality.overall >= 0.7
-      ? 'border-warning'
-      : 'border-error';
+        ? "border-warning"
+        : "border-error";
 
   const qualityBg =
     chunk.quality.overall >= 0.85
-      ? 'bg-success/5'
+      ? "bg-success/5"
       : chunk.quality.overall >= 0.7
-      ? 'bg-warning/5'
-      : 'bg-error/5';
+        ? "bg-warning/5"
+        : "bg-error/5";
 
   const handleClick = (e: React.MouseEvent) => {
     if (e.ctrlKey || e.metaKey) {
@@ -181,8 +181,8 @@ function ChunkCard({
     <div
       className={`
         relative rounded-lg border-2 transition-all cursor-pointer
-        ${isSelected ? 'ring-2 ring-ember ring-offset-2 ring-offset-kiln-900' : ''}
-        ${isHovered && !isSelected ? 'border-ember/50' : qualityColor}
+        ${isSelected ? "ring-2 ring-ember ring-offset-2 ring-offset-kiln-900" : ""}
+        ${isHovered && !isSelected ? "border-ember/50" : qualityColor}
         ${qualityBg}
       `}
       onClick={handleClick}
@@ -194,7 +194,7 @@ function ChunkCard({
         className={`
           absolute -top-3 -left-3 w-7 h-7 rounded-full flex items-center justify-center
           text-xs font-mono font-bold border-2
-          ${isSelected ? 'bg-ember border-ember text-white' : 'bg-kiln-800 border-kiln-600 text-kiln-300'}
+          ${isSelected ? "bg-ember border-ember text-white" : "bg-kiln-800 border-kiln-600 text-kiln-300"}
         `}
       >
         {index + 1}
@@ -218,16 +218,14 @@ function ChunkCard({
             )}
           </div>
           <div className="flex items-center gap-3 text-xs">
-            <span className="text-kiln-500">
-              {chunk.token_count} tokens
-            </span>
+            <span className="text-kiln-500">{chunk.token_count} tokens</span>
             <span
               className={`font-mono font-bold ${
                 chunk.quality.overall >= 0.85
-                  ? 'text-success'
+                  ? "text-success"
                   : chunk.quality.overall >= 0.7
-                  ? 'text-warning'
-                  : 'text-error'
+                    ? "text-warning"
+                    : "text-error"
               }`}
             >
               {Math.round(chunk.quality.overall * 100)}%
@@ -254,12 +252,12 @@ function ChunkCard({
               key={block.id}
               className={`
                 text-sm leading-relaxed
-                ${block.type === 'heading' ? 'font-semibold text-kiln-100' : 'text-kiln-300'}
-                ${block.type === 'code' ? 'font-mono bg-kiln-900 p-2 rounded text-xs' : ''}
-                ${block.type === 'table' ? 'font-mono text-xs overflow-x-auto' : ''}
+                ${block.type === "heading" ? "font-semibold text-kiln-100" : "text-kiln-300"}
+                ${block.type === "code" ? "font-mono bg-kiln-900 p-2 rounded text-xs" : ""}
+                ${block.type === "table" ? "font-mono text-xs overflow-x-auto" : ""}
               `}
             >
-              {block.type === 'heading' && block.heading_level && (
+              {block.type === "heading" && block.heading_level && (
                 <span className="text-xs text-kiln-500 mr-2">
                   H{block.heading_level}
                 </span>
@@ -294,7 +292,9 @@ function ChunkCard({
   );
 }
 
-function getBlockTypeSummary(blocks: Block[]): Array<{ type: string; count: number }> {
+function getBlockTypeSummary(
+  blocks: Block[],
+): Array<{ type: string; count: number }> {
   const counts: Record<string, number> = {};
   for (const block of blocks) {
     counts[block.type] = (counts[block.type] || 0) + 1;
@@ -311,13 +311,13 @@ interface BlockCardProps {
 
 function BlockCard({ block, index }: BlockCardProps) {
   const typeColors: Record<string, string> = {
-    heading: 'border-ember bg-ember/10',
-    text: 'border-kiln-500 bg-kiln-800',
-    table: 'border-warning bg-warning/10',
-    code: 'border-foundry-cast bg-foundry-cast/10',
-    list: 'border-success bg-success/10',
-    list_item: 'border-success/50 bg-success/5',
-    image: 'border-forge-heat bg-forge-heat/10',
+    heading: "border-ember bg-ember/10",
+    text: "border-kiln-500 bg-kiln-800",
+    table: "border-warning bg-warning/10",
+    code: "border-foundry-cast bg-foundry-cast/10",
+    list: "border-success bg-success/10",
+    list_item: "border-success/50 bg-success/5",
+    image: "border-forge-heat bg-forge-heat/10",
   };
 
   const colorClass = typeColors[block.type] || typeColors.text;
@@ -335,20 +335,18 @@ function BlockCard({ block, index }: BlockCardProps) {
           </span>
         </div>
         {block.bbox && (
-          <span className="text-[10px] text-kiln-500">
-            p.{block.page}
-          </span>
+          <span className="text-[10px] text-kiln-500">p.{block.page}</span>
         )}
       </div>
       <div
         className={`
           text-sm whitespace-pre-wrap
-          ${block.type === 'heading' ? 'font-semibold' : ''}
-          ${block.type === 'code' ? 'font-mono text-xs' : ''}
+          ${block.type === "heading" ? "font-semibold" : ""}
+          ${block.type === "code" ? "font-mono text-xs" : ""}
         `}
       >
         {block.content.length > 500
-          ? block.content.slice(0, 500) + '...'
+          ? block.content.slice(0, 500) + "..."
           : block.content}
       </div>
     </div>

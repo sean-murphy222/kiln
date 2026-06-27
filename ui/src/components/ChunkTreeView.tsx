@@ -4,7 +4,7 @@
 
 import { useState } from 'react';
 import { ChevronDown, ChevronRight, FileText, Layers } from 'lucide-react';
-import type { Chunk } from '../api/chonk';
+import type { Chunk } from '../api/quarry';
 
 interface ChunkNode {
   path: string;

@@ -3,7 +3,7 @@
  */
 
 import { FileText, Hash, Layers } from 'lucide-react';
-import type { Document, Chunk } from '../api/chonk';
+import type { Document, Chunk } from '../api/quarry';
 
 interface DocumentOverviewProps {
   document: Document;

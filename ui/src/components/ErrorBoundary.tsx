@@ -27,7 +27,7 @@ export class ErrorBoundary extends Component<Props, State> {
   }
 
   componentDidCatch(error: Error, errorInfo: ErrorInfo) {
-    console.error('CHONK Error Boundary caught error:', error, errorInfo);
+    console.error('Kiln Error Boundary caught error:', error, errorInfo);
     this.setState({ errorInfo });
 
     // In production, you might send this to an error reporting service
@@ -61,7 +61,7 @@ export class ErrorBoundary extends Component<Props, State> {
                   Something went wrong
                 </h1>
                 <p className="text-sm text-kiln-500">
-                  CHONK encountered an unexpected error
+                  Kiln encountered an unexpected error
                 </p>
               </div>
             </div>

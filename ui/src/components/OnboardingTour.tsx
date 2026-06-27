@@ -12,19 +12,19 @@ interface OnboardingTourProps {
 
 const TOUR_STEPS = [
   {
-    title: 'Welcome to CHONK Diagnostics!',
-    description: 'CHONK helps you find and fix problems in your document chunks before embedding them for RAG.',
+    title: 'Welcome to Kiln Diagnostics!',
+    description: 'Kiln helps you find and fix problems in your document chunks before embedding them for RAG.',
     icon: '🎯',
   },
   {
     title: 'Step 1: Upload a Document',
-    description: 'Click the "Add Doc" button in the toolbar to upload a PDF. CHONK will extract text and create initial chunks.',
+    description: 'Click the "Add Doc" button in the toolbar to upload a PDF. Kiln will extract text and create initial chunks.',
     highlight: 'upload',
     icon: '📄',
   },
   {
     title: 'Step 2: Run Diagnostics',
-    description: 'Click "RUN DIAGNOSTICS" to analyze your chunks. CHONK will detect problems like incomplete sentences, broken references, and mixed topics.',
+    description: 'Click "RUN DIAGNOSTICS" to analyze your chunks. Kiln will detect problems like incomplete sentences, broken references, and mixed topics.',
     highlight: 'diagnostics',
     icon: '🔍',
   },
@@ -36,13 +36,13 @@ const TOUR_STEPS = [
   },
   {
     title: 'Step 4: Preview Fixes',
-    description: 'Click "PREVIEW AUTOMATIC FIXES" to see what CHONK can fix automatically. You\'ll see merge/split actions with confidence scores.',
+    description: 'Click "PREVIEW AUTOMATIC FIXES" to see what Kiln can fix automatically. You\'ll see merge/split actions with confidence scores.',
     highlight: 'preview',
     icon: '🔧',
   },
   {
     title: 'Step 5: Apply Fixes',
-    description: 'Click "APPLY FIXES" to execute the improvements. CHONK will merge incomplete chunks, split mixed topics, and fix structural issues.',
+    description: 'Click "APPLY FIXES" to execute the improvements. Kiln will merge incomplete chunks, split mixed topics, and fix structural issues.',
     highlight: 'apply',
     icon: '✨',
   },
@@ -54,7 +54,7 @@ const TOUR_STEPS = [
   },
   {
     title: 'Ready to Start!',
-    description: 'That\'s the complete workflow! Upload a document to begin, and CHONK will guide you through each step.',
+    description: 'That\'s the complete workflow! Upload a document to begin, and Kiln will guide you through each step.',
     icon: '🚀',
   },
 ];

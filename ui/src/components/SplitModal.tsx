@@ -1,8 +1,8 @@
-import { useState, useEffect, useRef } from 'react';
-import { X, Scissors } from 'lucide-react';
-import { useStore } from '../store/useStore';
-import { chunkAPI, projectAPI } from '../api/chonk';
-import type { Chunk } from '../api/chonk';
+import { useState, useRef } from "react";
+import { X, Scissors } from "lucide-react";
+import { useStore } from "../store/useStore";
+import { chunkAPI, projectAPI } from "../api/quarry";
+import type { Chunk } from "../api/quarry";
 
 interface SplitModalProps {
   chunk: Chunk;
@@ -12,7 +12,7 @@ interface SplitModalProps {
 export function SplitModal({ chunk, onClose }: SplitModalProps) {
   const { setProject, setError, clearChunkSelection } = useStore();
   const [splitPosition, setSplitPosition] = useState(
-    Math.floor(chunk.content.length / 2)
+    Math.floor(chunk.content.length / 2),
   );
   const [isSubmitting, setIsSubmitting] = useState(false);
   const contentRef = useRef<HTMLDivElement>(null);
@@ -34,7 +34,7 @@ export function SplitModal({ chunk, onClose }: SplitModalProps) {
 
   const handleSplit = async () => {
     if (splitPosition <= 0 || splitPosition >= chunk.content.length) {
-      setError('Invalid split position');
+      setError("Invalid split position");
       return;
     }
 
@@ -46,7 +46,7 @@ export function SplitModal({ chunk, onClose }: SplitModalProps) {
       clearChunkSelection();
       onClose();
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to split chunk');
+      setError(err instanceof Error ? err.message : "Failed to split chunk");
     } finally {
       setIsSubmitting(false);
     }
@@ -147,7 +147,11 @@ export function SplitModal({ chunk, onClose }: SplitModalProps) {
 
         {/* Footer */}
         <div className="flex items-center justify-end gap-3 px-4 py-3 border-t border-kiln-600">
-          <button className="btn-secondary" onClick={onClose} disabled={isSubmitting}>
+          <button
+            className="btn-secondary"
+            onClick={onClose}
+            disabled={isSubmitting}
+          >
             Cancel
           </button>
           <button
@@ -156,7 +160,7 @@ export function SplitModal({ chunk, onClose }: SplitModalProps) {
             disabled={isSubmitting}
           >
             <Scissors size={14} />
-            {isSubmitting ? 'Splitting...' : 'Split Chunk'}
+            {isSubmitting ? "Splitting..." : "Split Chunk"}
           </button>
         </div>
       </div>

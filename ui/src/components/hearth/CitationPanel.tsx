@@ -1,7 +1,12 @@
-import { useState } from 'react';
-import { PanelRightClose, FileText, ChevronDown, ChevronRight, ExternalLink } from 'lucide-react';
-import { cn } from '@/lib/cn';
-import type { Citation } from '@/store/useHearthStore';
+import { useState } from "react";
+import {
+  PanelRightClose,
+  FileText,
+  ChevronDown,
+  ChevronRight,
+} from "lucide-react";
+import { cn } from "@/lib/cn";
+import type { Citation } from "@/store/useHearthStore";
 
 interface CitationPanelProps {
   citations: Citation[];
@@ -10,9 +15,9 @@ interface CitationPanelProps {
 }
 
 function relevanceBadge(score: number) {
-  if (score >= 0.8) return { label: 'High', className: 'badge-success' };
-  if (score >= 0.5) return { label: 'Medium', className: 'badge-warning' };
-  return { label: 'Low', className: 'badge-neutral' };
+  if (score >= 0.8) return { label: "High", className: "badge-success" };
+  if (score >= 0.5) return { label: "Medium", className: "badge-warning" };
+  return { label: "Low", className: "badge-neutral" };
 }
 
 function CitationCard({
@@ -30,10 +35,10 @@ function CitationCard({
   return (
     <div
       className={cn(
-        'rounded-md border transition-all duration-200',
+        "rounded-md border transition-all duration-200",
         isActive
-          ? 'bg-hearth-glow/5 border-hearth-glow/20'
-          : 'bg-kiln-800/50 border-kiln-600/40 hover:border-kiln-500/40',
+          ? "bg-hearth-glow/5 border-hearth-glow/20"
+          : "bg-kiln-800/50 border-kiln-600/40 hover:border-kiln-500/40",
       )}
     >
       <button
@@ -44,11 +49,11 @@ function CitationCard({
           {/* Citation number */}
           <span
             className={cn(
-              'flex-shrink-0 w-5 h-5 rounded text-[10px] font-mono font-bold',
-              'flex items-center justify-center',
+              "flex-shrink-0 w-5 h-5 rounded text-[10px] font-mono font-bold",
+              "flex items-center justify-center",
               isActive
-                ? 'bg-hearth-glow/20 text-hearth-glow'
-                : 'bg-kiln-700 text-kiln-400',
+                ? "bg-hearth-glow/20 text-hearth-glow"
+                : "bg-kiln-700 text-kiln-400",
             )}
           >
             {index + 1}
@@ -73,9 +78,15 @@ function CitationCard({
 
           {/* Expand arrow */}
           {expanded ? (
-            <ChevronDown size={14} className="text-kiln-500 flex-shrink-0 mt-0.5" />
+            <ChevronDown
+              size={14}
+              className="text-kiln-500 flex-shrink-0 mt-0.5"
+            />
           ) : (
-            <ChevronRight size={14} className="text-kiln-500 flex-shrink-0 mt-0.5" />
+            <ChevronRight
+              size={14}
+              className="text-kiln-500 flex-shrink-0 mt-0.5"
+            />
           )}
         </div>
       </button>
@@ -99,7 +110,11 @@ function CitationCard({
   );
 }
 
-export function CitationPanel({ citations, activeCitationId, onClose }: CitationPanelProps) {
+export function CitationPanel({
+  citations,
+  activeCitationId,
+  onClose,
+}: CitationPanelProps) {
   return (
     <div className="w-80 flex flex-col h-full bg-kiln-800/50 border-l border-kiln-600/50">
       {/* Header */}
@@ -130,7 +145,9 @@ export function CitationPanel({ citations, activeCitationId, onClose }: Citation
           <div className="text-center py-12">
             <FileText size={24} className="mx-auto mb-3 text-kiln-600" />
             <p className="text-xs text-kiln-500">
-              Citations will appear here when<br />the assistant references documents.
+              Citations will appear here when
+              <br />
+              the assistant references documents.
             </p>
           </div>
         ) : (

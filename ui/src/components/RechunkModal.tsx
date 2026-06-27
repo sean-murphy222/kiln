@@ -1,7 +1,7 @@
-import { useState } from 'react';
-import { X, RefreshCw, Sliders } from 'lucide-react';
-import { useStore } from '../store/useStore';
-import { documentAPI, projectAPI } from '../api/chonk';
+import { useState } from "react";
+import { X, RefreshCw, Sliders } from "lucide-react";
+import { useStore } from "../store/useStore";
+import { documentAPI, projectAPI } from "../api/quarry";
 
 interface RechunkModalProps {
   documentId: string;
@@ -27,26 +27,26 @@ export function RechunkModal({
 
   const chunkers = [
     {
-      id: 'hierarchy',
-      name: 'Hierarchy',
-      description: 'Respects headings and document structure (recommended)',
+      id: "hierarchy",
+      name: "Hierarchy",
+      description: "Respects headings and document structure (recommended)",
     },
     {
-      id: 'recursive',
-      name: 'Recursive',
-      description: 'Splits on natural boundaries (paragraphs, sentences)',
+      id: "recursive",
+      name: "Recursive",
+      description: "Splits on natural boundaries (paragraphs, sentences)",
     },
     {
-      id: 'fixed',
-      name: 'Fixed Size',
-      description: 'Simple fixed-size chunks with overlap',
+      id: "fixed",
+      name: "Fixed Size",
+      description: "Simple fixed-size chunks with overlap",
     },
   ];
 
   const handleRechunk = async () => {
     setIsSubmitting(true);
     try {
-      const result = await documentAPI.rechunk(documentId, {
+      await documentAPI.rechunk(documentId, {
         chunker,
         target_tokens: targetTokens,
         max_tokens: maxTokens,
@@ -58,7 +58,9 @@ export function RechunkModal({
       setProject(updatedProject);
       onClose();
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to rechunk document');
+      setError(
+        err instanceof Error ? err.message : "Failed to rechunk document",
+      );
     } finally {
       setIsSubmitting(false);
     }
@@ -86,7 +88,7 @@ export function RechunkModal({
         {/* Content */}
         <div className="p-4 space-y-6">
           <p className="text-sm text-kiln-500">
-            Adjust chunking settings for{' '}
+            Adjust chunking settings for{" "}
             <span className="text-kiln-100">{documentName}</span>
           </p>
 
@@ -101,9 +103,10 @@ export function RechunkModal({
                   key={c.id}
                   className={`
                     flex items-start gap-3 p-3 rounded cursor-pointer transition-colors
-                    ${chunker === c.id
-                      ? 'bg-ember/20 border border-ember'
-                      : 'bg-kiln-700 border border-transparent hover:border-kiln-600'
+                    ${
+                      chunker === c.id
+                        ? "bg-ember/20 border border-ember"
+                        : "bg-kiln-700 border border-transparent hover:border-kiln-600"
                     }
                   `}
                 >
@@ -136,7 +139,9 @@ export function RechunkModal({
                 type="number"
                 className="input-field"
                 value={targetTokens}
-                onChange={(e) => setTargetTokens(parseInt(e.target.value) || 400)}
+                onChange={(e) =>
+                  setTargetTokens(parseInt(e.target.value) || 400)
+                }
                 min={50}
                 max={2000}
               />
@@ -184,7 +189,9 @@ export function RechunkModal({
                 type="number"
                 className="input-field"
                 value={overlapTokens}
-                onChange={(e) => setOverlapTokens(parseInt(e.target.value) || 50)}
+                onChange={(e) =>
+                  setOverlapTokens(parseInt(e.target.value) || 50)
+                }
                 min={0}
                 max={200}
               />
@@ -197,15 +204,19 @@ export function RechunkModal({
           {/* Warning about locked chunks */}
           <div className="p-3 rounded bg-kiln-700 border border-kiln-600">
             <p className="text-xs text-kiln-500">
-              <span className="text-warning">Note:</span> Locked chunks
-              will be preserved and re-added after rechunking.
+              <span className="text-warning">Note:</span> Locked chunks will be
+              preserved and re-added after rechunking.
             </p>
           </div>
         </div>
 
         {/* Footer */}
         <div className="flex items-center justify-end gap-3 px-4 py-3 border-t border-kiln-600">
-          <button className="btn-secondary" onClick={onClose} disabled={isSubmitting}>
+          <button
+            className="btn-secondary"
+            onClick={onClose}
+            disabled={isSubmitting}
+          >
             Cancel
           </button>
           <button
@@ -213,8 +224,11 @@ export function RechunkModal({
             onClick={handleRechunk}
             disabled={isSubmitting}
           >
-            <RefreshCw size={14} className={isSubmitting ? 'animate-spin' : ''} />
-            {isSubmitting ? 'Processing...' : 'Rechunk'}
+            <RefreshCw
+              size={14}
+              className={isSubmitting ? "animate-spin" : ""}
+            />
+            {isSubmitting ? "Processing..." : "Rechunk"}
           </button>
         </div>
       </div>

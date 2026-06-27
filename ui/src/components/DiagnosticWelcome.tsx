@@ -12,7 +12,7 @@ export function DiagnosticWelcome() {
         {/* Hero Section */}
         <div className="text-center mb-12">
           <h1 className="text-pixel text-4xl text-kiln-300 mb-4">
-            CHONK Diagnostics
+            Quarry Diagnostics
           </h1>
           <p className="text-lg text-kiln-500 mb-6">
             Find and fix chunk problems <strong className="text-kiln-300">before</strong> embedding
@@ -28,7 +28,7 @@ export function DiagnosticWelcome() {
         <div className="bg-kiln-800 border-4 border-black p-8 mb-8">
           <h2 className="text-pixel text-xl text-kiln-300 mb-6 flex items-center gap-2">
             <Search size={24} className="text-ember" />
-            What CHONK Detects
+            What Quarry Detects
           </h2>
 
           <div className="grid grid-cols-2 gap-6">
@@ -89,7 +89,7 @@ export function DiagnosticWelcome() {
               <div>
                 <h3 className="text-sm font-bold text-kiln-300 mb-1">Upload PDF Document</h3>
                 <p className="text-xs text-kiln-500">
-                  CHONK extracts text and creates initial chunks using Docling (best-in-class structure detection)
+                  Quarry extracts text and creates initial chunks using Docling (best-in-class structure detection)
                 </p>
               </div>
             </div>

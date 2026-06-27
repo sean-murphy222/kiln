@@ -2,7 +2,7 @@
  * ProblemCard - Individual chunk problem display
  */
 
-import type { Chunk } from '../../api/chonk';
+import type { Chunk } from '../../api/quarry';
 
 export type ProblemType = 'semantic_incomplete' | 'semantic_contamination' | 'structural_breakage' | 'reference_orphaning';
 export type ProblemSeverity = 'high' | 'medium' | 'low';

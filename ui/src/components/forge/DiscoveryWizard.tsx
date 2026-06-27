@@ -117,7 +117,6 @@ export function DiscoveryWizard() {
     discoveryCurrentIndex,
     setDiscoveryAnswer,
     setDiscoveryIndex,
-    resetDiscovery,
     selectedDisciplineId,
   } = useForgeStore();
 

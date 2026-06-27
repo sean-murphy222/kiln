@@ -8,7 +8,7 @@ import {
   Settings,
 } from 'lucide-react';
 import { useStore } from '../store/useStore';
-import { projectAPI, documentAPI } from '../api/chonk';
+import { projectAPI, documentAPI } from '../api/quarry';
 import { SettingsModal } from './SettingsModal';
 import { ExportModal } from './ExportModal';
 
@@ -73,7 +73,7 @@ export function Toolbar() {
     if (!project) return;
 
     if (!project.project_path && window.electronAPI) {
-      const result = await window.electronAPI.saveProject(project.name + '.chonk');
+      const result = await window.electronAPI.saveProject(project.name + '.kiln');
       if (result.canceled || !result.filePath) return;
 
       setLoading(true);
@@ -118,7 +118,7 @@ export function Toolbar() {
 
       {/* Project name */}
       <div className="text-pixel text-xs text-kiln-300 ml-2">
-        {project?.name ?? 'CHONK'}
+        {project?.name ?? 'Kiln'}
       </div>
 
       {/* Spacer */}

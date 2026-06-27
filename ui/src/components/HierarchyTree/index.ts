@@ -1,5 +1,5 @@
 /**
- * HierarchyTree - The centerpiece component of CHONK
+ * HierarchyTree - The centerpiece component of Quarry
  *
  * Visual document structure explorer.
  */

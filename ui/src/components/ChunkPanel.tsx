@@ -1,21 +1,20 @@
-import { useState } from 'react';
+import { useState } from "react";
 import {
   Lock,
   Unlock,
   Merge,
   Scissors,
   Tag,
-  MessageSquare,
   ChevronDown,
   ChevronRight,
   AlertTriangle,
   RefreshCw,
-} from 'lucide-react';
-import { useStore } from '../store/useStore';
-import { chunkAPI, projectAPI } from '../api/chonk';
-import type { Chunk } from '../api/chonk';
-import { SplitModal } from './SplitModal';
-import { RechunkModal } from './RechunkModal';
+} from "lucide-react";
+import { useStore } from "../store/useStore";
+import { chunkAPI, projectAPI } from "../api/quarry";
+import type { Chunk } from "../api/quarry";
+import { SplitModal } from "./SplitModal";
+import { RechunkModal } from "./RechunkModal";
 
 export function ChunkPanel() {
   const {
@@ -34,7 +33,7 @@ export function ChunkPanel() {
 
   const document = project?.documents.find((d) => d.id === selectedDocumentId);
   const selectedChunks = document?.chunks.filter((c) =>
-    selectedChunkIds.includes(c.id)
+    selectedChunkIds.includes(c.id),
   );
 
   // Handle merge
@@ -47,7 +46,7 @@ export function ChunkPanel() {
       setProject(updatedProject);
       clearChunkSelection();
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to merge chunks');
+      setError(err instanceof Error ? err.message : "Failed to merge chunks");
     }
   };
 
@@ -61,80 +60,91 @@ export function ChunkPanel() {
 
   return (
     <>
-    <div className="h-full flex flex-col bg-kiln-800">
-      {/* Header */}
-      <div className="panel-header flex items-center justify-between">
-        <span>Chunks</span>
-        <div className="flex items-center gap-2">
-          <button
-            className="text-kiln-500 hover:text-ember"
-            onClick={() => setShowRechunkModal(true)}
-            title="Rechunk document"
-          >
-            <RefreshCw size={14} />
-          </button>
-          <span className="text-kiln-500">{document.chunks.length}</span>
-        </div>
-      </div>
-
-      {/* Actions */}
-      {selectedChunkIds.length > 0 && (
-        <div className="px-3 py-2 border-b border-kiln-600 flex items-center gap-2">
-          <span className="text-xs text-kiln-500">
-            {selectedChunkIds.length} selected
-          </span>
-          <div className="flex-1" />
-          {selectedChunkIds.length === 1 && (
+      <div className="h-full flex flex-col bg-kiln-800">
+        {/* Header */}
+        <div className="panel-header flex items-center justify-between">
+          <span>Chunks</span>
+          <div className="flex items-center gap-2">
             <button
-              className="btn-secondary py-1 px-2 text-xs flex items-center gap-1"
-              onClick={() => setSplitModalChunk(selectedChunks![0])}
-              title="Split selected chunk"
+              className="text-kiln-500 hover:text-ember"
+              onClick={() => setShowRechunkModal(true)}
+              title="Rechunk document"
             >
-              <Scissors size={12} />
-              Split
+              <RefreshCw size={14} />
             </button>
-          )}
-          {selectedChunkIds.length >= 2 && (
-            <button
-              className="btn-secondary py-1 px-2 text-xs flex items-center gap-1"
-              onClick={handleMerge}
-              title="Merge selected chunks"
-            >
-              <Merge size={12} />
-              Merge
-            </button>
-          )}
-          <button
-            className="text-xs text-kiln-500 hover:text-kiln-300"
-            onClick={clearChunkSelection}
-          >
-            Clear
-          </button>
+            <span className="text-kiln-500">{document.chunks.length}</span>
+          </div>
         </div>
-      )}
 
-      {/* Chunk list */}
-      <div className="flex-1 overflow-y-auto">
-        {document.chunks.map((chunk, index) => (
-          <ChunkListItem
-            key={chunk.id}
-            chunk={chunk}
-            index={index}
-            isSelected={selectedChunkIds.includes(chunk.id)}
-            onSelect={() => selectChunk(chunk.id)}
-            onToggle={() => toggleChunkSelection(chunk.id)}
-          />
-        ))}
+        {/* Actions */}
+        {selectedChunkIds.length > 0 && (
+          <div className="px-3 py-2 border-b border-kiln-600 flex items-center gap-2">
+            <span className="text-xs text-kiln-500">
+              {selectedChunkIds.length} selected
+            </span>
+            <div className="flex-1" />
+            {selectedChunkIds.length === 1 && (
+              <button
+                className="btn-secondary py-1 px-2 text-xs flex items-center gap-1"
+                onClick={() => setSplitModalChunk(selectedChunks![0])}
+                title="Split selected chunk"
+              >
+                <Scissors size={12} />
+                Split
+              </button>
+            )}
+            {selectedChunkIds.length >= 2 && (
+              <button
+                className="btn-secondary py-1 px-2 text-xs flex items-center gap-1"
+                onClick={handleMerge}
+                title="Merge selected chunks"
+              >
+                <Merge size={12} />
+                Merge
+              </button>
+            )}
+            <button
+              className="text-xs text-kiln-500 hover:text-kiln-300"
+              onClick={clearChunkSelection}
+            >
+              Clear
+            </button>
+          </div>
+        )}
+
+        {/* Chunk list */}
+        <div className="flex-1 overflow-y-auto">
+          {document.chunks.map((chunk, index) => (
+            <ChunkListItem
+              key={chunk.id}
+              chunk={chunk}
+              index={index}
+              isSelected={selectedChunkIds.includes(chunk.id)}
+              onSelect={() => selectChunk(chunk.id)}
+              onToggle={() => toggleChunkSelection(chunk.id)}
+            />
+          ))}
+        </div>
+
+        {/* Selected chunk detail */}
+        {selectedChunks?.length === 1 && (
+          <ChunkDetail chunk={selectedChunks[0]} />
+        )}
       </div>
-
-      {/* Selected chunk detail */}
-      {selectedChunks?.length === 1 && (
-        <ChunkDetail
-          chunk={selectedChunks[0]}
-          document={document}
+      {splitModalChunk && (
+        <SplitModal
+          chunk={splitModalChunk}
+          onClose={() => setSplitModalChunk(null)}
         />
       )}
-    </div>
+      {showRechunkModal && document && (
+        <RechunkModal
+          documentId={document.id}
+          documentName={document.source_path.split(/[/\\]/).pop() ?? "Document"}
+          currentChunker={document.chunker_used ?? "hierarchy"}
+          onClose={() => setShowRechunkModal(false)}
+        />
+      )}
     </>
   );
 }
@@ -156,17 +166,17 @@ function ChunkListItem({
 }: ChunkListItemProps) {
   const qualityColor =
     chunk.quality.overall >= 0.85
-      ? 'bg-success'
+      ? "bg-success"
       : chunk.quality.overall >= 0.7
-      ? 'bg-warning'
-      : 'bg-error';
+        ? "bg-warning"
+        : "bg-error";
 
   return (
     <div
       className={`
         px-3 py-2 border-b border-kiln-600/50 cursor-pointer
         transition-colors
-        ${isSelected ? 'bg-ember/20' : 'hover:bg-kiln-700'}
+        ${isSelected ? "bg-ember/20" : "hover:bg-kiln-700"}
       `}
       onClick={onSelect}
     >
@@ -188,9 +198,7 @@ function ChunkListItem({
             <span className="text-xs font-mono text-kiln-500">
               #{index + 1}
             </span>
-            {chunk.is_locked && (
-              <Lock size={12} className="text-warning" />
-            )}
+            {chunk.is_locked && <Lock size={12} className="text-warning" />}
             {chunk.is_modified && (
               <span className="w-1.5 h-1.5 rounded-full bg-ember" />
             )}
@@ -202,9 +210,7 @@ function ChunkListItem({
 
         {/* Quality indicator */}
         <div className="flex items-center gap-2">
-          <span className="text-xs text-kiln-500">
-            {chunk.token_count}
-          </span>
+          <span className="text-xs text-kiln-500">{chunk.token_count}</span>
           <div
             className={`w-2 h-2 rounded-full ${qualityColor}`}
             title={`Quality: ${Math.round(chunk.quality.overall * 100)}%`}
@@ -236,12 +242,11 @@ function ChunkListItem({
 
 interface ChunkDetailProps {
   chunk: Chunk;
-  document: { id: string };
 }
 
-function ChunkDetail({ chunk, document }: ChunkDetailProps) {
+function ChunkDetail({ chunk }: ChunkDetailProps) {
   const [isExpanded, setIsExpanded] = useState(true);
-  const [newTag, setNewTag] = useState('');
+  const [newTag, setNewTag] = useState("");
   const { setProject, setError } = useStore();
 
   const handleAddTag = async () => {
@@ -253,9 +258,9 @@ function ChunkDetail({ chunk, document }: ChunkDetailProps) {
       });
       const updatedProject = await projectAPI.get();
       setProject(updatedProject);
-      setNewTag('');
+      setNewTag("");
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to add tag');
+      setError(err instanceof Error ? err.message : "Failed to add tag");
     }
   };
 
@@ -267,7 +272,7 @@ function ChunkDetail({ chunk, document }: ChunkDetailProps) {
       const updatedProject = await projectAPI.get();
       setProject(updatedProject);
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to remove tag');
+      setError(err instanceof Error ? err.message : "Failed to remove tag");
     }
   };
 
@@ -279,7 +284,7 @@ function ChunkDetail({ chunk, document }: ChunkDetailProps) {
       const updatedProject = await projectAPI.get();
       setProject(updatedProject);
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to update chunk');
+      setError(err instanceof Error ? err.message : "Failed to update chunk");
     }
   };
 
@@ -290,14 +295,8 @@ function ChunkDetail({ chunk, document }: ChunkDetailProps) {
         className="w-full px-3 py-2 flex items-center gap-2 text-left hover:bg-kiln-700"
         onClick={() => setIsExpanded(!isExpanded)}
       >
-        {isExpanded ? (
-          <ChevronDown size={14} />
-        ) : (
-          <ChevronRight size={14} />
-        )}
-        <span className="text-xs font-medium text-kiln-300">
-          Chunk Details
-        </span>
+        {isExpanded ? <ChevronDown size={14} /> : <ChevronRight size={14} />}
+        <span className="text-xs font-medium text-kiln-300">Chunk Details</span>
       </button>
 
       {isExpanded && (
@@ -353,7 +352,7 @@ function ChunkDetail({ chunk, document }: ChunkDetailProps) {
                 placeholder="Add..."
                 value={newTag}
                 onChange={(e) => setNewTag(e.target.value)}
-                onKeyDown={(e) => e.key === 'Enter' && handleAddTag()}
+                onKeyDown={(e) => e.key === "Enter" && handleAddTag()}
               />
             </div>
           </div>

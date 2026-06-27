@@ -10,8 +10,8 @@
 
 import { useState } from 'react';
 import { AlertTriangle, CheckCircle, XCircle, FileText, Loader2, Zap } from 'lucide-react';
-import type { Document, Chunk, ChunkProblem, FixPlan, DiagnosticStatistics } from '../../api/chonk';
-import { diagnosticAPI } from '../../api/chonk';
+import type { Document, Chunk, ChunkProblem, FixPlan, DiagnosticStatistics } from '../../api/quarry';
+import { diagnosticAPI } from '../../api/quarry';
 import { WorkflowChecklist } from '../WorkflowChecklist';
 import { ChunkTreeView } from '../ChunkTreeView';
 

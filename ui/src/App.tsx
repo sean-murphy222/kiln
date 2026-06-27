@@ -1,7 +1,7 @@
 import { useEffect, useState, useCallback } from "react";
 import { Routes, Route, Navigate } from "react-router-dom";
 import { useStore } from "./store/useStore";
-import { projectAPI, utilAPI } from "./api/chonk";
+import { projectAPI, utilAPI } from "./api/quarry";
 import { AppShell } from "./components/shell/AppShell";
 import { Layout } from "./components/Layout";
 import { WelcomeScreen } from "./components/WelcomeScreen";

@@ -1,8 +1,8 @@
 import { useState, useCallback } from 'react';
 import { Search, Play, Plus, Check, X, Clock } from 'lucide-react';
 import { useStore } from '../store/useStore';
-import { testAPI, projectAPI } from '../api/chonk';
-import type { SearchResult } from '../api/chonk';
+import { testAPI, projectAPI } from '../api/quarry';
+import type { SearchResult } from '../api/quarry';
 
 export function TestPanel() {
   const {

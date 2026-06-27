@@ -14,7 +14,7 @@ import type {
   HierarchyTree,
   StrategyResult,
   StrategyQueryResult,
-} from '../api/chonk';
+} from '../api/quarry';
 
 export type ChunkingStrategy = 'hierarchical' | 'fixed' | 'semantic' | 'custom';
 
