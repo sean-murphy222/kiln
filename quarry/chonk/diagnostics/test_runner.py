@@ -9,9 +9,9 @@ from __future__ import annotations
 from dataclasses import dataclass, field
 from typing import Any
 
+from chonk.core.document import ChonkDocument
 from chonk.diagnostics.question_generator import GeneratedQuestion, QuestionGenerator
 from chonk.testing import RetrievalTester
-from chonk.core.document import Chunk, ChonkDocument
 
 
 @dataclass

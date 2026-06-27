@@ -144,9 +144,7 @@ class HierarchyAnalyzer:
         return analysis
 
     @staticmethod
-    def _check_orphan_headings(
-        tree: HierarchyTree, analysis: HierarchyAnalysis
-    ) -> None:
+    def _check_orphan_headings(tree: HierarchyTree, analysis: HierarchyAnalysis) -> None:
         """Check for headings with no content."""
         all_nodes = tree.get_all_nodes()
 
@@ -163,9 +161,7 @@ class HierarchyAnalyzer:
                 )
 
     @staticmethod
-    def _check_section_sizes(
-        tree: HierarchyTree, analysis: HierarchyAnalysis
-    ) -> None:
+    def _check_section_sizes(tree: HierarchyTree, analysis: HierarchyAnalysis) -> None:
         """Check for sections that are too large or too small."""
         all_nodes = tree.get_all_nodes()
         nodes_with_content = [n for n in all_nodes if n.content_blocks]
@@ -248,9 +244,7 @@ class HierarchyAnalyzer:
             )
 
     @staticmethod
-    def _generate_recommendations(
-        tree: HierarchyTree, analysis: HierarchyAnalysis
-    ) -> None:
+    def _generate_recommendations(tree: HierarchyTree, analysis: HierarchyAnalysis) -> None:
         """Generate recommendations based on analysis."""
         stats = tree.get_statistics()
 
@@ -279,9 +273,7 @@ class HierarchyAnalyzer:
 
         # Recommend based on content coverage
         content_ratio = (
-            stats["nodes_with_content"] / stats["total_nodes"]
-            if stats["total_nodes"] > 0
-            else 0
+            stats["nodes_with_content"] / stats["total_nodes"] if stats["total_nodes"] > 0 else 0
         )
 
         if content_ratio < 0.5:
@@ -292,14 +284,10 @@ class HierarchyAnalyzer:
 
         # Recommend based on tree balance
         if len(analysis.issues) == 0:
-            analysis.recommendations.append(
-                "✅ No issues detected - hierarchy looks good!"
-            )
+            analysis.recommendations.append("✅ No issues detected - hierarchy looks good!")
 
     @staticmethod
-    def compare_trees(
-        tree1: HierarchyTree, tree2: HierarchyTree
-    ) -> dict[str, Any]:
+    def compare_trees(tree1: HierarchyTree, tree2: HierarchyTree) -> dict[str, Any]:
         """
         Compare two hierarchy trees.
 
@@ -322,7 +310,6 @@ class HierarchyAnalyzer:
             "differences": {
                 "node_diff": stats2["total_nodes"] - stats1["total_nodes"],
                 "depth_diff": stats2["max_depth"] - stats1["max_depth"],
-                "token_diff": stats2["avg_tokens_per_node"]
-                - stats1["avg_tokens_per_node"],
+                "token_diff": stats2["avg_tokens_per_node"] - stats1["avg_tokens_per_node"],
             },
         }

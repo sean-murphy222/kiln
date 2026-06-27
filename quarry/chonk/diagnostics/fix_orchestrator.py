@@ -149,8 +149,9 @@ class FixOrchestrator:
         success = True
         if validate and not errors:
             # Re-run diagnostics on fixed chunks
-            from chonk.core.document import ChonkDocument, DocumentMetadata
             from pathlib import Path
+
+            from chonk.core.document import ChonkDocument, DocumentMetadata
 
             # Create temporary document for validation
             temp_doc = ChonkDocument(
@@ -166,7 +167,6 @@ class FixOrchestrator:
             new_problems = self.analyzer.analyze_document(temp_doc)
 
             # Check if problems reduced (should reduce by at least 50% of applied actions)
-            expected_reduction = len(applied_actions) * 0.5
             # Count problems associated with chunks we fixed
             old_problem_count = len([p for p in applied_actions])  # Use applied actions as proxy
 
@@ -175,7 +175,8 @@ class FixOrchestrator:
             if len(new_problems) > old_problem_count and len(applied_actions) > 0:
                 # Log warning but don't fail - partial improvement is still progress
                 errors.append(
-                    f"Validation: Limited improvement - {len(new_problems)} problems remain after {len(applied_actions)} fixes"
+                    f"Validation: Limited improvement - {len(new_problems)} problems "
+                    f"remain after {len(applied_actions)} fixes"
                 )
                 # Don't set success = False - partial fixes are okay
 
@@ -204,17 +205,11 @@ class FixOrchestrator:
         for chunk_id, chunk_action_list in chunk_actions.items():
             if len(chunk_action_list) > 1:
                 action_types = [a.action_type for a in chunk_action_list]
-                conflicts.append(
-                    f"Chunk {chunk_id} involved in multiple actions: {action_types}"
-                )
+                conflicts.append(f"Chunk {chunk_id} involved in multiple actions: {action_types}")
 
         return conflicts
 
-    def _resolve_conflicts(
-        self,
-        actions: list[FixAction],
-        conflicts: list[str]
-    ) -> list[FixAction]:
+    def _resolve_conflicts(self, actions: list[FixAction], conflicts: list[str]) -> list[FixAction]:
         """
         Resolve conflicts by keeping higher-confidence actions.
 
@@ -364,9 +359,9 @@ class FixOrchestrator:
 
         if split_type == "paragraph":
             split_idx = action.metadata.get("split_index", 1)
-            paragraphs = chunk.content.split('\n\n')
-            content_a = '\n\n'.join(paragraphs[:split_idx])
-            content_b = '\n\n'.join(paragraphs[split_idx:])
+            paragraphs = chunk.content.split("\n\n")
+            content_a = "\n\n".join(paragraphs[:split_idx])
+            content_b = "\n\n".join(paragraphs[split_idx:])
 
         elif split_type in ["heading", "midpoint"]:
             split_pos = action.metadata.get("split_position", len(chunk.content) // 2)
@@ -411,6 +406,6 @@ class FixOrchestrator:
         )
 
         # Replace original chunk with two new chunks
-        new_chunks = chunks[:chunk_idx] + [chunk_a, chunk_b] + chunks[chunk_idx + 1:]
+        new_chunks = chunks[:chunk_idx] + [chunk_a, chunk_b] + chunks[chunk_idx + 1 :]
 
         return new_chunks

@@ -9,8 +9,8 @@ from __future__ import annotations
 
 from typing import ClassVar
 
+from chonk.chunkers.base import BaseChunker, ChunkerRegistry
 from chonk.core.document import Block, BlockType, Chunk
-from chonk.chunkers.base import BaseChunker, ChunkerConfig, ChunkerRegistry
 
 
 @ChunkerRegistry.register
@@ -58,9 +58,7 @@ class FixedSizeChunker(BaseChunker):
                 # Calculate overlap
                 overlap_blocks = self._get_overlap_blocks(current_blocks)
                 current_blocks = overlap_blocks
-                current_tokens = sum(
-                    self._count_tokens(b.content) for b in overlap_blocks
-                )
+                current_tokens = sum(self._count_tokens(b.content) for b in overlap_blocks)
 
             # Add block to current chunk
             current_blocks.append(block)
@@ -73,9 +71,7 @@ class FixedSizeChunker(BaseChunker):
                 # Calculate overlap
                 overlap_blocks = self._get_overlap_blocks(current_blocks)
                 current_blocks = overlap_blocks
-                current_tokens = sum(
-                    self._count_tokens(b.content) for b in overlap_blocks
-                )
+                current_tokens = sum(self._count_tokens(b.content) for b in overlap_blocks)
 
         # Don't forget the last chunk
         if current_blocks:
@@ -87,7 +83,9 @@ class FixedSizeChunker(BaseChunker):
             ):
                 # Merge with last chunk
                 last_chunk = chunks[-1]
-                merged_block_ids = last_chunk.block_ids + [b.id for b in current_blocks if b.id not in last_chunk.block_ids]
+                merged_block_ids = last_chunk.block_ids + [
+                    b.id for b in current_blocks if b.id not in last_chunk.block_ids
+                ]
                 merged_blocks = [b for b in blocks if b.id in merged_block_ids]
                 chunks[-1] = self._create_chunk(merged_blocks)
             else:

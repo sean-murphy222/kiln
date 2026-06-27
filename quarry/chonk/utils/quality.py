@@ -10,7 +10,7 @@ from __future__ import annotations
 import re
 from typing import Any
 
-from chonk.core.document import Block, BlockType, Chunk, ChonkDocument, QualityScore
+from chonk.core.document import Block, BlockType, ChonkDocument, Chunk, QualityScore
 from chonk.utils.tokens import TokenCounter
 
 
@@ -159,7 +159,9 @@ class QualityAnalyzer:
 
         # Check for heading without content
         has_heading = any(b.type == BlockType.HEADING for b in blocks)
-        has_content = any(b.type in (BlockType.TEXT, BlockType.LIST, BlockType.TABLE) for b in blocks)
+        has_content = any(
+            b.type in (BlockType.TEXT, BlockType.LIST, BlockType.TABLE) for b in blocks
+        )
 
         if has_heading and not has_content:
             return 0.5
@@ -193,9 +195,7 @@ class QualityAnalyzer:
 
         return 1.0
 
-    def get_improvement_suggestions(
-        self, chunk: Chunk, document: ChonkDocument
-    ) -> list[str]:
+    def get_improvement_suggestions(self, chunk: Chunk, document: ChonkDocument) -> list[str]:
         """Get suggestions for improving a chunk."""
         suggestions = []
         score = chunk.quality
@@ -206,9 +206,7 @@ class QualityAnalyzer:
                     f"Consider merging with adjacent chunks (only {chunk.token_count} tokens)"
                 )
             else:
-                suggestions.append(
-                    f"Consider splitting this chunk ({chunk.token_count} tokens)"
-                )
+                suggestions.append(f"Consider splitting this chunk ({chunk.token_count} tokens)")
 
         if score.sentence_complete < 0.8:
             content = chunk.content.strip()

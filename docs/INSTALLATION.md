@@ -177,6 +177,83 @@ For laptops with limited VRAM (8 GB or less), use quantized Phi models. For work
 
 ---
 
+## Real Model Inference & Training (Opt-in)
+
+By default Kiln runs with a **mock inference backend** and a **dry-run training
+simulator**, so the full pipeline and test suite work on any machine with no GPU
+and no large model downloads. To run **real** models, install the extras and
+flip the backend via environment variables — no code changes required.
+
+### Install the model extras
+
+```bash
+# Real inference (HF transformers + peft); bf16 by default
+pip install -e ".[inference]"
+
+# Real LoRA fine-tuning (peft + trl + datasets)
+pip install -e ".[training]"
+
+# Optional 4-bit quantization (bitsandbytes). May be unavailable on some
+# platforms (e.g. Blackwell/sm_120 + Windows); bf16 is the default.
+pip install -e ".[quant]"
+```
+
+Verify the GPU stack:
+
+```bash
+python -c "import torch; print(torch.cuda.is_available(), torch.cuda.get_device_name(0))"
+```
+
+### Enable real inference
+
+| Variable | Purpose | Default |
+|---|---|---|
+| KILN_INFERENCE_BACKEND | `mock` or `transformers` | `mock` |
+| KILN_BASE_MODEL | Base model id (required for `transformers`) | — |
+| KILN_ADAPTER_PATH | LoRA adapter to attach at inference | — |
+| KILN_LOAD_4BIT | `1` to load 4-bit (needs `[quant]`) | `0` (bf16) |
+| KILN_INFERENCE_DTYPE | Torch dtype for the bf16/fp16 path | `bfloat16` |
+| KILN_MAX_NEW_TOKENS | Generation length cap | `512` |
+
+```bash
+export KILN_INFERENCE_BACKEND=transformers
+export KILN_BASE_MODEL=Qwen/Qwen2.5-0.5B-Instruct
+python kiln_server.py
+```
+
+### Enable real LoRA training
+
+| Variable | Purpose | Default |
+|---|---|---|
+| FOUNDRY_TRAINING_BACKEND | `dryrun` or `real` | `dryrun` |
+
+```bash
+export FOUNDRY_TRAINING_BACKEND=real
+# Run a TrainingPipeline as usual; it writes a loadable PEFT adapter to
+# <output_dir>/adapter that the inference backend loads via KILN_ADAPTER_PATH.
+```
+
+The real training backend resolves LoRA target modules per model family (e.g.
+Phi-3 uses `qkv_proj`/`o_proj`) and fine-tunes in bf16.
+
+### Running the GPU/model tests
+
+GPU-marked tests are skipped by default. Opt in with `KILN_RUN_GPU_TESTS=1`:
+
+```bash
+KILN_RUN_GPU_TESTS=1 pytest foundry/tests/test_inference_gpu.py \
+                            foundry/tests/test_training_gpu.py \
+                            hearth/tests/test_per_slot_routing.py
+```
+
+### VRAM guidance
+
+Hearth loads **one real model at a time** (single-resident; loading a new slot
+evicts the previous one). On 16 GB VRAM, a 0.5–3B model fits comfortably in
+bf16; a 7–8B base needs 4-bit (`KILN_LOAD_4BIT=1`).
+
+---
+
 ## Directory Structure After Installation
 
 ```

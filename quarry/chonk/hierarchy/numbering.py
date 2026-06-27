@@ -153,10 +153,12 @@ class NumberingValidator:
         seen: set[str] = set()
         for num in numbers:
             if num in seen:
-                issues.append({
-                    "type": "duplicate_number",
-                    "message": f"Duplicate section number: {num}",
-                })
+                issues.append(
+                    {
+                        "type": "duplicate_number",
+                        "message": f"Duplicate section number: {num}",
+                    }
+                )
             seen.add(num)
 
         # Check for gaps at top level
@@ -166,20 +168,20 @@ class NumberingValidator:
         # Flag unnumbered headings in a mostly-numbered document
         if unnumbered_indices and len(numbers) > len(unnumbered_indices):
             for idx in unnumbered_indices:
-                issues.append({
-                    "type": "unnumbered_in_numbered_doc",
-                    "message": (
-                        f"Heading at index {idx} is unnumbered "
-                        f"in a numbered document: {headings[idx]!r}"
-                    ),
-                })
+                issues.append(
+                    {
+                        "type": "unnumbered_in_numbered_doc",
+                        "message": (
+                            f"Heading at index {idx} is unnumbered "
+                            f"in a numbered document: {headings[idx]!r}"
+                        ),
+                    }
+                )
 
         return issues
 
     @staticmethod
-    def _check_gaps(
-        top_level: list[str], issues: list[dict[str, str]]
-    ) -> None:
+    def _check_gaps(top_level: list[str], issues: list[dict[str, str]]) -> None:
         """Check for gaps in top-level numbering.
 
         Args:
@@ -200,10 +202,12 @@ class NumberingValidator:
             expected = int_numbers[i - 1] + 1
             actual = int_numbers[i]
             if actual > expected:
-                issues.append({
-                    "type": "numbering_gap",
-                    "message": (
-                        f"Gap in numbering: expected {expected} "
-                        f"after {int_numbers[i-1]}, found {actual}"
-                    ),
-                })
+                issues.append(
+                    {
+                        "type": "numbering_gap",
+                        "message": (
+                            f"Gap in numbering: expected {expected} "
+                            f"after {int_numbers[i-1]}, found {actual}"
+                        ),
+                    }
+                )

@@ -14,7 +14,7 @@ from dataclasses import dataclass, field
 from enum import Enum
 from typing import Any
 
-from chonk.core.document import Chunk, ChonkDocument
+from chonk.core.document import ChonkDocument, Chunk
 
 
 class ProblemType(Enum):
@@ -63,23 +63,29 @@ class DiagnosticAnalyzer:
 
     # Reference patterns
     FORWARD_REF_PATTERNS = [
-        r'\bas follows:?\b',
-        r'\bbelow:?\b',
-        r'\bsee table\s+\d+',
-        r'\bsee figure\s+\d+',
+        r"\bas follows:?\b",
+        r"\bbelow:?\b",
+        r"\bsee table\s+\d+",
+        r"\bsee figure\s+\d+",
     ]
 
     BACKWARD_REF_PATTERNS = [
-        r'\bas mentioned\b',
-        r'\bas noted\b',
-        r'\babove\b',
-        r'\bprevious(?:ly)?\b',
-        r'\bsee section\b',
+        r"\bas mentioned\b",
+        r"\bas noted\b",
+        r"\babove\b",
+        r"\bprevious(?:ly)?\b",
+        r"\bsee section\b",
     ]
 
     DANGLING_CONNECTIVES = [
-        'however', 'therefore', 'additionally', 'furthermore',
-        'moreover', 'consequently', 'thus', 'hence',
+        "however",
+        "therefore",
+        "additionally",
+        "furthermore",
+        "moreover",
+        "consequently",
+        "thus",
+        "hence",
     ]
 
     def __init__(self):
@@ -110,29 +116,43 @@ class DiagnosticAnalyzer:
         if chunk.token_count < 20:
             severity = Severity.HIGH if chunk.token_count < 10 else Severity.MEDIUM
 
-            problems.append(ChunkProblem(
-                id=f"problem_{chunk.id}_size_small",
-                chunk_id=chunk.id,
-                problem_type=ProblemType.SEMANTIC_INCOMPLETE,
-                severity=severity,
-                description=f"Chunk has only {chunk.token_count} tokens - likely an incomplete fragment",
-                suggested_fix="Consider merging with adjacent chunks to form complete semantic unit",
-                metadata={"token_count": chunk.token_count},
-            ))
+            problems.append(
+                ChunkProblem(
+                    id=f"problem_{chunk.id}_size_small",
+                    chunk_id=chunk.id,
+                    problem_type=ProblemType.SEMANTIC_INCOMPLETE,
+                    severity=severity,
+                    description=(
+                        f"Chunk has only {chunk.token_count} tokens - "
+                        "likely an incomplete fragment"
+                    ),
+                    suggested_fix=(
+                        "Consider merging with adjacent chunks to form complete semantic unit"
+                    ),
+                    metadata={"token_count": chunk.token_count},
+                )
+            )
 
         # Very large chunks (semantic contamination)
         elif chunk.token_count > 500:
             severity = Severity.HIGH if chunk.token_count > 800 else Severity.MEDIUM
 
-            problems.append(ChunkProblem(
-                id=f"problem_{chunk.id}_size_large",
-                chunk_id=chunk.id,
-                problem_type=ProblemType.SEMANTIC_CONTAMINATION,
-                severity=severity,
-                description=f"Chunk has {chunk.token_count} tokens - may contain multiple unrelated topics",
-                suggested_fix="Consider splitting chunk at topic boundaries or major section breaks",
-                metadata={"token_count": chunk.token_count},
-            ))
+            problems.append(
+                ChunkProblem(
+                    id=f"problem_{chunk.id}_size_large",
+                    chunk_id=chunk.id,
+                    problem_type=ProblemType.SEMANTIC_CONTAMINATION,
+                    severity=severity,
+                    description=(
+                        f"Chunk has {chunk.token_count} tokens - "
+                        "may contain multiple unrelated topics"
+                    ),
+                    suggested_fix=(
+                        "Consider splitting chunk at topic boundaries or major section breaks"
+                    ),
+                    metadata={"token_count": chunk.token_count},
+                )
+            )
 
         return problems
 
@@ -151,43 +171,62 @@ class DiagnosticAnalyzer:
 
         # Check for lowercase start (mid-sentence fragment)
         if content[0].islower() and not content[0].isdigit():
-            problems.append(ChunkProblem(
-                id=f"problem_{chunk.id}_lowercase_start",
-                chunk_id=chunk.id,
-                problem_type=ProblemType.SEMANTIC_INCOMPLETE,
-                severity=Severity.HIGH,
-                description="Chunk starts with lowercase letter - likely mid-sentence fragment",
-                suggested_fix="Merge with previous chunk to complete the sentence" if prev_chunk else None,
-                metadata={"start_char": content[0]},
-            ))
+            problems.append(
+                ChunkProblem(
+                    id=f"problem_{chunk.id}_lowercase_start",
+                    chunk_id=chunk.id,
+                    problem_type=ProblemType.SEMANTIC_INCOMPLETE,
+                    severity=Severity.HIGH,
+                    description="Chunk starts with lowercase letter - likely mid-sentence fragment",
+                    suggested_fix=(
+                        "Merge with previous chunk to complete the sentence" if prev_chunk else None
+                    ),
+                    metadata={"start_char": content[0]},
+                )
+            )
 
         # Check for dangling connectives
         content_lower = content.lower()
         for connective in self.DANGLING_CONNECTIVES:
             if content_lower.startswith(connective):
-                problems.append(ChunkProblem(
-                    id=f"problem_{chunk.id}_connective_{connective}",
-                    chunk_id=chunk.id,
-                    problem_type=ProblemType.SEMANTIC_INCOMPLETE,
-                    severity=Severity.MEDIUM,
-                    description=f"Chunk starts with '{connective}' - needs context from previous chunk",
-                    suggested_fix="Merge with previous chunk to preserve logical flow" if prev_chunk else None,
-                    metadata={"connective": connective},
-                ))
+                problems.append(
+                    ChunkProblem(
+                        id=f"problem_{chunk.id}_connective_{connective}",
+                        chunk_id=chunk.id,
+                        problem_type=ProblemType.SEMANTIC_INCOMPLETE,
+                        severity=Severity.MEDIUM,
+                        description=(
+                            f"Chunk starts with '{connective}' - "
+                            "needs context from previous chunk"
+                        ),
+                        suggested_fix=(
+                            "Merge with previous chunk to preserve logical flow"
+                            if prev_chunk
+                            else None
+                        ),
+                        metadata={"connective": connective},
+                    )
+                )
                 break
 
         # Check for incomplete ending (no sentence terminator)
-        if content and content[-1] not in '.!?':
+        if content and content[-1] not in ".!?":
             if len(content) > 50:  # Only flag if chunk is substantial
-                problems.append(ChunkProblem(
-                    id=f"problem_{chunk.id}_incomplete_end",
-                    chunk_id=chunk.id,
-                    problem_type=ProblemType.SEMANTIC_INCOMPLETE,
-                    severity=Severity.MEDIUM,
-                    description="Chunk ends without sentence terminator - may be split mid-sentence",
-                    suggested_fix="Merge with next chunk to complete the sentence" if next_chunk else None,
-                    metadata={"last_char": content[-1]},
-                ))
+                problems.append(
+                    ChunkProblem(
+                        id=f"problem_{chunk.id}_incomplete_end",
+                        chunk_id=chunk.id,
+                        problem_type=ProblemType.SEMANTIC_INCOMPLETE,
+                        severity=Severity.MEDIUM,
+                        description=(
+                            "Chunk ends without sentence terminator - " "may be split mid-sentence"
+                        ),
+                        suggested_fix=(
+                            "Merge with next chunk to complete the sentence" if next_chunk else None
+                        ),
+                        metadata={"last_char": content[-1]},
+                    )
+                )
 
         return problems
 
@@ -198,29 +237,41 @@ class DiagnosticAnalyzer:
         # Forward references
         for pattern in self.forward_patterns:
             if pattern.search(chunk.content):
-                problems.append(ChunkProblem(
-                    id=f"problem_{chunk.id}_forward_ref",
-                    chunk_id=chunk.id,
-                    problem_type=ProblemType.REFERENCE_ORPHANING,
-                    severity=Severity.MEDIUM,
-                    description=f"Contains forward reference ('{pattern.pattern}') - referenced content may be in different chunk",
-                    suggested_fix="Verify referenced content is retrievable or merge chunks",
-                    metadata={"pattern": pattern.pattern},
-                ))
+                problems.append(
+                    ChunkProblem(
+                        id=f"problem_{chunk.id}_forward_ref",
+                        chunk_id=chunk.id,
+                        problem_type=ProblemType.REFERENCE_ORPHANING,
+                        severity=Severity.MEDIUM,
+                        description=(
+                            f"Contains forward reference ('{pattern.pattern}') - "
+                            "referenced content may be in different chunk"
+                        ),
+                        suggested_fix="Verify referenced content is retrievable or merge chunks",
+                        metadata={"pattern": pattern.pattern},
+                    )
+                )
                 break
 
         # Backward references
         for pattern in self.backward_patterns:
             if pattern.search(chunk.content):
-                problems.append(ChunkProblem(
-                    id=f"problem_{chunk.id}_backward_ref",
-                    chunk_id=chunk.id,
-                    problem_type=ProblemType.REFERENCE_ORPHANING,
-                    severity=Severity.LOW,
-                    description=f"Contains backward reference ('{pattern.pattern}') - may need previous chunks for context",
-                    suggested_fix="Ensure referenced content is in same chunk or clearly linked",
-                    metadata={"pattern": pattern.pattern},
-                ))
+                problems.append(
+                    ChunkProblem(
+                        id=f"problem_{chunk.id}_backward_ref",
+                        chunk_id=chunk.id,
+                        problem_type=ProblemType.REFERENCE_ORPHANING,
+                        severity=Severity.LOW,
+                        description=(
+                            f"Contains backward reference ('{pattern.pattern}') - "
+                            "may need previous chunks for context"
+                        ),
+                        suggested_fix=(
+                            "Ensure referenced content is in same chunk or clearly linked"
+                        ),
+                        metadata={"pattern": pattern.pattern},
+                    )
+                )
                 break
 
         return problems
@@ -235,7 +286,7 @@ class DiagnosticAnalyzer:
         problems = []
 
         # Check for numbered lists
-        list_pattern = re.compile(r'^\s*(\d+)[\.\)]\s+', re.MULTILINE)
+        list_pattern = re.compile(r"^\s*(\d+)[\.\)]\s+", re.MULTILINE)
         matches = list_pattern.findall(chunk.content)
 
         if matches:
@@ -245,15 +296,20 @@ class DiagnosticAnalyzer:
 
             # List starts mid-sequence (doesn't start at 1)
             if min_num > 1:
-                problems.append(ChunkProblem(
-                    id=f"problem_{chunk.id}_list_start",
-                    chunk_id=chunk.id,
-                    problem_type=ProblemType.STRUCTURAL_BREAKAGE,
-                    severity=Severity.HIGH,
-                    description=f"Numbered list starts at item {min_num}, not 1 - list beginning is in different chunk",
-                    suggested_fix="Merge with previous chunk(s) to include complete list",
-                    metadata={"list_range": f"{min_num}-{max_num}"},
-                ))
+                problems.append(
+                    ChunkProblem(
+                        id=f"problem_{chunk.id}_list_start",
+                        chunk_id=chunk.id,
+                        problem_type=ProblemType.STRUCTURAL_BREAKAGE,
+                        severity=Severity.HIGH,
+                        description=(
+                            f"Numbered list starts at item {min_num}, not 1 - "
+                            "list beginning is in different chunk"
+                        ),
+                        suggested_fix="Merge with previous chunk(s) to include complete list",
+                        metadata={"list_range": f"{min_num}-{max_num}"},
+                    )
+                )
 
             # List has gaps (missing numbers)
             expected_nums = set(range(min_num, max_num + 1))
@@ -261,34 +317,38 @@ class DiagnosticAnalyzer:
             missing = expected_nums - actual_nums
 
             if missing:
-                problems.append(ChunkProblem(
-                    id=f"problem_{chunk.id}_list_gaps",
-                    chunk_id=chunk.id,
-                    problem_type=ProblemType.STRUCTURAL_BREAKAGE,
-                    severity=Severity.MEDIUM,
-                    description=f"Numbered list missing items: {sorted(missing)}",
-                    suggested_fix="List items may be split across chunks - consider merging",
-                    metadata={"missing_items": list(missing)},
-                ))
+                problems.append(
+                    ChunkProblem(
+                        id=f"problem_{chunk.id}_list_gaps",
+                        chunk_id=chunk.id,
+                        problem_type=ProblemType.STRUCTURAL_BREAKAGE,
+                        severity=Severity.MEDIUM,
+                        description=f"Numbered list missing items: {sorted(missing)}",
+                        suggested_fix="List items may be split across chunks - consider merging",
+                        metadata={"missing_items": list(missing)},
+                    )
+                )
 
         # Check for table markers (simple heuristic)
-        table_markers = ['|', '\t\t', '────']
+        table_markers = ["|", "\t\t", "────"]
         if any(marker in chunk.content for marker in table_markers):
             # Count lines with markers
-            lines = chunk.content.split('\n')
+            lines = chunk.content.split("\n")
             marker_lines = sum(1 for line in lines if any(m in line for m in table_markers))
 
             # If less than 3 marker lines, table might be split
             if marker_lines < 3 and marker_lines > 0:
-                problems.append(ChunkProblem(
-                    id=f"problem_{chunk.id}_table_partial",
-                    chunk_id=chunk.id,
-                    problem_type=ProblemType.STRUCTURAL_BREAKAGE,
-                    severity=Severity.MEDIUM,
-                    description="Partial table detected - table may be split across chunks",
-                    suggested_fix="Merge chunks to preserve complete table structure",
-                    metadata={"marker_lines": marker_lines},
-                ))
+                problems.append(
+                    ChunkProblem(
+                        id=f"problem_{chunk.id}_table_partial",
+                        chunk_id=chunk.id,
+                        problem_type=ProblemType.STRUCTURAL_BREAKAGE,
+                        severity=Severity.MEDIUM,
+                        description="Partial table detected - table may be split across chunks",
+                        suggested_fix="Merge chunks to preserve complete table structure",
+                        metadata={"marker_lines": marker_lines},
+                    )
+                )
 
         return problems
 

@@ -8,11 +8,11 @@ with the ChunkerRegistry for easy selection.
 from __future__ import annotations
 
 from abc import ABC, abstractmethod
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 from datetime import datetime
 from typing import Any, ClassVar
 
-from chonk.core.document import Block, Chunk, ChonkDocument
+from chonk.core.document import Block, ChonkDocument, Chunk
 
 
 @dataclass
@@ -77,7 +77,7 @@ class BaseChunker(ABC):
         self._token_counter: TokenCounter | None = None
 
     @property
-    def token_counter(self) -> "TokenCounter":
+    def token_counter(self) -> TokenCounter:
         """Lazy-load token counter."""
         if self._token_counter is None:
             self._token_counter = TokenCounter()
@@ -204,9 +204,7 @@ class ChunkerRegistry:
         return chunker_class
 
     @classmethod
-    def get_chunker(
-        cls, name: str, config: ChunkerConfig | None = None
-    ) -> BaseChunker | None:
+    def get_chunker(cls, name: str, config: ChunkerConfig | None = None) -> BaseChunker | None:
         """Get a chunker by name."""
         chunker_class = cls._chunkers.get(name)
         if chunker_class:

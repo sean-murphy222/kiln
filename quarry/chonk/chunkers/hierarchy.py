@@ -13,10 +13,10 @@ Now enhanced to use:
 from __future__ import annotations
 
 from dataclasses import dataclass
-from typing import Any, ClassVar
+from typing import ClassVar
 
-from chonk.core.document import Block, BlockType, Chunk, ChonkDocument
-from chonk.chunkers.base import BaseChunker, ChunkerConfig, ChunkerRegistry
+from chonk.chunkers.base import BaseChunker, ChunkerRegistry
+from chonk.core.document import Block, BlockType, Chunk
 
 
 @dataclass
@@ -26,8 +26,8 @@ class Section:
     heading: Block | None
     heading_level: int
     content_blocks: list[Block]
-    children: list["Section"]
-    parent: "Section | None"
+    children: list[Section]
+    parent: Section | None
 
     @property
     def all_blocks(self) -> list[Block]:
@@ -74,8 +74,7 @@ class HierarchyChunker(BaseChunker):
 
         # Check if we have TOC-enhanced blocks
         has_toc_info = any(
-            block.metadata.get("toc_match") for block in blocks
-            if block.type == BlockType.HEADING
+            block.metadata.get("toc_match") for block in blocks if block.type == BlockType.HEADING
         )
 
         if has_toc_info:
@@ -267,9 +266,7 @@ class HierarchyChunker(BaseChunker):
         # Process children
         self._process_section_children(section, chunks)
 
-    def _chunk_section_content(
-        self, blocks: list[Block], path: str, chunks: list[Chunk]
-    ) -> None:
+    def _chunk_section_content(self, blocks: list[Block], path: str, chunks: list[Chunk]) -> None:
         """Chunk a list of blocks by size."""
         if not blocks:
             return

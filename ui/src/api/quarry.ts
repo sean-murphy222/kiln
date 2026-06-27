@@ -1,10 +1,10 @@
 /**
- * CHONK API Client
+ * Quarry API Client
  *
  * Communicates with the Python backend via REST API.
  */
 
-const API_BASE = 'http://127.0.0.1:8420';
+const API_BASE = "http://127.0.0.1:8420";
 
 // Type definitions matching the Python backend
 export interface ChunkMetadata {
@@ -228,20 +228,22 @@ export class APIError extends Error {
 // Generic fetch wrapper
 async function apiFetch<T>(
   endpoint: string,
-  options: RequestInit = {}
+  options: RequestInit = {},
 ): Promise<T> {
   const url = `${API_BASE}${endpoint}`;
 
   const response = await fetch(url, {
     ...options,
     headers: {
-      'Content-Type': 'application/json',
+      "Content-Type": "application/json",
       ...options.headers,
     },
   });
 
   if (!response.ok) {
-    const error = await response.json().catch(() => ({ detail: 'Unknown error' }));
+    const error = await response
+      .json()
+      .catch(() => ({ detail: "Unknown error" }));
     throw new APIError(response.status, error.detail || response.statusText);
   }
 
@@ -251,43 +253,52 @@ async function apiFetch<T>(
 // Project endpoints
 export const projectAPI = {
   create: (name: string, outputDirectory?: string) =>
-    apiFetch<{ id: string; name: string; created_at: string }>('/api/project/new', {
-      method: 'POST',
-      body: JSON.stringify({ name, output_directory: outputDirectory }),
-    }),
+    apiFetch<{ id: string; name: string; created_at: string }>(
+      "/api/project/new",
+      {
+        method: "POST",
+        body: JSON.stringify({ name, output_directory: outputDirectory }),
+      },
+    ),
 
   open: (path: string) =>
-    apiFetch<{ id: string; name: string; document_count: number; created_at: string }>(
-      `/api/project/open?path=${encodeURIComponent(path)}`,
-      { method: 'POST' }
-    ),
+    apiFetch<{
+      id: string;
+      name: string;
+      document_count: number;
+      created_at: string;
+    }>(`/api/project/open?path=${encodeURIComponent(path)}`, {
+      method: "POST",
+    }),
 
   save: (path?: string) =>
     apiFetch<{ path: string; saved_at: string }>(
-      `/api/project/save${path ? `?path=${encodeURIComponent(path)}` : ''}`,
-      { method: 'POST' }
+      `/api/project/save${path ? `?path=${encodeURIComponent(path)}` : ""}`,
+      { method: "POST" },
     ),
 
-  get: () => apiFetch<Project>('/api/project'),
+  get: () => apiFetch<Project>("/api/project"),
 };
 
 // Document endpoints
 export const documentAPI = {
   upload: async (file: File, extractionTier?: string) => {
     const formData = new FormData();
-    formData.append('file', file);
+    formData.append("file", file);
 
     const url = extractionTier
       ? `${API_BASE}/api/documents/upload?extraction_tier=${encodeURIComponent(extractionTier)}`
       : `${API_BASE}/api/documents/upload`;
 
     const response = await fetch(url, {
-      method: 'POST',
+      method: "POST",
       body: formData,
     });
 
     if (!response.ok) {
-      const error = await response.json().catch(() => ({ detail: 'Upload failed' }));
+      const error = await response
+        .json()
+        .catch(() => ({ detail: "Upload failed" }));
       throw new APIError(response.status, error.detail);
     }
 
@@ -308,7 +319,7 @@ export const documentAPI = {
 
   delete: (documentId: string) =>
     apiFetch<{ deleted: string }>(`/api/documents/${documentId}`, {
-      method: 'DELETE',
+      method: "DELETE",
     }),
 
   rechunk: (
@@ -319,14 +330,14 @@ export const documentAPI = {
       max_tokens?: number;
       min_tokens?: number;
       overlap_tokens?: number;
-    }
+    },
   ) =>
     apiFetch<{ chunk_count: number; quality: QualityReport }>(
       `/api/documents/${documentId}/rechunk`,
       {
-        method: 'POST',
+        method: "POST",
         body: JSON.stringify({
-          chunker: config.chunker ?? 'hierarchy',
+          chunker: config.chunker ?? "hierarchy",
           target_tokens: config.target_tokens ?? 400,
           max_tokens: config.max_tokens ?? 600,
           min_tokens: config.min_tokens ?? 100,
@@ -335,7 +346,7 @@ export const documentAPI = {
           preserve_tables: true,
           preserve_code: true,
         }),
-      }
+      },
     ),
 
   getQuality: (documentId: string) =>
@@ -345,15 +356,18 @@ export const documentAPI = {
 // Chunk endpoints
 export const chunkAPI = {
   merge: (chunkIds: string[]) =>
-    apiFetch<Chunk>('/api/chunks/merge', {
-      method: 'POST',
+    apiFetch<Chunk>("/api/chunks/merge", {
+      method: "POST",
       body: JSON.stringify({ chunk_ids: chunkIds }),
     }),
 
   split: (chunkId: string, splitPosition: number) =>
-    apiFetch<{ chunk_a: Chunk; chunk_b: Chunk }>('/api/chunks/split', {
-      method: 'POST',
-      body: JSON.stringify({ chunk_id: chunkId, split_position: splitPosition }),
+    apiFetch<{ chunk_a: Chunk; chunk_b: Chunk }>("/api/chunks/split", {
+      method: "POST",
+      body: JSON.stringify({
+        chunk_id: chunkId,
+        split_position: splitPosition,
+      }),
     }),
 
   update: (
@@ -364,38 +378,40 @@ export const chunkAPI = {
       notes?: string | null;
       custom?: Record<string, unknown>;
       is_locked?: boolean;
-    }
+    },
   ) =>
     apiFetch<Chunk>(`/api/chunks/${chunkId}`, {
-      method: 'PUT',
+      method: "PUT",
       body: JSON.stringify(updates),
     }),
 
   getSuggestions: (chunkId: string) =>
-    apiFetch<{ chunk_id: string; quality_score: number; suggestions: string[] }>(
-      `/api/chunks/${chunkId}/suggestions`
-    ),
+    apiFetch<{
+      chunk_id: string;
+      quality_score: number;
+      suggestions: string[];
+    }>(`/api/chunks/${chunkId}/suggestions`),
 };
 
 // Search/Testing endpoints
 export const testAPI = {
   search: (query: string, topK = 5, documentIds?: string[]) =>
-    apiFetch<{ query: string; results: SearchResult[] }>('/api/test/search', {
-      method: 'POST',
+    apiFetch<{ query: string; results: SearchResult[] }>("/api/test/search", {
+      method: "POST",
       body: JSON.stringify({ query, top_k: topK, document_ids: documentIds }),
     }),
 
   getStatus: () =>
-    apiFetch<{ indexed: boolean; chunk_count: number }>('/api/test/status'),
+    apiFetch<{ indexed: boolean; chunk_count: number }>("/api/test/status"),
 
   reindex: () =>
-    apiFetch<{ indexed: boolean; chunk_count: number }>('/api/test/reindex', {
-      method: 'POST',
+    apiFetch<{ indexed: boolean; chunk_count: number }>("/api/test/reindex", {
+      method: "POST",
     }),
 
   createSuite: (name: string) =>
     apiFetch<TestSuite>(`/api/test-suites?name=${encodeURIComponent(name)}`, {
-      method: 'POST',
+      method: "POST",
     }),
 
   addQuery: (
@@ -403,10 +419,10 @@ export const testAPI = {
     query: string,
     expectedChunkIds?: string[],
     excludedChunkIds?: string[],
-    notes?: string
+    notes?: string,
   ) =>
     apiFetch<TestQuery>(`/api/test-suites/${suiteId}/queries`, {
-      method: 'POST',
+      method: "POST",
       body: JSON.stringify({
         query,
         expected_chunk_ids: expectedChunkIds ?? [],
@@ -415,7 +431,7 @@ export const testAPI = {
       }),
     }),
 
-  runSuite: (suiteId: string, topK = 5, documentIds?: string[]) =>
+  runSuite: (suiteId: string, topK = 5) =>
     apiFetch<{
       suite_id: string;
       suite_name: string;
@@ -434,7 +450,7 @@ export const testAPI = {
         execution_time_ms: number;
       }>;
     }>(`/api/test-suites/${suiteId}/run?top_k=${topK}`, {
-      method: 'POST',
+      method: "POST",
     }),
 
   getCoverage: (suiteId: string, topK = 5) =>
@@ -450,12 +466,19 @@ export const testAPI = {
 // Export endpoints
 export const exportAPI = {
   export: (format: string, outputPath: string, documentId?: string) =>
-    apiFetch<{ path: string; format: string; exported_at: string }>('/api/export', {
-      method: 'POST',
-      body: JSON.stringify({ format, output_path: outputPath, document_id: documentId }),
-    }),
+    apiFetch<{ path: string; format: string; exported_at: string }>(
+      "/api/export",
+      {
+        method: "POST",
+        body: JSON.stringify({
+          format,
+          output_path: outputPath,
+          document_id: documentId,
+        }),
+      },
+    ),
 
-  getFormats: () => apiFetch<{ formats: string[] }>('/api/export/formats'),
+  getFormats: () => apiFetch<{ formats: string[] }>("/api/export/formats"),
 };
 
 // Extractor interface
@@ -470,19 +493,22 @@ export interface Extractor {
 
 // Utility endpoints
 export const utilAPI = {
-  getLoaders: () => apiFetch<{ extensions: string[] }>('/api/loaders'),
-  getChunkers: () => apiFetch<{ chunkers: string[] }>('/api/chunkers'),
+  getLoaders: () => apiFetch<{ extensions: string[] }>("/api/loaders"),
+  getChunkers: () => apiFetch<{ chunkers: string[] }>("/api/chunkers"),
   getExtractors: () =>
-    apiFetch<{ extractors: Extractor[]; available_count: number }>('/api/extractors'),
-  healthCheck: () => apiFetch<{ status: string; version: string }>('/api/health'),
+    apiFetch<{ extractors: Extractor[]; available_count: number }>(
+      "/api/extractors",
+    ),
+  healthCheck: () =>
+    apiFetch<{ status: string; version: string }>("/api/health"),
 };
 
 // Settings endpoints
 export const settingsAPI = {
-  get: () => apiFetch<Record<string, unknown>>('/api/settings'),
+  get: () => apiFetch<Record<string, unknown>>("/api/settings"),
   save: (settings: Record<string, unknown>) =>
-    apiFetch<{ saved: boolean }>('/api/settings', {
-      method: 'POST',
+    apiFetch<{ saved: boolean }>("/api/settings", {
+      method: "POST",
       body: JSON.stringify(settings),
     }),
 };
@@ -490,8 +516,8 @@ export const settingsAPI = {
 // Hierarchy endpoints
 export const hierarchyAPI = {
   build: (documentId: string) =>
-    apiFetch<HierarchyTree>('/api/hierarchy/build', {
-      method: 'POST',
+    apiFetch<HierarchyTree>("/api/hierarchy/build", {
+      method: "POST",
       body: JSON.stringify({ document_id: documentId }),
     }),
 
@@ -522,10 +548,10 @@ export const comparisonAPI = {
         group_under_headings?: boolean;
         heading_weight?: number;
       };
-    }>
+    }>,
   ) =>
-    apiFetch<ComparisonResult>('/api/chunk/compare', {
-      method: 'POST',
+    apiFetch<ComparisonResult>("/api/chunk/compare", {
+      method: "POST",
       body: JSON.stringify({ document_id: documentId, strategies }),
     }),
 
@@ -540,12 +566,15 @@ export const comparisonAPI = {
       preserve_code?: boolean;
       group_under_headings?: boolean;
       heading_weight?: number;
-    }
+    },
   ) =>
-    apiFetch<{ chunks: Chunk[]; quality: QualityReport }>('/api/chunk/preview', {
-      method: 'POST',
-      body: JSON.stringify({ document_id: documentId, ...config }),
-    }),
+    apiFetch<{ chunks: Chunk[]; quality: QualityReport }>(
+      "/api/chunk/preview",
+      {
+        method: "POST",
+        body: JSON.stringify({ document_id: documentId, ...config }),
+      },
+    ),
 };
 
 // Enhanced query testing across strategies
@@ -554,15 +583,15 @@ export const queryTestAPI = {
     apiFetch<{
       query: string;
       strategies: StrategyQueryResult[];
-    }>('/api/test/query', {
-      method: 'POST',
+    }>("/api/test/query", {
+      method: "POST",
       body: JSON.stringify({ query, strategies, document_id: documentId }),
     }),
 
   compareStrategies: (
     queries: string[],
     strategies: string[],
-    documentId?: string
+    documentId?: string,
   ) =>
     apiFetch<{
       queries: Array<{
@@ -573,8 +602,8 @@ export const queryTestAPI = {
         best_strategy: string;
         avg_scores: Record<string, number>;
       };
-    }>('/api/test/compare-strategies', {
-      method: 'POST',
+    }>("/api/test/compare-strategies", {
+      method: "POST",
       body: JSON.stringify({ queries, strategies, document_id: documentId }),
     }),
 };
@@ -583,7 +612,7 @@ export const queryTestAPI = {
 export interface ChunkProblem {
   chunk_id: string;
   problem_type: string;
-  severity: 'high' | 'medium' | 'low';
+  severity: "high" | "medium" | "low";
   description: string;
   details: Record<string, unknown>;
   suggested_fix: string | null;
@@ -615,7 +644,7 @@ export interface QuestionTestResult {
 }
 
 export interface FixAction {
-  action_type: 'merge' | 'split';
+  action_type: "merge" | "split";
   chunk_ids: string[];
   description: string;
   confidence: number;
@@ -651,9 +680,13 @@ export interface DiagnosticResult {
 
 // Diagnostic endpoints
 export const diagnosticAPI = {
-  analyze: (documentId: string, includeQuestions = true, testQuestions = true) =>
-    apiFetch<DiagnosticResult>('/api/diagnostics/analyze', {
-      method: 'POST',
+  analyze: (
+    documentId: string,
+    includeQuestions = true,
+    testQuestions = true,
+  ) =>
+    apiFetch<DiagnosticResult>("/api/diagnostics/analyze", {
+      method: "POST",
       body: JSON.stringify({
         document_id: documentId,
         include_questions: includeQuestions,
@@ -674,20 +707,24 @@ export const diagnosticAPI = {
       questions: GeneratedQuestion[];
       chunk_coverage: number;
       total_questions: number;
-    }>('/api/diagnostics/generate-questions', {
-      method: 'POST',
+    }>("/api/diagnostics/generate-questions", {
+      method: "POST",
       body: JSON.stringify({ document_id: documentId }),
     }),
 
-  testQuestions: (documentId: string, questions: GeneratedQuestion[], topK = 5) =>
+  testQuestions: (
+    documentId: string,
+    questions: GeneratedQuestion[],
+    topK = 5,
+  ) =>
     apiFetch<{
       document_id: string;
       results: QuestionTestResult[];
       pass_rate: number;
       avg_expected_rank: number;
       total_tested: number;
-    }>('/api/diagnostics/test-questions', {
-      method: 'POST',
+    }>("/api/diagnostics/test-questions", {
+      method: "POST",
       body: JSON.stringify({
         document_id: documentId,
         questions,
@@ -700,15 +737,19 @@ export const diagnosticAPI = {
       document_id: string;
       problems_found: number;
       fix_plan: FixPlan;
-    }>('/api/diagnostics/preview-fixes', {
-      method: 'POST',
+    }>("/api/diagnostics/preview-fixes", {
+      method: "POST",
       body: JSON.stringify({
         document_id: documentId,
         auto_resolve_conflicts: autoResolveConflicts,
       }),
     }),
 
-  applyFixes: (documentId: string, autoResolveConflicts = true, validate = true) =>
+  applyFixes: (
+    documentId: string,
+    autoResolveConflicts = true,
+    validate = true,
+  ) =>
     apiFetch<{
       document_id: string;
       result: string;
@@ -725,8 +766,8 @@ export const diagnosticAPI = {
         problems_fixed: number;
         reduction_rate: number;
       };
-    }>('/api/diagnostics/apply-fixes', {
-      method: 'POST',
+    }>("/api/diagnostics/apply-fixes", {
+      method: "POST",
       body: JSON.stringify({
         document_id: documentId,
         auto_resolve_conflicts: autoResolveConflicts,

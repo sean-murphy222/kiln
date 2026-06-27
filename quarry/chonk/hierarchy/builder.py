@@ -138,8 +138,7 @@ class HierarchyBuilder:
             HierarchyBuilder._repair_orphans(child)
 
         orphans = [
-            c for c in node.children
-            if c.heading and not c.content_blocks and not c.children
+            c for c in node.children if c.heading and not c.content_blocks and not c.children
         ]
         for orphan in orphans:
             node.children.remove(orphan)
@@ -178,18 +177,16 @@ class HierarchyBuilder:
         from chonk.hierarchy.numbering import NumberingScheme
 
         # Extract heading texts for numbering detection
-        heading_texts = [
-            b.content for b in blocks if b.type == BlockType.HEADING
-        ]
+        heading_texts = [b.content for b in blocks if b.type == BlockType.HEADING]
         scheme = NumberingScheme.detect(heading_texts)
 
         # Build fingerprint summary from available features
         fp_summary = HierarchyBuilder._build_fingerprint_summary(fingerprint)
 
         metadata: dict[str, Any] = {
-            "document_type": document_type.value
-            if hasattr(document_type, "value")
-            else str(document_type),
+            "document_type": (
+                document_type.value if hasattr(document_type, "value") else str(document_type)
+            ),
             "numbering_scheme": scheme.to_dict(),
             "fingerprint_summary": fp_summary,
         }
@@ -294,9 +291,7 @@ class HierarchyBuilder:
                         "section_id": node.section_id,
                         "heading": node.heading,
                         "content": node.content_text,
-                        "heading_block_id": node.heading_block.id
-                        if node.heading_block
-                        else None,
+                        "heading_block_id": node.heading_block.id if node.heading_block else None,
                         "content_block_ids": [b.id for b in node.content_blocks],
                         "level": node.level,
                         "token_count": node.token_count,

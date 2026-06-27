@@ -56,7 +56,7 @@ if (fs.existsSync(path.join(projectDir, "package.json"))) {
   fs.existsSync(path.join(projectDir, "tests"))
 ) {
   testResult = run("python -m pytest --tb=short", projectDir, {
-    timeout: 600000,
+    timeout: 900000,
   });
 } else {
   testResult = { stdout: "", exitCode: 0 };

@@ -6,9 +6,8 @@ Extracts text, tables, and metadata from Word documents.
 
 from __future__ import annotations
 
-from datetime import datetime
 from pathlib import Path
-from typing import Any, ClassVar
+from typing import ClassVar
 
 from docx import Document
 from docx.document import Document as DocxDocument
@@ -180,8 +179,8 @@ class DocxLoader(BaseLoader):
     def _is_list_paragraph(self, para: Paragraph) -> bool:
         """Check if paragraph is a list item based on numbering."""
         # Check for numbering properties in the paragraph XML
-        numPr = para._element.find(qn("w:numPr"))
-        return numPr is not None
+        num_pr = para._element.find(qn("w:numPr"))
+        return num_pr is not None
 
     def _is_bold_paragraph(self, para: Paragraph) -> bool:
         """Check if most of the paragraph is bold."""

@@ -13,7 +13,7 @@ from typing import Any
 
 import numpy as np
 
-from chonk.core.document import Chunk, ChonkDocument, ChonkProject, TestQuery, TestSuite
+from chonk.core.document import ChonkDocument, ChonkProject, Chunk, TestQuery, TestSuite
 from chonk.testing.embedder import Embedder
 
 
@@ -214,10 +214,9 @@ class RetrievalTester:
 
         # Filter by document if specified
         if document_ids:
-            mask = np.array([
-                self._chunk_to_doc.get(c.id, ("", ""))[0] in document_ids
-                for c in self._chunks
-            ])
+            mask = np.array(
+                [self._chunk_to_doc.get(c.id, ("", ""))[0] in document_ids for c in self._chunks]
+            )
             if not mask.any():
                 return []
             embeddings = self._chunk_embeddings[mask]
@@ -275,16 +274,10 @@ class RetrievalTester:
         result_ids = {r.chunk.id for r in results}
 
         # Check expected chunks
-        missing = [
-            cid for cid in query.expected_chunk_ids
-            if cid not in result_ids
-        ]
+        missing = [cid for cid in query.expected_chunk_ids if cid not in result_ids]
 
         # Check excluded chunks
-        unwanted = [
-            cid for cid in query.excluded_chunk_ids
-            if cid in result_ids
-        ]
+        unwanted = [cid for cid in query.excluded_chunk_ids if cid in result_ids]
 
         passed = len(missing) == 0 and len(unwanted) == 0
 
@@ -365,10 +358,7 @@ class RetrievalTester:
             for r in results:
                 chunk_hits[r.chunk.id].append(query.id)
 
-        never_retrieved = [
-            cid for cid, hits in chunk_hits.items()
-            if len(hits) == 0
-        ]
+        never_retrieved = [cid for cid, hits in chunk_hits.items() if len(hits) == 0]
 
         frequently_retrieved = [
             {"chunk_id": cid, "query_count": len(hits)}
@@ -381,8 +371,7 @@ class RetrievalTester:
             "never_retrieved_count": len(never_retrieved),
             "never_retrieved": never_retrieved,
             "frequently_retrieved": frequently_retrieved,
-            "coverage_rate": 1 - (len(never_retrieved) / len(self._chunks))
-            if self._chunks else 0,
+            "coverage_rate": 1 - (len(never_retrieved) / len(self._chunks)) if self._chunks else 0,
         }
 
     def compute_similarity_matrix(self) -> np.ndarray:

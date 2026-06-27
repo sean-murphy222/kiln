@@ -4,10 +4,10 @@ from chonk.core.document import (
     Block,
     BlockType,
     BoundingBox,
-    Chunk,
-    ChunkMetadata,
     ChonkDocument,
     ChonkProject,
+    Chunk,
+    ChunkMetadata,
     DocumentMetadata,
     QualityScore,
 )

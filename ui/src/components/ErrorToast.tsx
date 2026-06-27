@@ -50,26 +50,26 @@ export function ErrorToast() {
   const getIcon = (type: ToastType) => {
     switch (type) {
       case 'error':
-        return <AlertCircle size={18} className="text-accent-error" />;
+        return <AlertCircle size={18} className="text-error" />;
       case 'warning':
-        return <AlertTriangle size={18} className="text-accent-warning" />;
+        return <AlertTriangle size={18} className="text-warning" />;
       case 'info':
-        return <Info size={18} className="text-accent-primary" />;
+        return <Info size={18} className="text-ember" />;
       case 'success':
-        return <CheckCircle size={18} className="text-accent-success" />;
+        return <CheckCircle size={18} className="text-success" />;
     }
   };
 
   const getBorderColor = (type: ToastType) => {
     switch (type) {
       case 'error':
-        return 'border-accent-error';
+        return 'border-error';
       case 'warning':
-        return 'border-accent-warning';
+        return 'border-warning';
       case 'info':
-        return 'border-accent-primary';
+        return 'border-ember';
       case 'success':
-        return 'border-accent-success';
+        return 'border-success';
     }
   };
 
@@ -82,15 +82,15 @@ export function ErrorToast() {
           key={toast.id}
           className={`
             flex items-start gap-3 p-3 rounded-lg
-            bg-surface-panel border-l-4 shadow-lg
+            bg-kiln-800 border-l-4 shadow-lg
             animate-slide-up
             ${getBorderColor(toast.type)}
           `}
         >
           {getIcon(toast.type)}
-          <p className="flex-1 text-sm text-chonk-light">{toast.message}</p>
+          <p className="flex-1 text-sm text-kiln-300">{toast.message}</p>
           <button
-            className="text-chonk-gray hover:text-chonk-white"
+            className="text-kiln-500 hover:text-kiln-100"
             onClick={() => removeToast(toast.id)}
           >
             <X size={16} />

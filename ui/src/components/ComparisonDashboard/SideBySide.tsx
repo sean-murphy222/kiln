@@ -5,8 +5,7 @@
  * before they commit to a strategy.
  */
 
-import React from 'react';
-import type { ChunkingStrategy } from '../StrategySelector';
+import React from "react";
 
 export interface StrategyResult {
   strategy_name: string;
@@ -62,20 +61,18 @@ const StrategyResultCard: React.FC<StrategyResultCardProps> = ({
   // Determine quality badge
   const qualityBadge =
     result.avg_quality_score >= 0.9
-      ? { label: 'Excellent', color: 'bg-green-600' }
+      ? { label: "Excellent", color: "bg-green-600" }
       : result.avg_quality_score >= 0.7
-      ? { label: 'Good', color: 'bg-blue-600' }
-      : result.avg_quality_score >= 0.5
-      ? { label: 'Fair', color: 'bg-yellow-600' }
-      : { label: 'Poor', color: 'bg-red-600' };
+        ? { label: "Good", color: "bg-blue-600" }
+        : result.avg_quality_score >= 0.5
+          ? { label: "Fair", color: "bg-yellow-600" }
+          : { label: "Poor", color: "bg-red-600" };
 
   return (
     <div className="bg-gray-800 rounded-lg border border-gray-700 p-4 hover:border-blue-500 transition-colors">
       {/* Header */}
       <div className="flex items-center justify-between mb-4">
-        <h3 className="text-lg font-bold capitalize">
-          {result.strategy_name}
-        </h3>
+        <h3 className="text-lg font-bold capitalize">{result.strategy_name}</h3>
         <span
           className={`px-3 py-1 text-xs font-bold rounded ${qualityBadge.color}`}
         >
@@ -179,9 +176,7 @@ const MetricRow: React.FC<MetricRowProps> = ({
         </div>
       </div>
 
-      {subtext && (
-        <div className="text-xs text-gray-500 ml-6">{subtext}</div>
-      )}
+      {subtext && <div className="text-xs text-gray-500 ml-6">{subtext}</div>}
 
       {progress !== undefined && (
         <div className="ml-6 mt-1">
@@ -189,10 +184,10 @@ const MetricRow: React.FC<MetricRowProps> = ({
             <div
               className={`h-full rounded-full transition-all ${
                 progress > 0.8
-                  ? 'bg-green-500'
+                  ? "bg-green-500"
                   : progress > 0.5
-                  ? 'bg-yellow-500'
-                  : 'bg-red-500'
+                    ? "bg-yellow-500"
+                    : "bg-red-500"
               }`}
               style={{ width: `${progress * 100}%` }}
             />

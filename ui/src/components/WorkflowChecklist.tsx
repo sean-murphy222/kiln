@@ -60,19 +60,19 @@ export function WorkflowChecklist({
   const completedCount = steps.filter(s => s.completed).length;
 
   return (
-    <div className="bg-surface-panel border-2 border-black p-4">
+    <div className="bg-kiln-800 border-2 border-black p-4">
       {/* Header */}
       <div className="mb-4">
-        <h3 className="text-pixel text-sm text-chonk-light">WORKFLOW GUIDE</h3>
-        <p className="text-xs text-chonk-gray mt-1">
+        <h3 className="text-pixel text-sm text-kiln-300">WORKFLOW GUIDE</h3>
+        <p className="text-xs text-kiln-500 mt-1">
           {completedCount}/{steps.length} steps completed
         </p>
       </div>
 
       {/* Progress bar */}
-      <div className="mb-4 bg-surface-bg border border-black h-2 rounded-full overflow-hidden">
+      <div className="mb-4 bg-kiln-900 border border-black h-2 rounded-full overflow-hidden">
         <div
-          className="h-full bg-accent-primary transition-all duration-500"
+          className="h-full bg-ember transition-all duration-500"
           style={{ width: `${(completedCount / steps.length) * 100}%` }}
         />
       </div>
@@ -84,7 +84,7 @@ export function WorkflowChecklist({
             key={step.id}
             className={`
               border-2 p-3 transition-all
-              ${step.active ? 'border-accent-primary bg-accent-primary/10' : 'border-black bg-surface-bg'}
+              ${step.active ? 'border-ember bg-ember/10' : 'border-black bg-kiln-900'}
               ${step.completed ? 'opacity-60' : ''}
             `}
           >
@@ -94,26 +94,26 @@ export function WorkflowChecklist({
                 {step.completed ? (
                   <CheckCircle size={18} className="text-green-400" />
                 ) : step.active ? (
-                  <Circle size={18} className="text-accent-primary animate-pulse" />
+                  <Circle size={18} className="text-ember animate-pulse" />
                 ) : (
-                  <Circle size={18} className="text-chonk-gray" />
+                  <Circle size={18} className="text-kiln-500" />
                 )}
               </div>
 
               {/* Content */}
               <div className="flex-1 min-w-0">
                 <div className="flex items-center gap-2 mb-1">
-                  <span className="text-xs text-chonk-gray">Step {index + 1}</span>
+                  <span className="text-xs text-kiln-500">Step {index + 1}</span>
                   {step.active && (
-                    <span className="text-xs px-2 py-0.5 bg-accent-primary text-black rounded font-bold">
+                    <span className="text-xs px-2 py-0.5 bg-ember text-black rounded font-bold">
                       CURRENT
                     </span>
                   )}
                 </div>
-                <div className="text-sm font-bold text-chonk-light mb-1">
+                <div className="text-sm font-bold text-kiln-300 mb-1">
                   {step.label}
                 </div>
-                <div className="text-xs text-chonk-gray">
+                <div className="text-xs text-kiln-500">
                   {step.description}
                 </div>
               </div>
@@ -121,7 +121,7 @@ export function WorkflowChecklist({
               {/* Arrow for active step */}
               {step.active && (
                 <div className="flex-shrink-0">
-                  <ArrowRight size={18} className="text-accent-primary animate-pulse" />
+                  <ArrowRight size={18} className="text-ember animate-pulse" />
                 </div>
               )}
             </div>
@@ -144,9 +144,9 @@ export function WorkflowChecklist({
 
       {/* Help text for current step */}
       {currentStepIndex >= 0 && (
-        <div className="mt-4 bg-surface-bg border border-black p-3">
-          <p className="text-xs text-chonk-gray">
-            <strong className="text-chonk-light">Next Action: </strong>
+        <div className="mt-4 bg-kiln-900 border border-black p-3">
+          <p className="text-xs text-kiln-500">
+            <strong className="text-kiln-300">Next Action: </strong>
             {currentStepIndex === 0 && 'Click "Add Doc" in the toolbar to upload a PDF'}
             {currentStepIndex === 1 && 'Click "RUN DIAGNOSTICS" button to analyze chunks'}
             {currentStepIndex === 2 && 'Click "PREVIEW AUTOMATIC FIXES" to see the fix plan'}

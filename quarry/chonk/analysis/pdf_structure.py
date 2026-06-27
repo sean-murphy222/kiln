@@ -17,7 +17,6 @@ from typing import Any
 import fitz  # PyMuPDF
 
 from chonk.analysis.structure import (
-    DocumentStructure,
     StructureNode,
     StructureSource,
 )
@@ -136,12 +135,14 @@ class PDFStructureExtractor:
                     page = entry[2]  # Target page (1-indexed in fitz)
                     dest = entry[3] if len(entry) > 3 else None  # Destination details
 
-                    result.toc_entries.append({
-                        "level": level,
-                        "title": title,
-                        "page": page,
-                        "destination": dest,
-                    })
+                    result.toc_entries.append(
+                        {
+                            "level": level,
+                            "title": title,
+                            "page": page,
+                            "destination": dest,
+                        }
+                    )
 
         except Exception as e:
             self._warnings.append(f"TOC extraction error: {e}")
@@ -203,9 +204,7 @@ class PDFStructureExtractor:
                 if info["size"] > result.body_font_size * 1.15:
                     result.heading_fonts.add(key)
 
-    def _extract_tagged_structure(
-        self, doc: fitz.Document, result: PDFAnalysisResult
-    ) -> None:
+    def _extract_tagged_structure(self, doc: fitz.Document, result: PDFAnalysisResult) -> None:
         """
         Extract tagged structure from PDF/UA documents.
 
@@ -253,18 +252,18 @@ class PDFStructureExtractor:
 
                 for link in page.get_links():
                     if link.get("kind") == fitz.LINK_GOTO:  # Internal link
-                        result.internal_links.append({
-                            "from_page": page_num + 1,
-                            "to_page": link.get("page", 0) + 1,
-                            "rect": link.get("from"),
-                        })
+                        result.internal_links.append(
+                            {
+                                "from_page": page_num + 1,
+                                "to_page": link.get("page", 0) + 1,
+                                "rect": link.get("from"),
+                            }
+                        )
 
         except Exception as e:
             self._warnings.append(f"Link extraction error: {e}")
 
-    def _extract_page_labels(
-        self, doc: fitz.Document, result: PDFAnalysisResult
-    ) -> None:
+    def _extract_page_labels(self, doc: fitz.Document, result: PDFAnalysisResult) -> None:
         """Extract page labels (e.g., 'i', 'ii', '1', '2')."""
         try:
             for page_num in range(len(doc)):
@@ -276,9 +275,7 @@ class PDFStructureExtractor:
         except Exception as e:
             self._warnings.append(f"Page label extraction error: {e}")
 
-    def build_structure_tree(
-        self, result: PDFAnalysisResult
-    ) -> StructureNode | None:
+    def build_structure_tree(self, result: PDFAnalysisResult) -> StructureNode | None:
         """
         Build a StructureNode tree from TOC entries.
 
@@ -376,10 +373,11 @@ class PDFStructureExtractor:
         - Heading confidence based on font analysis
         - TOC match information
         """
-        toc_titles = {
-            self._normalize_title(e["title"]): e
-            for e in result.toc_entries
-        } if result.has_toc else {}
+        toc_titles = (
+            {self._normalize_title(e["title"]): e for e in result.toc_entries}
+            if result.has_toc
+            else {}
+        )
 
         for block in blocks:
             # Check if this block matches a TOC entry
@@ -406,6 +404,7 @@ class PDFStructureExtractor:
     def _normalize_title(self, title: str) -> str:
         """Normalize a title for comparison."""
         import re
+
         title = title.lower().strip()
         title = re.sub(r"^\d+(\.\d+)*\.?\s*", "", title)  # Remove numbering
         title = re.sub(r"\s+", " ", title)

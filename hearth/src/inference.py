@@ -34,6 +34,7 @@ from datetime import datetime
 from enum import Enum
 from typing import Any
 
+from foundry.src import backend_config
 from foundry.src.rag_integration import (
     CitationSource,
     RAGPipeline,
@@ -468,6 +469,7 @@ class ModelManager:
     def __init__(self) -> None:
         """Initialize an empty model manager."""
         self._slots: dict[str, ModelSlot] = {}
+        self._backends: dict[str, Any] = {}
 
     def register_slot(
         self,
@@ -511,8 +513,11 @@ class ModelManager:
     def load_model(self, slot_id: str) -> ModelSlot:
         """Load a model into a slot, setting status to READY.
 
-        For MVP, this is a mock load that just updates status.
-        Production would load actual model weights.
+        With the default mock backend this just marks the slot READY. When
+        ``KILN_INFERENCE_BACKEND=transformers``, it loads real weights (base
+        from the slot's ``model_path`` or ``KILN_BASE_MODEL``, adapter from
+        ``lora_path``) and caches the backend. Loading is single-resident: any
+        previously loaded slot is evicted first to respect VRAM limits.
 
         Args:
             slot_id: The slot to load.
@@ -521,15 +526,76 @@ class ModelManager:
             The updated ModelSlot with READY status.
 
         Raises:
-            InferenceError: If slot_id is not found.
+            InferenceError: If slot_id is not found or the real load fails.
         """
         slot = self._get_or_raise(slot_id)
+        if backend_config.get_inference_backend() == "transformers":
+            return self._load_real_model(slot)
         slot.status = ModelStatus.READY
         slot.loaded_at = datetime.now()
         return slot
 
+    def _load_real_model(self, slot: ModelSlot) -> ModelSlot:
+        """Load real model weights for a slot (single-resident).
+
+        Args:
+            slot: The slot to load.
+
+        Returns:
+            The slot, marked READY.
+
+        Raises:
+            InferenceError: If the model fails to load.
+        """
+        from foundry.src.inference_factory import build_inference
+
+        slot.status = ModelStatus.LOADING
+        try:
+            self._evict_all(keep=slot.slot_id)
+            # Free a prior backend for THIS slot before rebuilding (reload case),
+            # otherwise the old model stays resident -> double VRAM usage.
+            self._close_backend(slot.slot_id)
+            base_model = slot.model_path or backend_config.get_base_model()
+            self._backends[slot.slot_id] = build_inference(
+                base_model=base_model,
+                adapter_path=slot.lora_path,
+                backend="transformers",
+            )
+        except Exception as exc:
+            slot.status = ModelStatus.ERROR
+            raise InferenceError(
+                f"Failed to load model for slot '{slot.slot_id}': {exc}"
+            ) from exc
+        slot.status = ModelStatus.READY
+        slot.loaded_at = datetime.now()
+        return slot
+
+    def _evict_all(self, keep: str | None = None) -> None:
+        """Unload all cached real backends except ``keep`` (single-resident)."""
+        for sid in list(self._backends):
+            if sid == keep:
+                continue
+            self._close_backend(sid)
+            other = self._slots.get(sid)
+            if other is not None:
+                other.status = ModelStatus.UNLOADED
+                other.loaded_at = None
+
+    def _close_backend(self, slot_id: str) -> None:
+        """Free a cached backend's resources and drop it from the cache."""
+        backend = self._backends.pop(slot_id, None)
+        close = getattr(backend, "close", None)
+        if callable(close):
+            close()
+
+    def get_backend(self, slot_id: str) -> Any:
+        """Return the loaded real backend for a slot, or None if mock/unloaded."""
+        return self._backends.get(slot_id)
+
     def unload_model(self, slot_id: str) -> None:
         """Unload a model from a slot, setting status to UNLOADED.
+
+        Frees any cached real backend for the slot.
 
         Args:
             slot_id: The slot to unload.
@@ -538,6 +604,7 @@ class ModelManager:
             InferenceError: If slot_id is not found.
         """
         slot = self._get_or_raise(slot_id)
+        self._close_backend(slot_id)
         slot.status = ModelStatus.UNLOADED
         slot.loaded_at = None
 
@@ -636,6 +703,8 @@ class HearthEngine:
         """
         self._manager = model_manager
         self._pipeline = rag_pipeline
+        # The pipeline's default model, restored when a slot has no real backend.
+        self._default_model = getattr(rag_pipeline, "_model", None)
         self._conversations: dict[str, Conversation] = {}
         self._feedback: dict[str, list[FeedbackSignal]] = {}
 
@@ -652,6 +721,11 @@ class HearthEngine:
             InferenceError: If the slot is not found or not ready.
         """
         self._validate_slot_ready(request.slot_id)
+        # Route generation to the slot's real model when one is loaded; restore
+        # the default model otherwise, so a real model never bleeds into a
+        # subsequent mock/unloaded-slot query.
+        backend = self._manager.get_backend(request.slot_id)
+        self._pipeline._model = backend if backend is not None else self._default_model
         start = time.monotonic()
         rag_response = self._pipeline.query(request.query)
         latency_ms = (time.monotonic() - start) * 1000

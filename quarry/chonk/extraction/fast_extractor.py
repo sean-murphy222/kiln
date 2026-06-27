@@ -9,7 +9,6 @@ from __future__ import annotations
 
 from pathlib import Path
 
-from chonk.core.document import Block, DocumentMetadata
 from chonk.extraction.strategy import ExtractionResult, ExtractionTier
 from chonk.loaders import LoaderRegistry
 

@@ -9,7 +9,7 @@ This module provides automated diagnostics for chunk problems:
 """
 
 from chonk.diagnostics.analyzer import DiagnosticAnalyzer
-from chonk.diagnostics.question_generator import QuestionGenerator
 from chonk.diagnostics.fix_orchestrator import FixOrchestrator
+from chonk.diagnostics.question_generator import QuestionGenerator
 
 __all__ = ["DiagnosticAnalyzer", "QuestionGenerator", "FixOrchestrator"]

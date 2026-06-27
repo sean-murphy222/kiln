@@ -13,14 +13,18 @@ from __future__ import annotations
 
 import json
 import logging
-import math
 import random
 import uuid
 from dataclasses import dataclass, field
 from datetime import datetime
 from enum import Enum
 from pathlib import Path
-from typing import Any, Protocol, runtime_checkable
+from typing import TYPE_CHECKING, Any, Protocol, runtime_checkable
+
+from foundry.src import backend_config
+
+if TYPE_CHECKING:
+    from foundry.src.training_backends import TrainingBackend
 
 logger = logging.getLogger(__name__)
 
@@ -661,6 +665,28 @@ class HyperparameterAutoConfig:
 
 
 # ===================================================================
+# Backend selection
+# ===================================================================
+
+
+def _select_training_backend() -> TrainingBackend:
+    """Select a training backend from the environment.
+
+    Returns:
+        A ``DryRunBackend`` by default, or a ``RealLoRABackend`` when
+        ``FOUNDRY_TRAINING_BACKEND=real``. The backend module is imported
+        lazily to avoid an import cycle and keep heavy deps optional.
+    """
+    if backend_config.get_training_backend() == "real":
+        from foundry.src.training_backends import RealLoRABackend
+
+        return RealLoRABackend()
+    from foundry.src.training_backends import DryRunBackend
+
+    return DryRunBackend()
+
+
+# ===================================================================
 # TrainingPipeline
 # ===================================================================
 
@@ -677,17 +703,25 @@ class TrainingPipeline:
         config: The training configuration.
     """
 
-    def __init__(self, config: TrainingConfig) -> None:
+    def __init__(
+        self,
+        config: TrainingConfig,
+        backend: TrainingBackend | None = None,
+    ) -> None:
         """Initialize the pipeline.
 
         Args:
             config: Training configuration to use.
+            backend: Optional training backend. When omitted, it is selected
+                from the environment (``FOUNDRY_TRAINING_BACKEND``), defaulting
+                to the dry-run simulator so tests stay hardware-free.
         """
         self.config = config
         self._status = TrainingStatus.PENDING
         self._train_data: list[dict[str, Any]] = []
         self._val_data: list[dict[str, Any]] = []
         self._total_examples = 0
+        self._backend = backend if backend is not None else _select_training_backend()
 
     def get_status(self) -> TrainingStatus:
         """Return the current pipeline status.
@@ -706,6 +740,9 @@ class TrainingPipeline:
         self._validate_config()
         self._load_curriculum()
         self.config.output_dir.mkdir(parents=True, exist_ok=True)
+        (self.config.output_dir / "config.json").write_text(
+            json.dumps(self.config.to_dict(), indent=2), encoding="utf-8"
+        )
         self._status = TrainingStatus.PREPARING
 
     def run(
@@ -800,11 +837,11 @@ class TrainingPipeline:
         val_data: list[dict[str, Any]],
         callback: TrainingProgressCallback | None,
     ) -> TrainingResult:
-        """Run the dry-run training simulator.
+        """Execute training via the configured backend.
 
-        Simulates training by generating decreasing loss metrics
-        across epochs and steps. In production, this method would
-        delegate to Unsloth or Axolotl.
+        Delegates to the selected ``TrainingBackend`` (dry-run by default, real
+        peft+trl when ``FOUNDRY_TRAINING_BACKEND=real``). The backend produces
+        the TrainingResult; the pipeline updates its status from the result.
 
         Args:
             train_data: Training split records.
@@ -812,119 +849,17 @@ class TrainingPipeline:
             callback: Optional progress callback.
 
         Returns:
-            A completed TrainingResult with simulated metrics.
+            The backend's TrainingResult.
         """
-        started_at = datetime.now()
-        adapter_path = self.config.output_dir / "adapter"
-        adapter_path.mkdir(parents=True, exist_ok=True)
-        metrics_history = self._simulate_metrics(train_data, val_data, callback)
-        completed_at = datetime.now()
-        result = self._build_result(
-            adapter_path,
-            metrics_history,
-            started_at,
-            completed_at,
-            train_data,
-            val_data,
-        )
-        if callback is not None:
-            callback.on_complete(result)
-        self._status = TrainingStatus.COMPLETED
-        return result
-
-    def _simulate_metrics(
-        self,
-        train_data: list[dict[str, Any]],
-        val_data: list[dict[str, Any]],
-        callback: TrainingProgressCallback | None,
-    ) -> list[TrainingMetrics]:
-        """Generate simulated training metrics.
-
-        Args:
-            train_data: Training records.
-            val_data: Validation records.
-            callback: Optional callback to notify.
-
-        Returns:
-            List of simulated TrainingMetrics.
-        """
-        metrics_history: list[TrainingMetrics] = []
-        steps_per_epoch = max(
-            1,
-            math.ceil(len(train_data) / self.config.batch_size),
-        )
-        global_step = 0
-        for epoch in range(1, self.config.epochs + 1):
-            for step in range(steps_per_epoch):
-                global_step += 1
-                metrics = self._make_step_metrics(epoch, global_step, val_data)
-                metrics_history.append(metrics)
-                if callback is not None:
-                    callback.on_step(metrics)
-            if callback is not None:
-                callback.on_epoch_end(epoch, metrics_history[-1])
-        return metrics_history
-
-    def _make_step_metrics(
-        self,
-        epoch: int,
-        global_step: int,
-        val_data: list[dict[str, Any]],
-    ) -> TrainingMetrics:
-        """Create a single simulated metrics entry.
-
-        Args:
-            epoch: Current epoch.
-            global_step: Global step counter.
-            val_data: Validation data (for determining val_loss).
-
-        Returns:
-            TrainingMetrics with simulated loss.
-        """
-        base_loss = 2.0 / (1.0 + global_step * 0.1)
-        val_loss = base_loss * 1.1 if val_data else None
-        return TrainingMetrics(
-            epoch=epoch,
-            step=global_step,
-            train_loss=base_loss,
-            val_loss=val_loss,
-            learning_rate=self.config.learning_rate,
-            timestamp=datetime.now(),
-        )
-
-    def _build_result(
-        self,
-        adapter_path: Path,
-        metrics_history: list[TrainingMetrics],
-        started_at: datetime,
-        completed_at: datetime,
-        train_data: list[dict[str, Any]],
-        val_data: list[dict[str, Any]],
-    ) -> TrainingResult:
-        """Assemble a TrainingResult from completed training.
-
-        Args:
-            adapter_path: Path to saved adapter.
-            metrics_history: Collected metrics.
-            started_at: Training start time.
-            completed_at: Training end time.
-            train_data: Training split.
-            val_data: Validation split.
-
-        Returns:
-            A completed TrainingResult.
-        """
-        return TrainingResult(
+        result = self._backend.execute(
+            train_data=train_data,
+            val_data=val_data,
             config=self.config,
-            status=TrainingStatus.COMPLETED,
-            adapter_path=adapter_path,
-            metrics_history=metrics_history,
-            total_examples=self._total_examples,
-            training_examples=len(train_data),
-            validation_examples=len(val_data),
-            started_at=started_at,
-            completed_at=completed_at,
+            args=self._create_training_args(),
+            callback=callback,
         )
+        self._status = result.status
+        return result
 
     def _check_runnable(self) -> None:
         """Verify pipeline is in a runnable state.

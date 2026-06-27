@@ -1,19 +1,20 @@
 /**
- * WorkflowPanel - The new CHONK workflow
+ * WorkflowPanel - The Quarry document workflow
  *
  * DROP FILE → SEE HIERARCHY → CHOOSE STRATEGY → COMPARE → TEST → EXPORT
  */
 
-import { useEffect, useState } from 'react';
-import { useStore } from '../store/useStore';
-import { hierarchyAPI, comparisonAPI, queryTestAPI } from '../api/chonk';
-import { TreeView } from './HierarchyTree';
-import { StrategyPicker, ParameterPanel } from './StrategySelector';
-import { SideBySide, RecommendationBox } from './ComparisonDashboard';
-import { QueryTester } from './QueryTester';
-import type { QueryResult } from './QueryTester';
+import { useEffect, useState } from "react";
+import { useStore } from "../store/useStore";
+import type { ChunkingStrategy } from "../store/useStore";
+import { hierarchyAPI, comparisonAPI, queryTestAPI } from "../api/quarry";
+import { TreeView } from "./HierarchyTree";
+import { StrategyPicker, ParameterPanel } from "./StrategySelector";
+import { SideBySide, RecommendationBox } from "./ComparisonDashboard";
+import { QueryTester } from "./QueryTester";
+import type { QueryResult } from "./QueryTester";
 
-type WorkflowStep = 'hierarchy' | 'strategy' | 'compare' | 'test' | 'export';
+type WorkflowStep = "hierarchy" | "strategy" | "compare" | "test" | "export";
 
 export function WorkflowPanel() {
   const {
@@ -27,7 +28,6 @@ export function WorkflowPanel() {
     setStrategy,
     chunkingParameters,
     setParameters,
-    resetParameters,
     comparisonResults,
     setComparisonResults,
     setComparing,
@@ -35,7 +35,7 @@ export function WorkflowPanel() {
     setRecommendation,
   } = useStore();
 
-  const [currentStep, setCurrentStep] = useState<WorkflowStep>('hierarchy');
+  const [currentStep, setCurrentStep] = useState<WorkflowStep>("hierarchy");
   const [error, setError] = useState<string | null>(null);
 
   // Load hierarchy when document is selected
@@ -43,6 +43,8 @@ export function WorkflowPanel() {
     if (selectedDocumentId && !hierarchyTree) {
       loadHierarchy();
     }
+    // Intentionally runs only when the selected document changes.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [selectedDocumentId]);
 
   const loadHierarchy = async () => {
@@ -54,7 +56,9 @@ export function WorkflowPanel() {
       const tree = await hierarchyAPI.build(selectedDocumentId);
       setHierarchyTree(tree);
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to build hierarchy');
+      setError(
+        err instanceof Error ? err.message : "Failed to build hierarchy",
+      );
     } finally {
       setHierarchyLoading(false);
     }
@@ -68,33 +72,38 @@ export function WorkflowPanel() {
     try {
       const strategies = [
         {
-          name: 'hierarchical',
+          name: "hierarchical",
           config: {
             ...chunkingParameters,
             group_under_headings: true,
           },
         },
         {
-          name: 'fixed',
+          name: "fixed",
           config: {
             target_tokens: chunkingParameters.max_tokens,
             overlap_tokens: chunkingParameters.overlap_tokens,
           },
         },
         {
-          name: 'semantic',
+          name: "semantic",
           config: {
             target_tokens: chunkingParameters.max_tokens,
           },
         },
       ];
 
-      const result = await comparisonAPI.compare(selectedDocumentId, strategies);
+      const result = await comparisonAPI.compare(
+        selectedDocumentId,
+        strategies,
+      );
       setComparisonResults(result.strategies);
       setRecommendation(result.recommendation);
-      setCurrentStep('compare');
+      setCurrentStep("compare");
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to compare strategies');
+      setError(
+        err instanceof Error ? err.message : "Failed to compare strategies",
+      );
     } finally {
       setComparing(false);
     }
@@ -107,7 +116,7 @@ export function WorkflowPanel() {
       const result = await queryTestAPI.testQuery(
         query,
         [selectedStrategy],
-        selectedDocumentId
+        selectedDocumentId,
       );
 
       // Transform StrategyQueryResult to QueryResult format
@@ -120,13 +129,13 @@ export function WorkflowPanel() {
         chunk_preview: r.content_preview,
       }));
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to test query');
+      setError(err instanceof Error ? err.message : "Failed to test query");
       return [];
     }
   };
 
   const handleSelectStrategy = (strategy: string) => {
-    setStrategy(strategy as any);
+    setStrategy(strategy as ChunkingStrategy);
   };
 
   if (!selectedDocumentId) {
@@ -150,8 +159,8 @@ export function WorkflowPanel() {
             onClick={() => setCurrentStep(step.id)}
             className={`flex-1 px-4 py-3 text-sm font-medium border-r border-gray-700 transition-colors ${
               currentStep === step.id
-                ? 'bg-blue-600 text-white'
-                : 'bg-gray-800 text-gray-400 hover:bg-gray-700'
+                ? "bg-blue-600 text-white"
+                : "bg-gray-800 text-gray-400 hover:bg-gray-700"
             }`}
           >
             <div className="flex items-center justify-center gap-2">
@@ -172,12 +181,12 @@ export function WorkflowPanel() {
       {/* Step Content */}
       <div className="flex-1 overflow-y-auto p-6">
         {/* Step 1: Hierarchy */}
-        {currentStep === 'hierarchy' && hierarchyTree && (
+        {currentStep === "hierarchy" && hierarchyTree && (
           <div className="space-y-4">
             <div className="flex items-center justify-between">
               <h2 className="text-xl font-bold">Document Structure</h2>
               <button
-                onClick={() => setCurrentStep('strategy')}
+                onClick={() => setCurrentStep("strategy")}
                 className="px-4 py-2 bg-blue-600 hover:bg-blue-700 rounded font-medium"
               >
                 Next: Choose Strategy →
@@ -192,13 +201,13 @@ export function WorkflowPanel() {
         )}
 
         {/* Step 2: Strategy */}
-        {currentStep === 'strategy' && (
+        {currentStep === "strategy" && (
           <div className="space-y-6">
             <div className="flex items-center justify-between">
               <h2 className="text-xl font-bold">Choose Chunking Strategy</h2>
               <div className="flex gap-2">
                 <button
-                  onClick={() => setCurrentStep('hierarchy')}
+                  onClick={() => setCurrentStep("hierarchy")}
                   className="px-4 py-2 bg-gray-700 hover:bg-gray-600 rounded font-medium"
                 >
                   ← Back
@@ -226,19 +235,19 @@ export function WorkflowPanel() {
         )}
 
         {/* Step 3: Compare */}
-        {currentStep === 'compare' && (
+        {currentStep === "compare" && (
           <div className="space-y-6">
             <div className="flex items-center justify-between">
               <h2 className="text-xl font-bold">Compare Strategies</h2>
               <div className="flex gap-2">
                 <button
-                  onClick={() => setCurrentStep('strategy')}
+                  onClick={() => setCurrentStep("strategy")}
                   className="px-4 py-2 bg-gray-700 hover:bg-gray-600 rounded font-medium"
                 >
                   ← Back
                 </button>
                 <button
-                  onClick={() => setCurrentStep('test')}
+                  onClick={() => setCurrentStep("test")}
                   className="px-4 py-2 bg-blue-600 hover:bg-blue-700 rounded font-medium"
                   disabled={comparisonResults.length === 0}
                 >
@@ -269,19 +278,19 @@ export function WorkflowPanel() {
         )}
 
         {/* Step 4: Test */}
-        {currentStep === 'test' && (
+        {currentStep === "test" && (
           <div className="space-y-6">
             <div className="flex items-center justify-between">
               <h2 className="text-xl font-bold">Test Queries</h2>
               <div className="flex gap-2">
                 <button
-                  onClick={() => setCurrentStep('compare')}
+                  onClick={() => setCurrentStep("compare")}
                   className="px-4 py-2 bg-gray-700 hover:bg-gray-600 rounded font-medium"
                 >
                   ← Back
                 </button>
                 <button
-                  onClick={() => setCurrentStep('export')}
+                  onClick={() => setCurrentStep("export")}
                   className="px-4 py-2 bg-green-600 hover:bg-green-700 rounded font-medium"
                 >
                   Next: Export →
@@ -297,12 +306,12 @@ export function WorkflowPanel() {
         )}
 
         {/* Step 5: Export */}
-        {currentStep === 'export' && (
+        {currentStep === "export" && (
           <div className="space-y-6">
             <div className="flex items-center justify-between">
               <h2 className="text-xl font-bold">Export Chunks</h2>
               <button
-                onClick={() => setCurrentStep('test')}
+                onClick={() => setCurrentStep("test")}
                 className="px-4 py-2 bg-gray-700 hover:bg-gray-600 rounded font-medium"
               >
                 ← Back
@@ -314,15 +323,21 @@ export function WorkflowPanel() {
               <div className="space-y-3">
                 <div className="flex items-center justify-between text-sm">
                   <span className="text-gray-400">Strategy:</span>
-                  <span className="font-mono capitalize">{selectedStrategy}</span>
+                  <span className="font-mono capitalize">
+                    {selectedStrategy}
+                  </span>
                 </div>
                 <div className="flex items-center justify-between text-sm">
                   <span className="text-gray-400">Max Tokens:</span>
-                  <span className="font-mono">{chunkingParameters.max_tokens}</span>
+                  <span className="font-mono">
+                    {chunkingParameters.max_tokens}
+                  </span>
                 </div>
                 <div className="flex items-center justify-between text-sm">
                   <span className="text-gray-400">Overlap:</span>
-                  <span className="font-mono">{chunkingParameters.overlap_tokens}</span>
+                  <span className="font-mono">
+                    {chunkingParameters.overlap_tokens}
+                  </span>
                 </div>
               </div>
 
@@ -343,8 +358,8 @@ export function WorkflowPanel() {
               <div className="text-4xl mb-2">✅</div>
               <h3 className="font-bold text-lg mb-2">Workflow Complete!</h3>
               <p className="text-sm text-gray-300">
-                You've successfully visualized, configured, compared, and tested your chunking strategy.
-                Export your chunks when ready!
+                You've successfully visualized, configured, compared, and tested
+                your chunking strategy. Export your chunks when ready!
               </p>
             </div>
           </div>
@@ -355,9 +370,9 @@ export function WorkflowPanel() {
 }
 
 const STEPS = [
-  { id: 'hierarchy' as WorkflowStep, label: 'Hierarchy' },
-  { id: 'strategy' as WorkflowStep, label: 'Strategy' },
-  { id: 'compare' as WorkflowStep, label: 'Compare' },
-  { id: 'test' as WorkflowStep, label: 'Test' },
-  { id: 'export' as WorkflowStep, label: 'Export' },
+  { id: "hierarchy" as WorkflowStep, label: "Hierarchy" },
+  { id: "strategy" as WorkflowStep, label: "Strategy" },
+  { id: "compare" as WorkflowStep, label: "Compare" },
+  { id: "test" as WorkflowStep, label: "Test" },
+  { id: "export" as WorkflowStep, label: "Export" },
 ];

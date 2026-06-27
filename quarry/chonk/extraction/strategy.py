@@ -6,6 +6,7 @@ Handles selection and availability of different extraction tiers.
 
 from __future__ import annotations
 
+import importlib.util
 import os
 import subprocess
 from dataclasses import dataclass, field
@@ -19,6 +20,7 @@ from chonk.core.document import Block, DocumentMetadata
 # GPU Compatibility Check - MUST run before any torch/docling imports
 # RTX 50 series (Blackwell, sm_120) is not supported by PyTorch 2.x
 # ============================================================================
+
 
 def _check_gpu_architecture() -> tuple[bool, str | None]:
     """
@@ -52,6 +54,7 @@ def _check_gpu_architecture() -> tuple[bool, str | None]:
             # Check if PyTorch version supports Blackwell
             try:
                 import importlib.metadata
+
                 torch_version = importlib.metadata.version("torch")
                 # Parse version: "2.7.0+cu128" -> (2, 7, 0)
                 version_parts = torch_version.split("+")[0].split(".")
@@ -104,7 +107,7 @@ def _patch_torch_cuda() -> None:
         import torch.cuda
 
         # Only patch if not already patched
-        if hasattr(torch.cuda, '_chonk_patched'):
+        if hasattr(torch.cuda, "_chonk_patched"):
             return
 
         # Store original for potential restoration
@@ -171,20 +174,12 @@ def check_docling_available() -> bool:
     """Check if Docling is installed and available."""
     # Ensure CUDA is patched BEFORE importing docling (which imports torch)
     _ensure_cuda_patched()
-    try:
-        import docling
-        return True
-    except ImportError:
-        return False
+    return importlib.util.find_spec("docling") is not None
 
 
 def check_layoutparser_available() -> bool:
     """Check if LayoutParser is installed and available."""
-    try:
-        import layoutparser
-        return True
-    except ImportError:
-        return False
+    return importlib.util.find_spec("layoutparser") is not None
 
 
 def get_available_tiers() -> list[ExtractionTier]:
@@ -224,14 +219,17 @@ def _create_extractor(tier: ExtractionTier) -> Extractor:
     """Create an extractor instance for the given tier."""
     if tier == ExtractionTier.FAST:
         from chonk.extraction.fast_extractor import FastExtractor
+
         return FastExtractor()
 
     elif tier == ExtractionTier.ENHANCED:
         from chonk.extraction.docling_extractor import DoclingExtractor
+
         return DoclingExtractor()
 
     elif tier == ExtractionTier.AI:
         from chonk.extraction.layoutparser_extractor import LayoutParserExtractor
+
         return LayoutParserExtractor()
 
     raise ValueError(f"Unknown extraction tier: {tier}")
@@ -350,6 +348,7 @@ class ExtractionStrategy:
         # Use PyMuPDF for quick detection
         try:
             import fitz
+
             doc = fitz.open(path)
 
             # Sample first few pages
@@ -365,7 +364,8 @@ class ExtractionStrategy:
                 # This is a heuristic based on line count
                 drawings = page.get_drawings()
                 horizontal_lines = sum(
-                    1 for d in drawings
+                    1
+                    for d in drawings
                     if d.get("type") == "l" and abs(d.get("y0", 0) - d.get("y1", 0)) < 2
                 )
                 if horizontal_lines > 10:

@@ -1,7 +1,7 @@
-import { useState, useCallback, useRef } from 'react';
-import { Upload, FileText, AlertCircle } from 'lucide-react';
-import { useStore } from '../store/useStore';
-import { documentAPI, projectAPI, settingsAPI } from '../api/chonk';
+import { useState, useCallback, useRef } from "react";
+import { Upload } from "lucide-react";
+import { useStore } from "../store/useStore";
+import { documentAPI, projectAPI, settingsAPI } from "../api/quarry";
 
 interface DropZoneProps {
   children: React.ReactNode;
@@ -46,15 +46,15 @@ export function DropZone({ children }: DropZoneProps) {
       dragCounter.current = 0;
 
       const files = Array.from(e.dataTransfer.files);
-      const validExtensions = ['.pdf', '.docx', '.md', '.txt', '.markdown'];
+      const validExtensions = [".pdf", ".docx", ".md", ".txt", ".markdown"];
 
       const validFiles = files.filter((file) => {
-        const ext = '.' + file.name.split('.').pop()?.toLowerCase();
+        const ext = "." + file.name.split(".").pop()?.toLowerCase();
         return validExtensions.includes(ext);
       });
 
       if (validFiles.length === 0) {
-        setError('No valid files. Supported: PDF, DOCX, MD, TXT');
+        setError("No valid files. Supported: PDF, DOCX, MD, TXT");
         return;
       }
 
@@ -63,20 +63,28 @@ export function DropZone({ children }: DropZoneProps) {
       try {
         // Get extraction tier setting
         const settings = await settingsAPI.get().catch(() => ({}));
-        const extractionTier = (settings as Record<string, unknown>).extraction_tier as string | undefined;
+        const extractionTier = (settings as Record<string, unknown>)
+          .extraction_tier as string | undefined;
 
         for (let i = 0; i < validFiles.length; i++) {
           const file = validFiles[i];
-          setUploadProgress(`Uploading ${file.name} (${i + 1}/${validFiles.length})...`);
+          setUploadProgress(
+            `Uploading ${file.name} (${i + 1}/${validFiles.length})...`,
+          );
 
           const result = await documentAPI.upload(file, extractionTier);
 
           // Log extraction info if available
           if (result.tier_used) {
-            console.log(`[CHONK] Extracted ${file.name} using tier: ${result.tier_used}`);
+            console.log(
+              `[Kiln] Extracted ${file.name} using tier: ${result.tier_used}`,
+            );
           }
           if (result.warnings && result.warnings.length > 0) {
-            console.warn(`[CHONK] Extraction warnings for ${file.name}:`, result.warnings);
+            console.warn(
+              `[Kiln] Extraction warnings for ${file.name}:`,
+              result.warnings,
+            );
           }
 
           // Select the first uploaded document
@@ -90,13 +98,13 @@ export function DropZone({ children }: DropZoneProps) {
         setProject(updatedProject);
         setUploadProgress(null);
       } catch (err) {
-        setError(err instanceof Error ? err.message : 'Upload failed');
+        setError(err instanceof Error ? err.message : "Upload failed");
       } finally {
         setIsUploading(false);
         setUploadProgress(null);
       }
     },
-    [setProject, selectDocument, setError]
+    [setProject, selectDocument, setError],
   );
 
   return (
@@ -111,21 +119,21 @@ export function DropZone({ children }: DropZoneProps) {
 
       {/* Drag overlay */}
       {isDragging && (
-        <div className="absolute inset-0 z-50 bg-surface-bg/90 flex items-center justify-center">
-          <div className="card-pixel p-8 text-center animate-pulse-pixel">
-            <Upload size={48} className="mx-auto mb-4 text-accent-primary" />
-            <p className="text-lg text-chonk-white mb-2">Drop files to upload</p>
-            <p className="text-sm text-chonk-gray">PDF, DOCX, MD, TXT</p>
+        <div className="absolute inset-0 z-50 bg-kiln-900/90 flex items-center justify-center">
+          <div className="card p-8 text-center animate-pulse-pixel">
+            <Upload size={48} className="mx-auto mb-4 text-ember" />
+            <p className="text-lg text-kiln-100 mb-2">Drop files to upload</p>
+            <p className="text-sm text-kiln-500">PDF, DOCX, MD, TXT</p>
           </div>
         </div>
       )}
 
       {/* Upload progress overlay */}
       {isUploading && (
-        <div className="absolute inset-0 z-50 bg-surface-bg/90 flex items-center justify-center">
-          <div className="card-pixel p-8 text-center">
-            <div className="w-12 h-12 mx-auto mb-4 border-4 border-accent-primary border-t-transparent rounded-full animate-spin" />
-            <p className="text-chonk-white">{uploadProgress || 'Processing...'}</p>
+        <div className="absolute inset-0 z-50 bg-kiln-900/90 flex items-center justify-center">
+          <div className="card p-8 text-center">
+            <div className="w-12 h-12 mx-auto mb-4 border-4 border-ember border-t-transparent rounded-full animate-spin" />
+            <p className="text-kiln-100">{uploadProgress || "Processing..."}</p>
           </div>
         </div>
       )}
