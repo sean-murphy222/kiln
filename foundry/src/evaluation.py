@@ -234,6 +234,62 @@ class KeywordSimilarityScorer:
         return set(tokens)
 
 
+class EmbeddingSimilarityScorer:
+    """Cosine-similarity scorer using sentence-transformer embeddings.
+
+    More robust than keyword overlap for paraphrased or nondeterministic model
+    output (e.g. when scoring a real LoRA-tuned model). Uses the local
+    ``all-MiniLM-L6-v2`` model, which Kiln already caches for retrieval. The
+    model is loaded lazily on first ``score`` call so importing this module
+    stays light, and the scorer satisfies the ``SimilarityScorer`` Protocol.
+
+    Args:
+        model_name: Sentence-transformer model id.
+        model: Pre-built encoder (mainly for testing); loaded lazily if omitted.
+
+    Example::
+
+        runner.run_evaluation(model=m, test_cases=cases,
+                              competency_names=names,
+                              scorer=EmbeddingSimilarityScorer())
+    """
+
+    def __init__(self, model_name: str = "all-MiniLM-L6-v2", model: Any = None) -> None:
+        self._model_name = model_name
+        self._model = model
+
+    def _ensure_model(self) -> Any:
+        """Load and cache the sentence-transformer model on first use."""
+        if self._model is None:
+            from sentence_transformers import SentenceTransformer
+
+            self._model = SentenceTransformer(self._model_name)
+        return self._model
+
+    def score(self, reference: str, candidate: str) -> float:
+        """Compute cosine similarity between two texts.
+
+        Args:
+            reference: The expected/ideal answer text.
+            candidate: The model-generated answer text.
+
+        Returns:
+            Float between 0.0 and 1.0 (cosine clamped to non-negative).
+        """
+        if not reference.strip() or not candidate.strip():
+            return 0.0
+        import numpy as np
+
+        model = self._ensure_model()
+        embeddings = model.encode(
+            [reference, candidate],
+            convert_to_numpy=True,
+            normalize_embeddings=True,
+        )
+        similarity = float(np.dot(embeddings[0], embeddings[1]))
+        return max(0.0, min(1.0, similarity))
+
+
 # ---------------------------------------------------------------------------
 # Data classes
 # ---------------------------------------------------------------------------
