@@ -137,7 +137,16 @@ class Embedder:
         if self.cache_dir:
             kwargs["cache_folder"] = str(self.cache_dir)
 
-        return SentenceTransformer(self.model_name, **kwargs)
+        model = SentenceTransformer(self.model_name, **kwargs)
+        # all-MiniLM defaults to a 256-token window; use the model's full 512 so
+        # larger (consolidated) chunks embed without silent truncation.
+        try:
+            current = getattr(model, "max_seq_length", 0) or 0
+            if 0 < current < 512:
+                model.max_seq_length = 512
+        except Exception:
+            pass
+        return model
 
     def _init_openai(self):
         """Initialize OpenAI embedding client."""
