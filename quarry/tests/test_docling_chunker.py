@@ -43,7 +43,9 @@ class _FakeChunker:
 
 
 def _chunker_with(chunks: list[SimpleNamespace]) -> DoclingChunker:
-    dc = DoclingChunker()
+    # consolidate=False so these mapping tests don't merge chunks or load an
+    # embedder; consolidation has its own tests.
+    dc = DoclingChunker(consolidate=False)
     dc._chunker = _FakeChunker(chunks)  # inject; skips real HybridChunker build
     return dc
 
