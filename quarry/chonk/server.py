@@ -13,6 +13,7 @@ still be run independently::
 from __future__ import annotations
 
 import logging
+import os
 import tempfile
 from datetime import datetime
 from pathlib import Path
@@ -202,6 +203,7 @@ async def create_project(request: ProjectCreateRequest) -> dict[str, Any]:
 
     _state["project"] = project
     _state["tester"] = RetrievalTester()
+    _autosave_project()
 
     return {
         "id": project.id,
@@ -353,6 +355,7 @@ async def upload_document(
         # Update search index
         tester: RetrievalTester = _state["tester"]
         tester.index_documents(project.documents)
+        _autosave_project()
 
         return {
             "document_id": document.id,
@@ -461,6 +464,7 @@ async def rechunk_document(document_id: str, config: ChunkConfigRequest) -> dict
     # Re-index
     tester: RetrievalTester = _state["tester"]
     tester.index_documents(project.documents)
+    _autosave_project()
 
     return {
         "chunk_count": len(document.chunks),
@@ -528,6 +532,7 @@ async def merge_chunks(request: MergeRequest) -> dict[str, Any]:
     # Re-index
     tester: RetrievalTester = _state["tester"]
     tester.index_documents(project.documents)
+    _autosave_project()
 
     return merged_chunk.to_dict()
 
@@ -556,6 +561,7 @@ async def delete_chunks(request: ChunkDeleteRequest) -> dict[str, Any]:
     # Re-index so the deleted chunks no longer appear in search results.
     tester = _get_retrieval_tester()
     tester.index_documents(project.documents)
+    _autosave_project()
 
     return {"deleted": deleted, "requested": len(ids)}
 
@@ -631,6 +637,7 @@ async def split_chunk(request: SplitRequest) -> dict[str, Any]:
     # Re-index
     tester: RetrievalTester = _state["tester"]
     tester.index_documents(project.documents)
+    _autosave_project()
 
     return {
         "chunk_a": chunk_a.to_dict(),
@@ -1576,9 +1583,63 @@ async def apply_fixes(request: ApplyFixesRequest) -> dict[str, Any]:
 # ============================================================================
 
 
-def _get_project() -> ChonkProject:
-    """Get the current project or raise error."""
+# ---------------------------------------------------------------------------
+# Auto-persistence: the project lives in memory, so a server restart would lose
+# it. Persist on every mutation and auto-load (+ re-index) on first access so a
+# restart doesn't drop the user's processed document.
+# ---------------------------------------------------------------------------
+_AUTOSAVE_PATH = Path(
+    os.environ.get(
+        "KILN_QUARRY_AUTOSAVE",
+        str(Path.home() / ".kiln" / "quarry-autosave.chonk"),
+    )
+)
+
+
+def _autosave_project() -> None:
+    """Best-effort persist the current project (never breaks a request)."""
     project = _state.get("project")
+    if project is None:
+        return
+    try:
+        _AUTOSAVE_PATH.parent.mkdir(parents=True, exist_ok=True)
+        original_path = project.project_path
+        project.save(_AUTOSAVE_PATH)
+        project.project_path = original_path  # don't hijack an explicit save path
+    except Exception:
+        logger.exception("Quarry autosave failed")
+
+
+def _autoload_project() -> ChonkProject | None:
+    """Load + re-index the autosaved project, if any."""
+    if not _AUTOSAVE_PATH.exists():
+        return None
+    try:
+        project = ChonkProject.load(_AUTOSAVE_PATH)
+    except Exception:
+        logger.exception("Quarry autoload failed")
+        return None
+    _state["project"] = project
+    tester = RetrievalTester()
+    _state["tester"] = tester
+    if project.documents:
+        try:
+            tester.index_documents(project.documents)
+        except Exception:
+            logger.exception("Re-index after autoload failed")
+    logger.info(
+        "Restored autosaved Quarry project '%s' (%d docs)",
+        project.name,
+        len(project.documents),
+    )
+    return project
+
+
+def _get_project() -> ChonkProject:
+    """Get the current project, restoring the last autosave after a restart."""
+    project = _state.get("project")
+    if project is None:
+        project = _autoload_project()
     if project is None:
         raise HTTPException(
             status_code=400,
