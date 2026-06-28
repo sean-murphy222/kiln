@@ -174,6 +174,40 @@ class RetrievalTester:
 
         return len(self._chunks)
 
+    def index_chunks(
+        self,
+        chunks: list[Chunk],
+        doc_id: str = "",
+        doc_name: str = "",
+    ) -> int:
+        """
+        Index a flat list of chunks directly (no document context required).
+
+        Used by the diagnostics and re-index paths, which already hold a list of
+        chunks rather than documents.
+
+        Args:
+            chunks: Chunks to index.
+            doc_id: Optional document id to associate with all chunks.
+            doc_name: Optional document name for search-result provenance.
+
+        Returns:
+            Number of chunks indexed.
+        """
+        self._chunks = list(chunks)
+        self._chunk_to_doc = {c.id: (doc_id, doc_name or doc_id) for c in self._chunks}
+
+        if not self._chunks:
+            self._chunk_embeddings = np.array([])
+            self._is_indexed = True
+            return 0
+
+        texts = [c.content for c in self._chunks]
+        self._chunk_embeddings = self.embedder.embed_many(texts, show_progress=True)
+        self._is_indexed = True
+
+        return len(self._chunks)
+
     def index_project(self, project: ChonkProject) -> int:
         """
         Index all documents in a project.
