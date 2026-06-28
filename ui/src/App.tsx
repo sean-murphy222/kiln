@@ -56,6 +56,21 @@ function QuarryRoute() {
     return () => clearInterval(interval);
   }, [backendReady]);
 
+  // Restore an existing backend project on load. Without this, a UI reload (or a
+  // backend restart with autosave) shows the "New Project" welcome screen even
+  // though a project already exists, making it look like work was lost.
+  useEffect(() => {
+    if (!backendReady || project) return;
+    projectAPI
+      .get()
+      .then((proj) => {
+        if (proj) setProject(proj);
+      })
+      .catch(() => {
+        /* no project loaded yet — keep the welcome screen */
+      });
+  }, [backendReady, project, setProject]);
+
   const handleNewProject = useCallback(
     async (name: string) => {
       setLoading(true);

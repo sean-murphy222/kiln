@@ -97,7 +97,11 @@ export function DiagnosticDashboard({ document }: DiagnosticDashboardProps) {
 
     try {
       console.log("[DIAGNOSTICS] Calling API...");
-      const result = await diagnosticAPI.analyze(document.id, true, true);
+      // Static analysis only: it's fast and surfaces the problem chunks. The
+      // question-based retrieval test embeds + queries every chunk, which can
+      // take minutes on a large document (effectively a hang), so it's not run
+      // automatically here.
+      const result = await diagnosticAPI.analyze(document.id, false, false);
       console.log("[DIAGNOSTICS] Got results:", {
         problems: result.problems.length,
         statistics: result.statistics,
