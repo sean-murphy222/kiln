@@ -1491,7 +1491,7 @@ class ApplyFixesRequest(BaseModel):
     document_id: str
     auto_resolve_conflicts: bool = True
     validate: bool = True  # Re-run diagnostics after fixes
-    max_iterations: int = 10  # Apply fixes in cycles until convergence
+    max_iterations: int = 50  # Apply fixes in cycles until no fixes remain
 
 
 @router.post("/api/diagnostics/apply-fixes")
@@ -1523,25 +1523,21 @@ async def apply_fixes(request: ApplyFixesRequest) -> dict[str, Any]:
             "message": "No problems detected - nothing to fix",
         }
 
-    # Apply fixes iteratively: each pass can unblock fixes that weren't
-    # applicable before (a merge clears a conflict or makes a neighbor mergeable),
-    # so we loop until no actions are planned/applied, the problem count stops
-    # dropping, or we hit the iteration cap. Re-index only once at the end.
+    # Apply fixes iteratively until NO fixable problems remain: each pass can
+    # unblock fixes that weren't applicable before (a merge clears a conflict or
+    # makes a neighbor mergeable). We loop until the planner has no actions, a
+    # pass applies nothing, or a pass produces no net change in chunk count
+    # (converged / oscillating). Re-index only once at the end.
     orchestrator = FixOrchestrator()
     applied_actions: list[Any] = []
     all_warnings: list[str] = []
     chunks_before = len(document.chunks)
-    prev_problem_count = len(problems_before)
     iterations = 0
 
     for _ in range(max(1, request.max_iterations)):
         problems = analyzer.analyze_document(document)
         if not problems:
             break
-        # Stop if a pass produced no net improvement (converged / oscillating).
-        if iterations > 0 and len(problems) >= prev_problem_count:
-            break
-        prev_problem_count = len(problems)
 
         plan = orchestrator.plan_fixes(
             problems,
@@ -1551,6 +1547,7 @@ async def apply_fixes(request: ApplyFixesRequest) -> dict[str, Any]:
         if not plan.actions:
             break
 
+        chunks_at_pass_start = len(document.chunks)
         result = orchestrator.execute_plan(plan, document.chunks, validate=False)
         if not result.actions_applied:
             break
@@ -1559,6 +1556,10 @@ async def apply_fixes(request: ApplyFixesRequest) -> dict[str, Any]:
         applied_actions.extend(result.actions_applied)
         all_warnings.extend(result.warnings)
         iterations += 1
+
+        # No net change in chunk count this pass -> converged or oscillating.
+        if len(document.chunks) == chunks_at_pass_start:
+            break
 
     if not applied_actions:
         return {
