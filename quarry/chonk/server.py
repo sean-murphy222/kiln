@@ -229,8 +229,9 @@ async def open_project(path: str) -> dict[str, Any]:
             "document_count": len(project.documents),
             "created_at": project.created_at.isoformat(),
         }
-    except Exception as e:
-        raise HTTPException(status_code=400, detail=str(e))
+    except Exception:
+        logger.exception("Failed to open project")
+        raise HTTPException(status_code=400, detail="Failed to open project")
 
 
 @router.post("/api/project/save")
@@ -243,8 +244,9 @@ async def save_project(path: str | None = None) -> dict[str, Any]:
             "path": str(save_path),
             "saved_at": datetime.now().isoformat(),
         }
-    except Exception as e:
-        raise HTTPException(status_code=400, detail=str(e))
+    except Exception:
+        logger.exception("Failed to save project")
+        raise HTTPException(status_code=400, detail="Failed to save project")
 
 
 @router.get("/api/project")
@@ -492,8 +494,10 @@ async def merge_chunks(request: MergeRequest) -> dict[str, Any]:
     if source_doc is None:
         raise HTTPException(status_code=404, detail="Chunks not found")
 
-    # Sort by position (using block_ids as proxy for order)
-    chunks_to_merge.sort(key=lambda c: c.block_ids[0] if c.block_ids else "")
+    # Sort by document order (block_ids are opaque strings -- e.g. Docling
+    # self_refs like "#/texts/10" -- so use each chunk's current position).
+    _order = {c.id: i for i, c in enumerate(source_doc.chunks)}
+    chunks_to_merge.sort(key=lambda c: _order.get(c.id, 0))
 
     # Create merged chunk
     merged_content = "\n\n".join(c.content for c in chunks_to_merge)
@@ -1021,7 +1025,7 @@ async def get_hierarchy_stats(document_id: str) -> dict[str, Any]:
 
     return {
         "total_nodes": stats["total_nodes"],
-        "total_headings": len(tree._get_level_distribution()),
+        "total_headings": sum(tree._get_level_distribution().values()),
         "max_depth": stats["max_depth"],
         "quality_score": 1.0,  # Placeholder - would need HierarchyAnalyzer for real score
     }
@@ -1070,6 +1074,8 @@ async def compare_strategies(request: CompareStrategiesRequest) -> dict[str, Any
         )
 
         chunker = ChunkerRegistry.get_chunker(name, chunker_config)
+        if chunker is None:
+            raise HTTPException(status_code=400, detail=f"Unknown chunking strategy: {name}")
         chunkers.append((name, chunker))
 
     # Compare strategies
@@ -1115,6 +1121,8 @@ async def preview_chunks(request: PreviewChunksRequest) -> dict[str, Any]:
     )
 
     chunker = ChunkerRegistry.get_chunker(request.chunker, config)
+    if chunker is None:
+        raise HTTPException(status_code=400, detail=f"Unknown chunking strategy: {request.chunker}")
 
     # Generate chunks
     chunks = chunker.chunk(document.blocks)
@@ -1190,14 +1198,20 @@ async def test_query(request: StrategyTestRequest) -> dict[str, Any]:
             )
 
             chunker = ChunkerRegistry.get_chunker(strategy_name, config)
+            if chunker is None:
+                raise HTTPException(
+                    status_code=400,
+                    detail=f"Unknown chunking strategy: {strategy_name}",
+                )
             chunks = chunker.chunk(doc.blocks)
             all_chunks.extend(chunks)
 
         if not all_chunks:
             continue
 
-        # Search using retrieval tester
-        tester = _get_retrieval_tester()
+        # Search using a LOCAL tester so per-strategy preview chunks don't
+        # overwrite the project's shared retrieval index.
+        tester = RetrievalTester()
         tester.index_chunks(all_chunks)
         results = tester.search(request.query, top_k=3)
 
@@ -1206,11 +1220,11 @@ async def test_query(request: StrategyTestRequest) -> dict[str, Any]:
         for result in results:
             formatted_results.append(
                 {
-                    "chunk_id": result.chunk_id,
+                    "chunk_id": result.chunk.id,
                     "score": result.score,
-                    "content_preview": result.content_preview[:200],
-                    "hierarchy_path": result.hierarchy_path,
-                    "token_count": result.token_count,
+                    "content_preview": result.chunk.content[:200],
+                    "hierarchy_path": result.chunk.hierarchy_path,
+                    "token_count": result.chunk.token_count,
                 }
             )
 
@@ -1242,7 +1256,7 @@ async def compare_strategies_query(request: CompareStrategiesQueryRequest) -> di
     results = []
 
     for query in request.queries:
-        query_request = TestQueryRequest(
+        query_request = StrategyTestRequest(
             query=query,
             strategies=request.strategies,
             document_id=request.document_id,
