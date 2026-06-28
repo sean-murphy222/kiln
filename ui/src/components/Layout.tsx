@@ -22,6 +22,27 @@ import { useKeyboardShortcuts } from "../hooks/useKeyboardShortcuts";
 
 type ViewMode = "diagnostic" | "workflow" | "chunks";
 
+// Plain-language purpose for each view, shown as a tooltip on the tab and as a
+// one-line description strip under the switcher so the three overlapping views
+// aren't a mystery to newcomers.
+const VIEW_META: Record<ViewMode, { tip: string; blurb: string }> = {
+  diagnostic: {
+    tip: "Auto-check chunk quality and apply merge/split fixes before export",
+    blurb:
+      "Diagnostic — automatically assess chunk quality and apply fixes. Start here.",
+  },
+  workflow: {
+    tip: "Guided steps: build hierarchy, pick & compare a strategy, test retrieval, export",
+    blurb:
+      "Visual Workflow — a guided path to choose and tune a chunking strategy.",
+  },
+  chunks: {
+    tip: "Manually inspect, merge, split, delete, and tag individual chunks",
+    blurb:
+      "Chunks View — manually inspect and edit chunks (merge / split / delete / tag).",
+  },
+};
+
 export function Layout() {
   const {
     sidebarOpen,
@@ -74,6 +95,8 @@ export function Layout() {
         <div className="flex border-b border-gray-700 bg-gray-800">
           <button
             onClick={() => setViewMode("diagnostic")}
+            title={VIEW_META.diagnostic.tip}
+            aria-label={`Diagnostic view. ${VIEW_META.diagnostic.tip}`}
             className={`flex items-center gap-2 px-6 py-3 font-medium transition-colors ${
               viewMode === "diagnostic"
                 ? "bg-blue-600 text-white border-b-2 border-blue-400"
@@ -82,10 +105,14 @@ export function Layout() {
           >
             <AlertTriangle size={18} />
             <span>Diagnostic</span>
-            <span className="text-xs px-2 py-0.5 bg-ember rounded">MVP</span>
+            <span className="text-xs px-2 py-0.5 bg-ember rounded">
+              Recommended
+            </span>
           </button>
           <button
             onClick={() => setViewMode("workflow")}
+            title={VIEW_META.workflow.tip}
+            aria-label={`Visual Workflow view. ${VIEW_META.workflow.tip}`}
             className={`flex items-center gap-2 px-6 py-3 font-medium transition-colors ${
               viewMode === "workflow"
                 ? "bg-blue-600 text-white border-b-2 border-blue-400"
@@ -97,6 +124,8 @@ export function Layout() {
           </button>
           <button
             onClick={() => setViewMode("chunks")}
+            title={VIEW_META.chunks.tip}
+            aria-label={`Chunks view. ${VIEW_META.chunks.tip}`}
             className={`flex items-center gap-2 px-6 py-3 font-medium transition-colors ${
               viewMode === "chunks"
                 ? "bg-blue-600 text-white border-b-2 border-blue-400"
@@ -106,6 +135,11 @@ export function Layout() {
             <Grid size={18} />
             <span>Chunks View</span>
           </button>
+        </div>
+
+        {/* Active-view description */}
+        <div className="px-6 py-1.5 text-xs text-gray-400 bg-gray-800/60 border-b border-gray-700">
+          {VIEW_META[viewMode].blurb}
         </div>
 
         {/* Error Banner */}
