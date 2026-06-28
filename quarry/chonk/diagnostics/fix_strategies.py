@@ -52,6 +52,7 @@ class FixResult:
     actions_applied: list[FixAction]
     new_chunks: list[Chunk]
     errors: list[str] = field(default_factory=list)
+    warnings: list[str] = field(default_factory=list)
 
     def to_dict(self) -> dict[str, Any]:
         return {
@@ -60,6 +61,7 @@ class FixResult:
             "chunks_after": self.chunks_after,
             "actions_applied": [a.to_dict() for a in self.actions_applied],
             "errors": self.errors,
+            "warnings": self.warnings,
         }
 
 
