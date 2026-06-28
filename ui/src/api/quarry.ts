@@ -616,6 +616,7 @@ export const queryTestAPI = {
 
 // Diagnostic interfaces
 export interface ChunkProblem {
+  id: string;
   chunk_id: string;
   problem_type: string;
   severity: "high" | "medium" | "low";
