@@ -4,6 +4,7 @@ import {
   Unlock,
   Merge,
   Scissors,
+  Trash2,
   Tag,
   ChevronDown,
   ChevronRight,
@@ -47,6 +48,27 @@ export function ChunkPanel() {
       clearChunkSelection();
     } catch (err) {
       setError(err instanceof Error ? err.message : "Failed to merge chunks");
+    }
+  };
+
+  // Handle bulk delete (e.g. removing useless table-of-contents chunks)
+  const handleDelete = async () => {
+    if (selectedChunkIds.length === 0) return;
+    const n = selectedChunkIds.length;
+    if (
+      !window.confirm(
+        `Delete ${n} chunk${n > 1 ? "s" : ""}? They will be removed from the search index.`,
+      )
+    )
+      return;
+
+    try {
+      await chunkAPI.deleteMany(selectedChunkIds);
+      const updatedProject = await projectAPI.get();
+      setProject(updatedProject);
+      clearChunkSelection();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Failed to delete chunks");
     }
   };
 
@@ -103,6 +125,14 @@ export function ChunkPanel() {
                 Merge
               </button>
             )}
+            <button
+              className="btn-secondary py-1 px-2 text-xs flex items-center gap-1 text-red-300 hover:text-red-200"
+              onClick={handleDelete}
+              title="Delete selected chunks"
+            >
+              <Trash2 size={12} />
+              Delete
+            </button>
             <button
               className="text-xs text-kiln-500 hover:text-kiln-300"
               onClick={clearChunkSelection}

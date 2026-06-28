@@ -355,6 +355,12 @@ export const documentAPI = {
 
 // Chunk endpoints
 export const chunkAPI = {
+  deleteMany: (chunkIds: string[]) =>
+    apiFetch<{ deleted: number; requested: number }>("/api/chunks/delete", {
+      method: "POST",
+      body: JSON.stringify({ chunk_ids: chunkIds }),
+    }),
+
   merge: (chunkIds: string[]) =>
     apiFetch<Chunk>("/api/chunks/merge", {
       method: "POST",
