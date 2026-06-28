@@ -122,6 +122,10 @@ class DoclingExtractor:
                 "element_count": len(blocks),
             },
             warnings=self._warnings,
+            # Retain the parsed DoclingDocument so the chunking step can use
+            # Docling's HybridChunker directly (proper structure-aware chunking)
+            # rather than re-chunking the flattened blocks.
+            docling_document=doc,
         )
 
     def _convert_docling_to_blocks(self, doc: Any) -> list[Block]:

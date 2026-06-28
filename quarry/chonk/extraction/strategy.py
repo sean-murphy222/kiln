@@ -150,6 +150,10 @@ class ExtractionResult:
     tier_used: ExtractionTier
     extraction_info: dict[str, Any] = field(default_factory=dict)
     warnings: list[str] = field(default_factory=list)
+    # Internal handle: the parsed DoclingDocument, when extraction used Docling.
+    # Carried through so the chunking step can use Docling's own HybridChunker
+    # instead of re-chunking flattened blocks. Never serialized into API output.
+    docling_document: Any | None = None
 
 
 @runtime_checkable

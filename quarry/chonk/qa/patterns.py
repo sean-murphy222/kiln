@@ -119,6 +119,12 @@ BOILERPLATE_PATTERNS: list[CompiledPattern] = [
         match_type="prefix",
     ),
     CompiledPattern(
+        name="not_measurement_sensitive",
+        category=FilterCategory.BOILERPLATE,
+        pattern=re.compile(r"not\s+measurement\s+sensitive", re.IGNORECASE),
+        match_type="contains",
+    ),
+    CompiledPattern(
         name="proprietary",
         category=FilterCategory.BOILERPLATE,
         pattern=re.compile(r"proprietary.*confidential", re.IGNORECASE),
