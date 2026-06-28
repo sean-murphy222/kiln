@@ -1,6 +1,8 @@
 """
 Pytest configuration and fixtures for CHONK tests.
 """
+# Fixture content strings below are intentionally long sample text.
+# ruff: noqa: E501
 
 import tempfile
 from pathlib import Path
