@@ -118,7 +118,7 @@ class QuestionTestRunner:
         # Search for chunks
         search_results = self.tester.search(question.question, top_k)
 
-        retrieved_ids = [r.chunk_id for r in search_results]
+        retrieved_ids = [r.chunk.id for r in search_results]
         retrieved_scores = [r.score for r in search_results]
 
         # Check if expected chunks were retrieved
@@ -173,7 +173,8 @@ class QuestionTestRunner:
             if test_type not in results_by_type:
                 results_by_type[test_type] = {"passed": 0, "partial": 0, "failed": 0}
 
-            results_by_type[test_type][result.status] += 1
+            status_key = {"pass": "passed", "partial": "partial", "fail": "failed"}[result.status]
+            results_by_type[test_type][status_key] += 1
 
         # Find worst-performing chunks
         chunk_failures = {}
