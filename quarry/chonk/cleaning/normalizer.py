@@ -53,6 +53,66 @@ _MULTI_NEWLINE_RE = re.compile(r"\n{3,}")
 # Line-end hyphenation: "word-\n" followed by lowercase continuation
 _HYPHEN_BREAK_RE = re.compile(r"(\w)-\n([a-z])")
 
+# Runs of 2+ spaces act as the real word boundary inside letter-spaced text.
+_WORD_GAP_RE = re.compile(r" {2,}")
+# Minimum single-char tokens to treat a group as a letter-spaced word.
+_LETTER_SPACING_MIN_RUN = 3
+
+
+def collapse_letter_spacing(text: str) -> str:
+    """Collapse inter-glyph-spaced text like "N O T  M E A S U R E M E N T".
+
+    PDFs sometimes render titles with a space between every letter and a larger
+    gap (2+ spaces) between words. Docling reads the same text layer and does not
+    de-space it. We treat runs of 2+ spaces as real word boundaries; within each
+    group, if every space-separated token is a single alphanumeric character and
+    there are at least ``_LETTER_SPACING_MIN_RUN`` of them, we join them back
+    into a word. Ordinary prose (multi-char tokens) is left untouched.
+
+    Args:
+        text: Input text, possibly containing letter-spaced runs.
+
+    Returns:
+        Text with letter-spaced runs collapsed.
+    """
+
+    def fix_line(line: str) -> str:
+        groups = _WORD_GAP_RE.split(line)
+        out: list[str] = []
+        for group in groups:
+            tokens = group.split(" ")
+            if len(tokens) >= _LETTER_SPACING_MIN_RUN and all(
+                len(t) == 1 and t.isalnum() for t in tokens
+            ):
+                out.append("".join(tokens))
+            else:
+                out.append(group)
+        return " ".join(out)
+
+    return "\n".join(fix_line(line) for line in text.split("\n"))
+
+
+def normalize_text(text: str) -> str:
+    """Clean a raw text string (e.g. a Docling chunk) without a Block.
+
+    Applies the same character/hyphenation/whitespace cleaning the
+    ``BlockNormalizer`` uses, preceded by letter-spacing collapse, so chunk text
+    from any source can be normalized uniformly.
+
+    Args:
+        text: Raw text to clean.
+
+    Returns:
+        Cleaned text.
+    """
+    sink: list[str] = []
+    text = collapse_letter_spacing(text)
+    text = BlockNormalizer._normalize_chars(text, sink)
+    text = BlockNormalizer._repair_hyphenation(text, sink)
+    text = BlockNormalizer._normalize_whitespace(text, sink)
+    return text
+
+
 # Smart quotes and special characters
 _SMART_QUOTES = {
     "\u2018": "'",  # left single
@@ -178,6 +238,7 @@ class BlockNormalizer:
         applied: list[str] = []
 
         content = block.content
+        content = self._collapse_letter_spacing(content, applied)
         content = self._normalize_chars(content, applied)
         content = self._repair_hyphenation(content, applied)
         content = self._remove_continuation_markers(content, applied)
@@ -186,6 +247,14 @@ class BlockNormalizer:
 
         block.content = content
         return applied
+
+    @staticmethod
+    def _collapse_letter_spacing(text: str, applied: list[str]) -> str:
+        """Collapse inter-glyph-spaced runs (e.g. 'N O T' -> 'NOT')."""
+        result = collapse_letter_spacing(text)
+        if result != text:
+            applied.append("collapse_letter_spacing")
+        return result
 
     @staticmethod
     def _normalize_chars(text: str, applied: list[str]) -> str:

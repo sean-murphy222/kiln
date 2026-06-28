@@ -12,6 +12,7 @@ still be run independently::
 
 from __future__ import annotations
 
+import logging
 import tempfile
 from datetime import datetime
 from pathlib import Path
@@ -44,6 +45,8 @@ from chonk.hierarchy import HierarchyBuilder
 from chonk.loaders import LoaderRegistry
 from chonk.testing import RetrievalTester
 from chonk.utils.quality import QualityAnalyzer
+
+logger = logging.getLogger(__name__)
 
 # ---------------------------------------------------------------------------
 # Router: all Quarry/CHONK endpoints live here so that external apps
@@ -83,7 +86,7 @@ _state: dict[str, Any] = {
         "show_quality_warnings": True,
         "auto_save": True,
         # Extraction settings
-        "extraction_tier": "fast",  # fast, enhanced, ai, auto
+        "extraction_tier": "enhanced",  # fast, enhanced, ai, auto (Docling default for PDFs)
         "extraction_auto_upgrade": False,
     },
 }
@@ -303,15 +306,34 @@ async def upload_document(
             document = LoaderRegistry.load_document(tmp_path)
             document.source_path = Path(file.filename or "document")
 
-        # Auto-chunk with default settings
-        ChunkerRegistry.chunk_document(
-            document,
-            project.settings.default_chunker,
-            ChunkerConfig(
-                target_tokens=project.settings.default_chunk_size,
-                overlap_tokens=project.settings.default_overlap,
-            ),
+        # Chunk: prefer Docling's HybridChunker when a DoclingDocument is
+        # available (proper structure-aware, token-aware chunking). Otherwise
+        # fall back to the block-based hierarchy chunker.
+        docling_doc = (
+            getattr(result, "docling_document", None) if suffix.lower() == ".pdf" else None
         )
+        chunked_with_docling = False
+        if docling_doc is not None:
+            try:
+                from chonk.chunkers.docling_chunker import DoclingChunker
+
+                document.chunks = DoclingChunker(
+                    embed_model=settings.get("embedding_model"),
+                ).chunk_docling_document(docling_doc)
+                document.chunker_used = "docling"
+                document.last_chunked_at = datetime.now()
+                chunked_with_docling = True
+            except Exception as exc:  # pragma: no cover - defensive fallback
+                logger.warning("Docling chunking failed, using hierarchy fallback: %s", exc)
+        if not chunked_with_docling:
+            ChunkerRegistry.chunk_document(
+                document,
+                project.settings.default_chunker,
+                ChunkerConfig(
+                    target_tokens=project.settings.default_chunk_size,
+                    overlap_tokens=project.settings.default_overlap,
+                ),
+            )
 
         # Analyze quality
         analyzer = QualityAnalyzer()
