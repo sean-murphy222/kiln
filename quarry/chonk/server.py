@@ -139,6 +139,12 @@ class MergeRequest(BaseModel):
     chunk_ids: list[str]
 
 
+class ChunkDeleteRequest(BaseModel):
+    """Request for bulk-deleting chunks by id."""
+
+    chunk_ids: list[str]
+
+
 class SplitRequest(BaseModel):
     """Request for splitting a chunk."""
 
@@ -520,6 +526,34 @@ async def merge_chunks(request: MergeRequest) -> dict[str, Any]:
     tester.index_documents(project.documents)
 
     return merged_chunk.to_dict()
+
+
+@router.post("/api/chunks/delete")
+async def delete_chunks(request: ChunkDeleteRequest) -> dict[str, Any]:
+    """Bulk-delete chunks by id, then re-index the project.
+
+    Lets users remove always-useless chunks (e.g. table-of-contents entries)
+    that would otherwise be persistent false-positive search hits.
+    """
+    project = _get_project()
+    ids = set(request.chunk_ids)
+    if not ids:
+        raise HTTPException(status_code=400, detail="No chunk ids provided")
+
+    deleted = 0
+    for doc in project.documents:
+        before = len(doc.chunks)
+        doc.chunks = [c for c in doc.chunks if c.id not in ids]
+        deleted += before - len(doc.chunks)
+
+    if deleted == 0:
+        raise HTTPException(status_code=404, detail="No matching chunks found")
+
+    # Re-index so the deleted chunks no longer appear in search results.
+    tester = _get_retrieval_tester()
+    tester.index_documents(project.documents)
+
+    return {"deleted": deleted, "requested": len(ids)}
 
 
 @router.post("/api/chunks/split")
