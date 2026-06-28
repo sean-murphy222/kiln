@@ -6,15 +6,35 @@ import tempfile
 from pathlib import Path
 
 import pytest
-
 from chonk.core.document import (
     Block,
     BlockType,
-    Chunk,
     ChonkDocument,
     ChonkProject,
     DocumentMetadata,
 )
+
+
+@pytest.fixture(autouse=True)
+def _isolate_quarry_autosave(tmp_path, monkeypatch):
+    """Keep server autosave out of the user's real ~/.kiln during tests.
+
+    chonk.server now autosaves the project on every mutation; without this the
+    endpoint tests would write to (and auto-load from) the real autosave path,
+    polluting the user's home and cross-contaminating tests.
+    """
+    try:
+        from chonk import server as _server
+
+        monkeypatch.setattr(
+            _server,
+            "_AUTOSAVE_PATH",
+            tmp_path / "quarry-autosave.chonk",
+            raising=False,
+        )
+    except Exception:
+        pass
+    yield
 
 
 @pytest.fixture
