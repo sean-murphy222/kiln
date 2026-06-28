@@ -126,6 +126,7 @@ class FixOrchestrator:
         current_chunks = chunks.copy()
         applied_actions = []
         errors = []
+        warnings: list[str] = []
 
         # Execute each action
         for action in plan.actions:
@@ -146,7 +147,6 @@ class FixOrchestrator:
                 continue
 
         # Validate improvements if requested
-        success = True
         if validate and not errors:
             # Re-run diagnostics on fixed chunks
             from pathlib import Path
@@ -173,20 +173,24 @@ class FixOrchestrator:
             # If new problems didn't reduce at all, that's a failure
             # But some problems may remain because one chunk can have multiple problems
             if len(new_problems) > old_problem_count and len(applied_actions) > 0:
-                # Log warning but don't fail - partial improvement is still progress
-                errors.append(
-                    f"Validation: Limited improvement - {len(new_problems)} problems "
+                # Informational only - partial improvement is still progress. This
+                # must NOT go into `errors`, or it would flip success to False and
+                # the applied fixes would be discarded by the caller.
+                warnings.append(
+                    f"Limited improvement - {len(new_problems)} problems "
                     f"remain after {len(applied_actions)} fixes"
                 )
-                # Don't set success = False - partial fixes are okay
 
+        # Success means we actually applied at least one fix. Per-action failures
+        # are reported in `errors` but don't discard the fixes that did apply.
         return FixResult(
-            success=success and not errors,
+            success=len(applied_actions) > 0,
             chunks_before=original_count,
             chunks_after=len(current_chunks),
             actions_applied=applied_actions,
             new_chunks=current_chunks,
             errors=errors,
+            warnings=warnings,
         )
 
     def _detect_conflicts(self, actions: list[FixAction]) -> list[str]:

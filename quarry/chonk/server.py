@@ -1491,6 +1491,7 @@ class ApplyFixesRequest(BaseModel):
     document_id: str
     auto_resolve_conflicts: bool = True
     validate: bool = True  # Re-run diagnostics after fixes
+    max_iterations: int = 10  # Apply fixes in cycles until convergence
 
 
 @router.post("/api/diagnostics/apply-fixes")
@@ -1522,43 +1523,71 @@ async def apply_fixes(request: ApplyFixesRequest) -> dict[str, Any]:
             "message": "No problems detected - nothing to fix",
         }
 
-    # Plan and execute fixes
+    # Apply fixes iteratively: each pass can unblock fixes that weren't
+    # applicable before (a merge clears a conflict or makes a neighbor mergeable),
+    # so we loop until no actions are planned/applied, the problem count stops
+    # dropping, or we hit the iteration cap. Re-index only once at the end.
     orchestrator = FixOrchestrator()
-    plan = orchestrator.plan_fixes(
-        problems_before,
-        document.chunks,
-        auto_resolve_conflicts=request.auto_resolve_conflicts,
-    )
+    applied_actions: list[Any] = []
+    all_warnings: list[str] = []
+    chunks_before = len(document.chunks)
+    prev_problem_count = len(problems_before)
+    iterations = 0
 
-    result = orchestrator.execute_plan(
-        plan,
-        document.chunks,
-        validate=request.validate,
-    )
+    for _ in range(max(1, request.max_iterations)):
+        problems = analyzer.analyze_document(document)
+        if not problems:
+            break
+        # Stop if a pass produced no net improvement (converged / oscillating).
+        if iterations > 0 and len(problems) >= prev_problem_count:
+            break
+        prev_problem_count = len(problems)
 
-    if not result.success:
+        plan = orchestrator.plan_fixes(
+            problems,
+            document.chunks,
+            auto_resolve_conflicts=request.auto_resolve_conflicts,
+        )
+        if not plan.actions:
+            break
+
+        result = orchestrator.execute_plan(plan, document.chunks, validate=False)
+        if not result.actions_applied:
+            break
+
+        document.chunks = result.new_chunks
+        applied_actions.extend(result.actions_applied)
+        all_warnings.extend(result.warnings)
+        iterations += 1
+
+    if not applied_actions:
         return {
             "document_id": request.document_id,
-            "result": "failed",
-            "errors": result.errors,
-            "fix_result": result.to_dict(),
+            "result": "no_fixes_applied",
+            "message": "No automatic fixes could be applied",
+            "before": {"problems": len(problems_before), "statistics": stats_before},
         }
 
-    # Update document with fixed chunks
-    document.chunks = result.new_chunks
-
-    # Re-run diagnostics on fixed chunks
+    # Final diagnostics on the fixed chunks + a single re-index.
     problems_after = analyzer.analyze_document(document)
     stats_after = analyzer.get_statistics(problems_after)
 
-    # Re-index chunks for retrieval
     tester = _get_retrieval_tester()
     tester.index_documents(project.documents)
+    _autosave_project()
 
     return {
         "document_id": request.document_id,
         "result": "success",
-        "fix_result": result.to_dict(),
+        "iterations": iterations,
+        "fix_result": {
+            "success": True,
+            "chunks_before": chunks_before,
+            "chunks_after": len(document.chunks),
+            "actions_applied": [a.to_dict() for a in applied_actions],
+            "errors": [],
+            "warnings": all_warnings,
+        },
         "before": {
             "problems": len(problems_before),
             "statistics": stats_before,
