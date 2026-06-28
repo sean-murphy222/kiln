@@ -686,19 +686,43 @@ export interface DiagnosticResult {
 
 // Diagnostic endpoints
 export const diagnosticAPI = {
-  analyze: (
+  analyze: async (
     documentId: string,
     includeQuestions = true,
     testQuestions = true,
-  ) =>
-    apiFetch<DiagnosticResult>("/api/diagnostics/analyze", {
+  ): Promise<DiagnosticResult> => {
+    // Backend returns { document_id, static_analysis: { problems, statistics },
+    // question_tests: { summary: {...} } }. Flatten to the DiagnosticResult the
+    // dashboard consumes.
+    const raw = await apiFetch<{
+      document_id: string;
+      static_analysis?: {
+        problems?: ChunkProblem[];
+        statistics?: DiagnosticStatistics;
+      };
+      question_tests?: {
+        summary?: { total_tests?: number; passed?: number; pass_rate?: number };
+      };
+    }>("/api/diagnostics/analyze", {
       method: "POST",
       body: JSON.stringify({
         document_id: documentId,
         include_questions: includeQuestions,
         test_questions: testQuestions,
       }),
-    }),
+    });
+    const summary = raw.question_tests?.summary;
+    return {
+      document_id: raw.document_id,
+      problems: raw.static_analysis?.problems ?? [],
+      statistics:
+        raw.static_analysis?.statistics ?? ({} as DiagnosticStatistics),
+      questions_generated: summary?.total_tests ?? 0,
+      questions_tested: summary?.total_tests ?? 0,
+      question_pass_rate: summary?.pass_rate ?? 0,
+      analyzed_at: new Date().toISOString(),
+    };
+  },
 
   getProblems: (documentId: string) =>
     apiFetch<{
